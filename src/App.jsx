@@ -3,9 +3,6 @@ import './App.css';
 import ParticleBackground from './components/ParticleBackground';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import FeaturesPreview from './components/FeaturesPreview';
-import Roadmap from './components/Roadmap';
-import FAQSection from './components/FAQSection';
 import Footer from './components/Footer';
 
 function App() {
@@ -30,18 +27,9 @@ function App() {
       {/* Navigation */}
       <Navbar onScrollToWaitlist={handleScrollToWaitlist} />
 
-      {/* Main Landing Page Content */}
-      <main className="main-content">
+      {/* Coming Soon Hero / Waitlist Content */}
+      <main className="main-content coming-soon-main">
         <Hero waitlistRef={waitlistRef} />
-        <div id="features">
-          <FeaturesPreview />
-        </div>
-        <div id="roadmap">
-          <Roadmap />
-        </div>
-        <div id="faq">
-          <FAQSection />
-        </div>
       </main>
 
       {/* Footer */}
