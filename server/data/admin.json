@@ -1,0 +1,21 @@
+{
+  "admin": {
+    "id": "ADM-001",
+    "name": "Fleet Administrator",
+    "email": "admin@sikharfleet.com",
+    "password": "admin123",
+    "role": "Administrator",
+    "designation": "Fleet Operations",
+    "initials": "FA",
+    "branch": "Delhi NCR Central Hub",
+    "tenant": "SIKHAR-FLEET-PRIVATE-LIMITED",
+    "permissions": [
+      "ALL_GLOBAL_CONTROLS",
+      "FINANCE_CLOSE",
+      "ASSIGNMENT_LOCK",
+      "ESTIMATE_APPROVAL"
+    ],
+    "lastLogin": "10/10/2026, 1:53:52 pm",
+    "sessionToken": "sikhar_auth_token_live_99420"
+  }
+}

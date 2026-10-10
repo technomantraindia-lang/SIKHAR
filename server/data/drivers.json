@@ -1,0 +1,833 @@
+{
+  "summary": {
+    "totalDrivers": 12,
+    "activeContracts": 57,
+    "onDuty": 8,
+    "onLeave": 1,
+    "suspended": 1,
+    "unassigned": 1,
+    "walletBreached": 14,
+    "lowPerformance": 6,
+    "attendanceMarked": 58,
+    "pendingHandover": 2
+  },
+  "actionQueue": [
+    {
+      "id": "act-1",
+      "type": "wallet",
+      "title": "Wallet Recharge Due",
+      "count": 14,
+      "severity": "bad",
+      "desc": "Drivers with negative or critically low balance"
+    },
+    {
+      "id": "act-2",
+      "type": "attendance",
+      "title": "Attendance Not Marked",
+      "count": 5,
+      "severity": "warn",
+      "desc": "Assigned drivers not checked into hub terminal"
+    },
+    {
+      "id": "act-3",
+      "type": "documents",
+      "title": "DL Expiring Soon (<15 Days)",
+      "count": 3,
+      "severity": "bad",
+      "desc": "Statutory driving licences pending renewal"
+    },
+    {
+      "id": "act-4",
+      "type": "performance",
+      "title": "Low Earnings Review",
+      "count": 6,
+      "severity": "warn",
+      "desc": "Gross daily fare below ₹1,200 threshold"
+    },
+    {
+      "id": "act-5",
+      "type": "handover",
+      "title": "Vehicle Handover Pending",
+      "count": 2,
+      "severity": "blue",
+      "desc": "Shift exchange and yard checkout required"
+    }
+  ],
+  "drivers": [
+    {
+      "id": "drv-12",
+      "name": "dhruv",
+      "phone": "9687567294",
+      "altPhone": "7854124574",
+      "city": "Gurgaon Operations Hub",
+      "photo": "",
+      "mobileVerified": true,
+      "status": "On Duty",
+      "rating": 5,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "shiftType": "24-Hour Dedicated",
+      "coDriver": null,
+      "location": "Gurgaon Operations Hub",
+      "vehicle": {
+        "registration": "DL52GD6605",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Assigned 1:1"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 496,
+        "activeHolds": 0,
+        "spendableBalance": 496,
+        "status": "Healthy",
+        "autoTopup": false,
+        "lastTopup": "Opening Balance: ₹496",
+        "recentTransactions": [
+          {
+            "id": "WTX-0080",
+            "date": "10 Oct 2026, 10:00 AM",
+            "type": "Initial Deposit",
+            "amount": "+₹496.00",
+            "method": "Initial Credit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "5421-9847-7548",
+        "aadhaarVerified": true,
+        "drivingLicence": "123654789654",
+        "dlExpiry": "2030-11-14",
+        "dlCategory": "Commercial LMV",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "7412589632 (Brother)",
+        "reference": {
+          "name": "Suresh Verma",
+          "phone": "98101 88990",
+          "relation": "Guarantor",
+          "address": "Sector 14, Gurgaon"
+        },
+        "address": "Vadodara",
+        "panCard": "BKAPA1029K",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹999 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "frequency": "Weekly Cycle (Every Monday)",
+        "taxRule": "GST 5% (Commercial Passenger Transport)",
+        "startDate": "10 Oct 2026",
+        "contractMonths": 12,
+        "agreementVersion": "v1.0 (Master Commercial Lease)",
+        "agreementSigned": true,
+        "depositReceipt": "UTR-89127632",
+        "depositStatus": "Held in Escrow",
+        "handoverOdometer": "45,210 km",
+        "handoverStatus": "Completed & QC Inspected"
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    },
+    {
+      "id": "drv-11",
+      "name": "chetan",
+      "phone": "9687564235",
+      "city": "South Delhi Hub",
+      "status": "On Duty",
+      "rating": 5,
+      "shift": "07:00 AM - 07:00 PM (Standard)",
+      "location": "South Delhi Hub",
+      "vehicle": {
+        "registration": "DL52GD6605",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Ready to Deploy"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 1500,
+        "activeHolds": 0,
+        "spendableBalance": 1500,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "09 Oct 2026, 05:51 PM · ₹500",
+        "recentTransactions": [
+          {
+            "id": "WTX-1077",
+            "date": "09 Oct 2026, 05:51 PM",
+            "type": "Wallet Top-up",
+            "amount": "+₹500",
+            "method": "Admin Top-Up Voucher ()",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-3253",
+            "date": "Today",
+            "type": "Onboarding Credit",
+            "amount": "+₹1,000.00",
+            "method": "Joining Balance",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "Verified",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-798465132",
+        "dlExpiry": "2030",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "Provided during onboarding",
+        "address": "Delhi NCR",
+        "panCard": "DLKPS4491J",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "startDate": "2026-10-09",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    },
+    {
+      "id": "drv-01",
+      "name": "Raj Kumar",
+      "phone": "+91 98101 23456",
+      "city": "Gurgaon Operations Hub",
+      "status": "On Duty",
+      "rating": 4.9,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "location": "Cyber City • Phase 2, Gurgaon",
+      "vehicle": {
+        "registration": "DL52GD6605",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "At Workshop"
+      },
+      "todayGross": "₹1,650",
+      "todayTrips": 12,
+      "wallet": {
+        "postedBalance": 2100,
+        "activeHolds": 0,
+        "spendableBalance": 2100,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "18 Aug 2026 · ₹1,200 (UPI)",
+        "recentTransactions": [
+          {
+            "id": "WTX-101",
+            "date": "18 Aug 2026, 05:30 PM",
+            "type": "Top-up",
+            "amount": "+₹1,200.00",
+            "method": "UPI-336646778900",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-102",
+            "date": "18 Aug 2026, 12:00 AM",
+            "type": "Daily Rent",
+            "amount": "-₹1,000.00",
+            "method": "Auto-Debit",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-103",
+            "date": "17 Aug 2026, 06:15 PM",
+            "type": "CNG Fuel Reimbursement",
+            "amount": "+₹450.00",
+            "method": "Hub Claim",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-8921",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-0420190012345",
+        "dlExpiry": "14 Nov 2029",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98112 34567 (Brother)",
+        "address": "H.No 42, Sector 14, Gurgaon, Haryana",
+        "panCard": "AZYPD8821M",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "startDate": "01 Jan 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 26,
+        "leaveDays": 1,
+        "punctuality": "98%"
+      }
+    },
+    {
+      "id": "drv-02",
+      "name": "Amit Singh",
+      "phone": "+91 98101 67890",
+      "city": "South Delhi Hub",
+      "status": "On Duty",
+      "rating": 4.8,
+      "shift": "06:00 AM - 06:00 PM (Active)",
+      "location": "Saket District Centre, New Delhi",
+      "vehicle": {
+        "registration": "HR38AK1234",
+        "model": "Tigor EV Fleet",
+        "type": "EV",
+        "status": "On Road"
+      },
+      "todayGross": "₹1,480",
+      "todayTrips": 11,
+      "wallet": {
+        "postedBalance": 1800,
+        "activeHolds": 350,
+        "spendableBalance": 1450,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "18 Aug 2026 · ₹1,500 (UPI)",
+        "recentTransactions": [
+          {
+            "id": "WTX-201",
+            "date": "18 Aug 2026, 04:10 PM",
+            "type": "EV Fast Charge Hold",
+            "amount": "-₹350.00",
+            "method": "Kazam Fast Charger",
+            "status": "Hold Active"
+          },
+          {
+            "id": "WTX-202",
+            "date": "18 Aug 2026, 12:00 AM",
+            "type": "Daily Rent",
+            "amount": "-₹1,000.00",
+            "method": "Auto-Debit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-4412",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-1020180045612",
+        "dlExpiry": "22 Aug 2028",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98765 43210 (Wife)",
+        "address": "Flat 304, Green Park, New Delhi",
+        "panCard": "GHYPR9923N",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,100 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "startDate": "15 Feb 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 25,
+        "leaveDays": 2,
+        "punctuality": "96%"
+      }
+    },
+    {
+      "id": "drv-03",
+      "name": "Manoj Yadav",
+      "phone": "+91 98101 23456",
+      "city": "Gurgaon Operations Hub",
+      "status": "On Duty",
+      "rating": 4.7,
+      "shift": "08:00 AM - 08:00 PM",
+      "location": "ABC Motors Workshop • Gurgaon",
+      "vehicle": {
+        "registration": "HR38AK5678",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "At Workshop"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 3200,
+        "activeHolds": 0,
+        "spendableBalance": 3200,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "17 Aug 2026 · ₹2,000",
+        "recentTransactions": [
+          {
+            "id": "WTX-301",
+            "date": "17 Aug 2026, 11:00 AM",
+            "type": "Top-up",
+            "amount": "+₹2,000.00",
+            "method": "Bank Transfer",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-9914",
+        "aadhaarVerified": true,
+        "drivingLicence": "HR-2620170098765",
+        "dlExpiry": "12 Oct 2027",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98111 22334 (Brother)",
+        "address": "Village Chakkarpur, Gurgaon",
+        "panCard": "CKLPM3321L",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "10 Mar 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 24,
+        "leaveDays": 3,
+        "punctuality": "94%"
+      }
+    },
+    {
+      "id": "drv-04",
+      "name": "Rohit Yadav",
+      "phone": "+91 98101 99887",
+      "city": "Sikhar Central Hub",
+      "status": "Ready",
+      "rating": 4.6,
+      "shift": "Shift Starting 06:00 PM",
+      "location": "Sikhar Hub Yard, Sec 32, Gurgaon",
+      "vehicle": {
+        "registration": "HR55BC2211",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Ready to Deploy"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 900,
+        "activeHolds": 0,
+        "spendableBalance": 900,
+        "status": "Low Balance",
+        "autoTopup": false,
+        "lastTopup": "16 Aug 2026 · ₹1,000",
+        "recentTransactions": [
+          {
+            "id": "WTX-401",
+            "date": "16 Aug 2026, 09:30 AM",
+            "type": "Top-up",
+            "amount": "+₹1,000.00",
+            "method": "Cash at Hub",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-402",
+            "date": "16 Aug 2026, 12:00 AM",
+            "type": "Daily Rent",
+            "amount": "-₹1,000.00",
+            "method": "Auto-Debit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-6671",
+        "aadhaarVerified": true,
+        "drivingLicence": "HR-5520200034125",
+        "dlExpiry": "18 Sep 2030",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98102 33445 (Father)",
+        "address": "Sector 45, Gurgaon, Haryana",
+        "panCard": "TYUPK5512B",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "01 Jun 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 27,
+        "leaveDays": 0,
+        "punctuality": "99%"
+      }
+    },
+    {
+      "id": "drv-05",
+      "name": "Sandeep Kumar",
+      "phone": "+91 98101 11223",
+      "city": "Gurgaon Operations Hub",
+      "status": "On Duty",
+      "rating": 4.2,
+      "shift": "Suspended (Breakdown Incident)",
+      "location": "Sec 44 Roadside, Gurgaon",
+      "vehicle": {
+        "registration": "DL52GD7393",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Breakdown"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": -400,
+        "activeHolds": 0,
+        "spendableBalance": -400,
+        "status": "Breached",
+        "autoTopup": false,
+        "lastTopup": "14 Aug 2026 · ₹500",
+        "recentTransactions": [
+          {
+            "id": "WTX-501",
+            "date": "18 Aug 2026, 12:00 AM",
+            "type": "Daily Rent",
+            "amount": "-₹1,000.00",
+            "method": "Overdraft Breached",
+            "status": "Breached"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-1129",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-0420150078912",
+        "dlExpiry": "15 Oct 2026",
+        "dlStatus": "Expiring Soon",
+        "policeVerification": "Pending Renewal",
+        "emergencyContact": "+91 98119 88776 (Uncle)",
+        "address": "Sarita Vihar, New Delhi",
+        "panCard": "ERQPS7711Z",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Deposit Hold)",
+        "startDate": "12 Jan 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 20,
+        "leaveDays": 5,
+        "punctuality": "82%"
+      }
+    },
+    {
+      "id": "drv-06",
+      "name": "Vikram Singh",
+      "phone": "+91 98101 44556",
+      "city": "Noida Hub",
+      "status": "Suspended",
+      "rating": 4.8,
+      "shift": "06:30 AM - 06:30 PM (Active)",
+      "location": "Sector 62, Noida, UP",
+      "vehicle": {
+        "registration": "UP16HT7788",
+        "model": "Tigor EV Fleet",
+        "type": "EV",
+        "status": "On Road"
+      },
+      "todayGross": "₹1,420",
+      "todayTrips": 10,
+      "wallet": {
+        "postedBalance": 1250,
+        "activeHolds": 400,
+        "spendableBalance": 850,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "18 Aug 2026 · ₹1,200",
+        "recentTransactions": [
+          {
+            "id": "WTX-601",
+            "date": "18 Aug 2026, 01:20 PM",
+            "type": "EV Fast Charge Hold",
+            "amount": "-₹400.00",
+            "method": "Tata Power EZ",
+            "status": "Hold Active"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-7788",
+        "aadhaarVerified": true,
+        "drivingLicence": "UP-1620190054321",
+        "dlExpiry": "28 Nov 2029",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98711 22334 (Brother)",
+        "address": "Sector 19, Noida, Uttar Pradesh",
+        "panCard": "JKLPX2290A",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,100 / day",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "18 Mar 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 26,
+        "leaveDays": 1,
+        "punctuality": "97%"
+      }
+    },
+    {
+      "id": "drv-07",
+      "name": "Vicky",
+      "phone": "+91 98101 33221",
+      "city": "South Delhi Hub",
+      "status": "On Duty",
+      "rating": 4.9,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "location": "Nehru Place Metro, New Delhi",
+      "vehicle": {
+        "registration": "DL52GD6534",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "On Road"
+      },
+      "todayGross": "₹1,900",
+      "todayTrips": 14,
+      "wallet": {
+        "postedBalance": 2500,
+        "activeHolds": 0,
+        "spendableBalance": 2500,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "18 Aug 2026 · ₹2,000",
+        "recentTransactions": [
+          {
+            "id": "WTX-701",
+            "date": "18 Aug 2026, 02:40 PM",
+            "type": "Top-up",
+            "amount": "+₹2,000.00",
+            "method": "UPI",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-3344",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-0420210088776",
+        "dlExpiry": "10 Jan 2031",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98100 11223 (Father)",
+        "address": "Lajpat Nagar 4, New Delhi",
+        "panCard": "MNBVC3312Q",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Rapido Revenue Share",
+        "rate": "75% Driver / 25% Sikhar",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "05 Feb 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 28,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    },
+    {
+      "id": "drv-08",
+      "name": "Anoop",
+      "phone": "+91 98101 88771",
+      "city": "Gurgaon Operations Hub",
+      "status": "On Leave",
+      "rating": 4.4,
+      "shift": "Approved Leave (Family Event)",
+      "location": "Home Location • Rohtak, Haryana",
+      "vehicle": {
+        "registration": "HR55BC1199",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Ready to Deploy"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": -900,
+        "activeHolds": 0,
+        "spendableBalance": -900,
+        "status": "Breached",
+        "autoTopup": false,
+        "lastTopup": "16 Aug 2026 · ₹1,000",
+        "recentTransactions": [
+          {
+            "id": "WTX-801",
+            "date": "17 Aug 2026, 12:00 AM",
+            "type": "Daily Rent",
+            "amount": "-₹1,000.00",
+            "method": "Overdraft",
+            "status": "Breached"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-6612",
+        "aadhaarVerified": true,
+        "drivingLicence": "HR-1220180011992",
+        "dlExpiry": "05 Mar 2027",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98123 44556 (Brother)",
+        "address": "Model Town, Rohtak, Haryana",
+        "panCard": "PLMOK9941S",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "14 Apr 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 21,
+        "leaveDays": 4,
+        "punctuality": "88%"
+      }
+    },
+    {
+      "id": "drv-09",
+      "name": "Suraj Mishra",
+      "phone": "+91 98101 99112",
+      "city": "South Delhi Hub",
+      "status": "On Duty",
+      "rating": 4.9,
+      "shift": "06:00 AM - 06:00 PM (Active)",
+      "location": "Connaught Place, Central Delhi",
+      "vehicle": {
+        "registration": "DL1Z08899",
+        "model": "Tigor EV Fleet",
+        "type": "EV",
+        "status": "On Road"
+      },
+      "todayGross": "₹1,780",
+      "todayTrips": 13,
+      "wallet": {
+        "postedBalance": 3100,
+        "activeHolds": 600,
+        "spendableBalance": 2500,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "18 Aug 2026 · ₹2,000",
+        "recentTransactions": [
+          {
+            "id": "WTX-901",
+            "date": "18 Aug 2026, 03:00 PM",
+            "type": "EV Charging Hold",
+            "amount": "-₹600.00",
+            "method": "Statiq Station",
+            "status": "Hold Active"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-9901",
+        "aadhaarVerified": true,
+        "drivingLicence": "DL-0120190044556",
+        "dlExpiry": "19 Dec 2029",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98711 00998 (Wife)",
+        "address": "Janakpuri Block C, New Delhi",
+        "panCard": "ZXCVB1123D",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,100 / day",
+        "deposit": "₹75,000 (Secured)",
+        "startDate": "20 Feb 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 27,
+        "leaveDays": 0,
+        "punctuality": "99%"
+      }
+    },
+    {
+      "id": "drv-10",
+      "name": "Jitendra Pal",
+      "phone": "+91 98101 55667",
+      "city": "Sikhar Central Hub",
+      "status": "Unassigned",
+      "rating": 4.6,
+      "shift": "Standby (Awaiting Car Handover)",
+      "location": "Sikhar Central Terminal Yard",
+      "vehicle": null,
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 500,
+        "activeHolds": 0,
+        "spendableBalance": 500,
+        "status": "Healthy",
+        "autoTopup": false,
+        "lastTopup": "17 Aug 2026 · ₹500",
+        "recentTransactions": [
+          {
+            "id": "WTX-1001",
+            "date": "17 Aug 2026, 10:00 AM",
+            "type": "Initial Wallet Credit",
+            "amount": "+₹500.00",
+            "method": "Admin Credit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-4533",
+        "aadhaarVerified": true,
+        "drivingLicence": "UP-1420200088991",
+        "dlExpiry": "12 Aug 2030",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98109 77889 (Brother)",
+        "address": "Ghaziabad, Uttar Pradesh",
+        "panCard": "QWERT6654Y",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Pending Allocation",
+        "rate": "₹1,000 / day (Agreed)",
+        "deposit": "₹75,000 (Verified in Bank)",
+        "startDate": "19 Aug 2026",
+        "contractMonths": 12
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    }
+  ]
+}

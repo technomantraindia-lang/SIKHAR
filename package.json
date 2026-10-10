@@ -4,16 +4,27 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"node --watch server/index.js\" \"vite\"",
+    "server": "node --watch server/index.js",
+    "client": "vite",
     "build": "vite build",
+    "db:seed": "node server/db/seed.js",
+    "deploy": "node scripts/deploy.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
+    "concurrently": "^10.0.5",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.53.0",
+    "mysql2": "^3.24.5",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "ssh2": "^1.17.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

@@ -1,0 +1,561 @@
+{
+  "summary": {
+    "title": "FLEET CONTROL TOWER",
+    "subtitle": "Real-time operational overview of your fleet",
+    "lastUpdated": "09:42 AM IST",
+    "currentDate": "19 Aug 2026",
+    "metrics": {
+      "totalFleet": {
+        "label": "TOTAL FLEET",
+        "value": 11,
+        "subline": "100% of fleet"
+      },
+      "onRoad": {
+        "label": "ON ROAD",
+        "value": 3,
+        "subline": "83.6% of fleet",
+        "status": "good"
+      },
+      "atWorkshop": {
+        "label": "AT WORKSHOP",
+        "value": 2,
+        "subline": "7.5% of fleet",
+        "status": "warn"
+      },
+      "readyToDeploy": {
+        "label": "READY TO DEPLOY",
+        "value": 3,
+        "subline": "4.5% of fleet",
+        "status": "blue"
+      },
+      "breakdown": {
+        "label": "BREAKDOWN",
+        "value": 1,
+        "subline": "1.5% of fleet",
+        "status": "bad"
+      },
+      "driverOnLeave": {
+        "label": "DRIVER ON LEAVE",
+        "value": 1,
+        "subline": "1.5% of fleet",
+        "status": "purple"
+      },
+      "otherNonOps": {
+        "label": "OTHER NON-OPS",
+        "value": 1,
+        "subline": "1.5% of fleet",
+        "status": "muted"
+      },
+      "utilization": {
+        "label": "FLEET UTILIZATION",
+        "value": "83.6%",
+        "subline": "87.2% week · 89.4% month",
+        "sparkline": [
+          78,
+          81,
+          84,
+          86,
+          88,
+          82,
+          84
+        ],
+        "status": "good"
+      }
+    }
+  },
+  "vehicles": [
+    {
+      "id": "DL01EV9988",
+      "registration": "DL01EV9988",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "connectorType": "CCS2 (Combined Charging System)",
+      "driver": "Unassigned",
+      "driverPhone": "—",
+      "driverStatus": "Available in Yard",
+      "status": "Ready to Deploy",
+      "location": "Sikhar Hub Central Operations Yard",
+      "hub": "Sikhar Hub Central Operations Yard",
+      "since": "Just registered",
+      "duration": "0d 0h",
+      "nextAction": "Put on Road",
+      "actionType": "PUT_ON_ROAD",
+      "odometer": "150 km",
+      "battery": "100%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Nov 2026",
+      "permit": "Valid · 31 Dec 2026",
+      "insurance": "Valid · 31 Dec 2026",
+      "fitness": "Valid · 31 Dec 2027",
+      "puc": "Valid · 30 Jun 2027",
+      "chassis": "MAT612034NJB62862",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "challansCount": 0,
+      "challansAmount": "₹0",
+      "dailyRentRate": "₹1,150",
+      "notes": "Vehicle newly inducted into Sikhar fleet asset registry.",
+      "assignmentHistory": [
+        {
+          "driver": "In Yard Inventory",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "10 Oct 2026",
+          "toDate": "Present",
+          "handoverKm": "150 km",
+          "status": "Active"
+        }
+      ]
+    },
+    {
+      "id": "DL52GD6605",
+      "registration": "DL52GD6605",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Raj Kumar",
+      "driverPhone": "+91 98110 44291",
+      "driverStatus": "On Duty (At Workshop)",
+      "status": "At Workshop",
+      "location": "ABC Motors · Okhla Workshop",
+      "since": "18 Aug, 10:32 AM",
+      "duration": "1d 23h",
+      "nextAction": "Job Card #JC-2026-00125",
+      "actionType": "JOB_CARD",
+      "odometer": "42,860 km",
+      "battery": "72%",
+      "health": "Attention Required",
+      "healthStatus": "warn",
+      "service": "Service due · 21 Aug 2026",
+      "permit": "Valid · 14 Oct 2026",
+      "insurance": "Valid · 02 Nov 2026",
+      "fitness": "Valid · 15 Jan 2027",
+      "puc": "Valid · 10 Sep 2026",
+      "chassis": "MAT612034NJB09812",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Vehicle undergoing 40k periodic service and brake pad check."
+    },
+    {
+      "id": "HR38AK1234",
+      "registration": "HR38AK1234",
+      "model": "WAGONR H3 CNG",
+      "type": "CNG",
+      "driver": "Amit Singh",
+      "driverPhone": "+91 98188 12044",
+      "driverStatus": "On Duty",
+      "status": "On Road",
+      "location": "Gurgaon Cyber City · Sector 29",
+      "since": "Active now",
+      "duration": "Ongoing Shift",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
+      "odometer": "54,180 km",
+      "battery": "84% (CNG)",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 24 Aug 2026",
+      "permit": "Valid · 12 Dec 2026",
+      "insurance": "Valid · 18 Jan 2027",
+      "fitness": "Valid · 20 Feb 2027",
+      "puc": "Valid · 15 Nov 2026",
+      "chassis": "MA3EWB42SNK44901",
+      "lender": "Astronova Capital",
+      "monthlyEmi": "₹18,500",
+      "notes": "Operating on Rapido commercial ride-hailing route."
+    },
+    {
+      "id": "HR55BC2211",
+      "registration": "HR55BC2211",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Rohit Yadav",
+      "driverPhone": "+91 99200 88319",
+      "driverStatus": "Ready for Handover",
+      "status": "On Road",
+      "location": "Sikhar Hub · Central Operations Yard",
+      "since": "Active now",
+      "duration": "Ongoing Shift",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
+      "odometer": "31,220 km",
+      "battery": "91%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Completed · 18 Aug 2026",
+      "permit": "Valid · 09 Nov 2026",
+      "insurance": "Valid · 22 Dec 2026",
+      "fitness": "Valid · 04 Mar 2027",
+      "puc": "Valid · 28 Oct 2026",
+      "chassis": "MAT612034NJB07641",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Passed post-service QC test drive. Fully charged and clean."
+    },
+    {
+      "id": "DL52GD7393",
+      "registration": "DL52GD7393",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Sandeep Kumar",
+      "driverPhone": "+91 97112 55901",
+      "driverStatus": "Breakdown Assist",
+      "status": "Breakdown",
+      "location": "Sector 44, Gurgaon Expressway",
+      "since": "19 Aug, 07:12 AM",
+      "duration": "2h 30m",
+      "nextAction": "Recovery dispatched",
+      "actionType": "ARRANGE_RECOVERY",
+      "odometer": "51,870 km",
+      "battery": "18% (Low Voltage)",
+      "health": "Critical",
+      "healthStatus": "bad",
+      "service": "Service breached",
+      "permit": "Valid · 28 Sep 2026",
+      "insurance": "Valid · 04 Oct 2026",
+      "fitness": "Valid · 11 Jan 2027",
+      "puc": "Valid · 14 Aug 2026 (Expired)",
+      "chassis": "MAT612034NJB06112",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Driver reported sudden inverter fault and low auxiliary battery. Tow truck requested. [Recovery tow-truck dispatched at 2:53:44 pm]"
+    },
+    {
+      "id": "UP16HT7788",
+      "registration": "UP16HT7788",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Vikram Singh",
+      "driverPhone": "+91 98711 00234",
+      "driverStatus": "On Duty",
+      "status": "On Road",
+      "location": "Sector 62, Noida Electronic City",
+      "since": "Active now",
+      "duration": "Ongoing Shift",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
+      "odometer": "44,180 km",
+      "battery": "58%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 27 Aug 2026",
+      "permit": "Valid · 11 Jan 2027",
+      "insurance": "Valid · 15 Feb 2027",
+      "fitness": "Valid · 19 Apr 2027",
+      "puc": "Valid · 01 Dec 2026",
+      "chassis": "MAT612034NJB08552",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "No active issues. Daily collection settled from wallet."
+    },
+    {
+      "id": "HR38AK5678",
+      "registration": "HR38AK5678",
+      "model": "WAGONR H3 CNG",
+      "type": "CNG",
+      "driver": "Manoj Yadav",
+      "driverPhone": "+91 98101 23456",
+      "driverStatus": "Assigned (Waiting Spares)",
+      "status": "At Workshop",
+      "location": "ABC Motors · Gurgaon Workshop",
+      "since": "16 Aug, 04:15 PM",
+      "duration": "3d 19h (Off-road > 3d)",
+      "nextAction": "Follow Up on Spares",
+      "actionType": "FOLLOW_UP",
+      "odometer": "62,340 km",
+      "battery": "65% (CNG)",
+      "health": "Attention Required",
+      "healthStatus": "warn",
+      "service": "Clutch overhaul in progress",
+      "permit": "Valid · 28 Sep 2026",
+      "insurance": "Valid · 12 Oct 2026",
+      "fitness": "Valid · 09 Jan 2027",
+      "puc": "Valid · 18 Nov 2026",
+      "chassis": "MA3EWB42SNK38129",
+      "lender": "Astronova Capital",
+      "monthlyEmi": "₹18,500",
+      "notes": "Off-road for over 3 days awaiting clutch assembly delivery from authorized OEM."
+    },
+    {
+      "id": "DL8CAZ7788",
+      "registration": "DL8CAZ7788",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Unassigned",
+      "driverPhone": "—",
+      "driverStatus": "Available in Yard",
+      "status": "Ready to Deploy",
+      "location": "Sikhar Hub Central Yard",
+      "since": "18 Aug, 07:10 PM",
+      "duration": "16h 32m",
+      "nextAction": "Put on Road",
+      "actionType": "PUT_ON_ROAD",
+      "odometer": "24,190 km",
+      "battery": "98%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 15 Sep 2026",
+      "permit": "Valid · 19 Dec 2026",
+      "insurance": "Valid · 11 Jan 2027",
+      "fitness": "Valid · 08 Mar 2027",
+      "puc": "Valid · 12 Jan 2027",
+      "chassis": "MAT612034NJB04219",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Ready for lease activation. Pre-handover checklist complete."
+    },
+    {
+      "id": "DL1Z08899",
+      "registration": "DL1Z08899",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Unassigned",
+      "driverPhone": "—",
+      "driverStatus": "Available in Yard",
+      "status": "Ready to Deploy",
+      "location": "Sikhar Hub Central Yard",
+      "since": "19 Aug, 08:30 AM",
+      "duration": "1h 12m",
+      "nextAction": "Put on Road",
+      "actionType": "PUT_ON_ROAD",
+      "odometer": "19,850 km",
+      "battery": "100%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Sep 2026",
+      "permit": "Valid · 14 Nov 2026",
+      "insurance": "Valid · 24 Dec 2026",
+      "fitness": "Valid · 18 Feb 2027",
+      "puc": "Valid · 29 Nov 2026",
+      "chassis": "MAT612034NJB03118",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Vehicle returned from lease yesterday; sanitized, charged, and inspected."
+    },
+    {
+      "id": "DL52GD6259",
+      "registration": "DL52GD6259",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Deepak Sharma",
+      "driverPhone": "+91 99110 88201",
+      "driverStatus": "On Scheduled Leave",
+      "status": "Driver On Leave",
+      "location": "Sikhar Hub · Parking Bay 14",
+      "since": "19 Aug, 06:00 AM",
+      "duration": "3h 42m",
+      "nextAction": "Review Leave Coverage",
+      "actionType": "REVIEW_LEAVE",
+      "odometer": "37,200 km",
+      "battery": "85%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 08 Sep 2026",
+      "permit": "Valid · 05 Jan 2027",
+      "insurance": "Valid · 19 Jan 2027",
+      "fitness": "Valid · 22 Mar 2027",
+      "puc": "Valid · 14 Oct 2026",
+      "chassis": "MAT612034NJB05912",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21,000",
+      "notes": "Driver on planned leave for 2 days. Vehicle kept in hub security yard."
+    },
+    {
+      "id": "HR55BD6737",
+      "registration": "HR55BD6737",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "driver": "Unassigned",
+      "driverPhone": "—",
+      "driverStatus": "Inspection Hold",
+      "status": "Other Non-Ops",
+      "location": "Sikhar Hub Yard 2",
+      "since": "17 Aug, 11:20 AM",
+      "duration": "2d 02h",
+      "nextAction": "Renew Fitness Certificate",
+      "actionType": "RENEW_FITNESS",
+      "odometer": "31,220 km",
+      "battery": "90%",
+      "health": "Attention Required",
+      "healthStatus": "warn",
+      "service": "Next service · 22 Sep 2026",
+      "permit": "Valid · 02 Nov 2026",
+      "insurance": "Valid · 18 Nov 2026",
+      "fitness": "Expiring in 3 days",
+      "puc": "Valid · 09 Dec 2026",
+      "chassis": "MAT612034NJB07432",
+      "lender": "Astronova Capital",
+      "monthlyEmi": "₹33,000",
+      "notes": "Non-operational pending annual RTO physical fitness inspection booking."
+    }
+  ],
+  "actionRequired": [
+    {
+      "id": "act-1",
+      "icon": "🔧",
+      "label": "Service Due",
+      "count": 7,
+      "type": "service-due",
+      "status": "warn"
+    },
+    {
+      "id": "act-2",
+      "icon": "⛔",
+      "label": "Service Breached",
+      "count": 2,
+      "type": "service-breached",
+      "status": "bad"
+    },
+    {
+      "id": "act-3",
+      "icon": "📋",
+      "label": "Insurance Due (7 Days)",
+      "count": 3,
+      "type": "insurance-due",
+      "status": "warn"
+    },
+    {
+      "id": "act-4",
+      "icon": "📜",
+      "label": "Permit Due (7 Days)",
+      "count": 2,
+      "type": "permit-due",
+      "status": "warn"
+    },
+    {
+      "id": "act-5",
+      "icon": "⚠️",
+      "label": "Challans Pending",
+      "count": 6,
+      "type": "challans-pending",
+      "status": "bad"
+    },
+    {
+      "id": "act-6",
+      "icon": "🚙",
+      "label": "Ready to Deploy",
+      "count": 3,
+      "type": "ready-deploy",
+      "status": "blue"
+    },
+    {
+      "id": "act-7",
+      "icon": "⏳",
+      "label": "Job Card Closure Pending",
+      "count": 2,
+      "type": "job-closure",
+      "status": "bad"
+    },
+    {
+      "id": "act-8",
+      "icon": "🚨",
+      "label": "Vehicle Off-Road > 3 Days",
+      "count": 3,
+      "type": "offroad",
+      "status": "bad"
+    }
+  ],
+  "driverStatus": {
+    "total": 63,
+    "onDuty": 56,
+    "onLeave": 3,
+    "suspended": 1,
+    "inactive": 2,
+    "unassigned": 1
+  },
+  "maintenancePipeline": [
+    {
+      "stage": "Service Due",
+      "count": 7,
+      "status": "warn"
+    },
+    {
+      "stage": "Job Card Created",
+      "count": 4,
+      "status": "normal"
+    },
+    {
+      "stage": "At Workshop",
+      "count": 5,
+      "status": "warn"
+    },
+    {
+      "stage": "Work Completed",
+      "count": 2,
+      "status": "good"
+    },
+    {
+      "stage": "Closure Pending",
+      "count": 2,
+      "status": "bad"
+    },
+    {
+      "stage": "Ready to Deploy",
+      "count": 3,
+      "status": "blue"
+    }
+  ],
+  "compliance": [
+    {
+      "type": "Periodic Service",
+      "due": 7,
+      "breached": 2
+    },
+    {
+      "type": "Insurance Policy",
+      "due": 3,
+      "breached": 0
+    },
+    {
+      "type": "State Permit",
+      "due": 2,
+      "breached": 1
+    },
+    {
+      "type": "Fitness Certificate",
+      "due": 4,
+      "breached": 0
+    },
+    {
+      "type": "Pollution (PUC)",
+      "due": 5,
+      "breached": 0
+    },
+    {
+      "type": "Traffic Police Challans",
+      "due": 6,
+      "breached": 0
+    }
+  ],
+  "healthSnapshot": [
+    {
+      "label": "Healthy Vehicles",
+      "count": 48,
+      "status": "good"
+    },
+    {
+      "label": "Attention Required",
+      "count": 10,
+      "status": "warn"
+    },
+    {
+      "label": "Critical Condition",
+      "count": 2,
+      "status": "bad"
+    },
+    {
+      "label": "Telematics GPS Offline",
+      "count": 3,
+      "status": "warn"
+    },
+    {
+      "label": "Battery / EV Fault Code",
+      "count": 2,
+      "status": "bad"
+    },
+    {
+      "label": "Accident Reported",
+      "count": 1,
+      "status": "bad"
+    }
+  ]
+}
