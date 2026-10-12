@@ -55,7 +55,7 @@
   ],
   "drivers": [
     {
-      "id": "drv-08",
+      "id": "drv-13",
       "name": "Sumit",
       "phone": "9811877654",
       "altPhone": "9811899882",
@@ -70,7 +70,7 @@
       "location": "Cyber City • Phase 2, Gurgaon",
       "vehicle": {
         "registration": "HR26WG4411",
-        "model": "WagonR H3 CNG",
+        "model": "MARUTI SUZUKI WAGONR H3 CNG",
         "type": "CNG",
         "status": "Assigned 1:1"
       },
@@ -239,13 +239,29 @@
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 1500,
+        "postedBalance": 1000,
         "activeHolds": 0,
-        "spendableBalance": 1500,
+        "spendableBalance": 1000,
         "status": "Healthy",
         "autoTopup": true,
-        "lastTopup": "09 Oct 2026, 05:51 PM · ₹500",
+        "lastTopup": "12 Oct 2026, 03:24 PM · ₹500",
         "recentTransactions": [
+          {
+            "id": "WTX-8996",
+            "date": "12 Oct 2026, 03:24 PM",
+            "type": "Wallet Top-up",
+            "amount": "+₹500",
+            "method": "UPI (UPI-98855811)",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-INV-7457",
+            "date": "12 Oct 2026, 02:31 PM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹1,000.00",
+            "method": "Invoice Paid: INV-26-642223 [HR55BD6737]",
+            "status": "Settled"
+          },
           {
             "id": "WTX-1077",
             "date": "09 Oct 2026, 05:51 PM",
@@ -299,21 +315,29 @@
       "shift": "07:00 AM - 07:00 PM (Active)",
       "location": "Cyber City • Phase 2, Gurgaon",
       "vehicle": {
-        "registration": "DL52GD6605",
-        "model": "WagonR H3 CNG",
-        "type": "CNG",
-        "status": "At Workshop"
+        "registration": "DL01EV9988",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "status": "Assigned 1:1"
       },
       "todayGross": "₹1,650",
       "todayTrips": 12,
       "wallet": {
-        "postedBalance": 2100,
+        "postedBalance": 1100,
         "activeHolds": 0,
-        "spendableBalance": 2100,
+        "spendableBalance": 1100,
         "status": "Healthy",
         "autoTopup": true,
         "lastTopup": "18 Aug 2026 · ₹1,200 (UPI)",
         "recentTransactions": [
+          {
+            "id": "WTX-INV-3431",
+            "date": "12 Oct 2026, 02:31 PM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹1,000.00",
+            "method": "Invoice Paid: INV-26-569681 [DL01EV9988]",
+            "status": "Settled"
+          },
           {
             "id": "WTX-101",
             "date": "18 Aug 2026, 05:30 PM",

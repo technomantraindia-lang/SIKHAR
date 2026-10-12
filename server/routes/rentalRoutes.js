@@ -44,11 +44,25 @@ router.get('/leases', (req, res) => {
   let list = data.leases || [];
 
   if (status && status !== 'all') {
-    list = list.filter(l => l.status.toLowerCase() === status.toLowerCase());
+    const sQuery = status.toLowerCase();
+    list = list.filter(l =>
+      l.status && (
+        l.status.toLowerCase() === sQuery ||
+        (sQuery === 'pending' && l.status.toLowerCase().includes('pending')) ||
+        (sQuery === 'active' && l.status.toLowerCase() === 'active')
+      )
+    );
   }
 
   if (dealType && dealType !== 'all') {
-    list = list.filter(l => l.dealType.toLowerCase().includes(dealType.toLowerCase()));
+    const dQuery = dealType.toLowerCase();
+    list = list.filter(l =>
+      l.dealType && (
+        l.dealType.toLowerCase().includes(dQuery) ||
+        (dQuery === 'fixed' && l.dealType.toLowerCase().includes('fixed')) ||
+        (dQuery === 'revenue' && l.dealType.toLowerCase().includes('revenue'))
+      )
+    );
   }
 
   if (search && search.trim() !== '') {

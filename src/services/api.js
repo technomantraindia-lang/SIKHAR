@@ -201,6 +201,24 @@ export async function topupDriverWalletApi(id, amount, method = 'Admin Credit Vo
   }
 }
 
+export async function fetchWalletHealthApi(status = 'all', search = '') {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/drivers/wallet-health`);
+    if (status && status !== 'all') url.searchParams.append('status', status);
+    if (search && search.trim() !== '') url.searchParams.append('search', search.trim());
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve wallet health metrics.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Wallet health API fetch error:', err);
+    throw err;
+  }
+}
+
 export async function onboardDriverApi(driverPayload) {
   try {
     const response = await fetch(`${API_BASE}/drivers`, {

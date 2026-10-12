@@ -9,6 +9,7 @@ import BookingLeasePage from './components/rentals/BookingLeasePage';
 import InvoicesPage from './components/rentals/InvoicesPage';
 import GenerateInvoicePage from './components/rentals/GenerateInvoicePage';
 import InvoiceDetailPage from './components/rentals/InvoiceDetailPage';
+import WalletHealthPage from './components/wallet/WalletHealthPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
 import { getCachedAdminUser, logoutAdminApi } from './services/api';
@@ -145,6 +146,11 @@ export default function App() {
               onBackToInvoices={() => navigateTo('invoices')}
               onBackToDashboard={() => navigateTo('dashboard')}
               onNavigate={(target) => navigateTo(target)}
+            />
+          ) : activeRoute === 'wallet' ? (
+            <WalletHealthPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
             />
           ) : (
             <ModuleViewer

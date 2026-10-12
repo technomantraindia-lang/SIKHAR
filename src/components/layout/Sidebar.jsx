@@ -15,7 +15,8 @@ import {
   ChevronRight,
   LogOut,
   ArrowLeftRight,
-  Plus
+  Plus,
+  Wallet
 } from '../common/Icons';
 
 // Grouped Menu Sections matching User Screenshot & Wireframe v8
@@ -47,7 +48,8 @@ const MENU_SECTIONS = [
     items: [
       { id: 'bookings', label: 'Bookings / Leases', icon: FileText, hasSubmenu: false },
       { id: 'invoices', label: 'Rental Invoices', icon: Receipt, hasSubmenu: false },
-      { id: 'generate-invoice', label: 'Generate Invoice', icon: Plus, hasSubmenu: false }
+      { id: 'generate-invoice', label: 'Generate Invoice', icon: Plus, hasSubmenu: false },
+      { id: 'wallet', label: 'Wallet Health', icon: Wallet, hasSubmenu: false }
     ]
   },
   {

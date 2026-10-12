@@ -28,7 +28,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || process.env.HOSTINGER_PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Enable Cross-Origin Resource Sharing and JSON Body Parsing
 app.use(cors());

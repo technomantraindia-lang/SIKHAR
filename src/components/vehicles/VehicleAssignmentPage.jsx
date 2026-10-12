@@ -13,7 +13,8 @@ import {
   RotateCcw,
   Shield,
   ChevronRight,
-  Info
+  Info,
+  X
 } from '../common/Icons';
 import {
   fetchDriversApi,
@@ -228,8 +229,18 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
       {/* Toast Notification */}
       {toastMessage && (
         <div className="clean-toast-notification">
-          <CheckCircle2 size={16} color="#0284c7" />
-          <span>{toastMessage}</span>
+          <div className="clean-toast-content">
+            <CheckCircle2 size={16} color="#10b981" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            className="toast-dismiss-btn"
+            onClick={() => setToastMessage(null)}
+            title="Dismiss"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 

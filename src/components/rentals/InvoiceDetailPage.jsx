@@ -13,7 +13,8 @@ import {
   Clock,
   Car,
   Users,
-  Info
+  Info,
+  X
 } from '../common/Icons';
 import {
   fetchInvoicesApi,
@@ -132,8 +133,18 @@ export default function InvoiceDetailPage({
       {/* Toast Notification */}
       {toastMessage && (
         <div className="clean-toast-notification">
-          <CheckCircle2 size={16} color="#0284c7" />
-          <span>{toastMessage}</span>
+          <div className="clean-toast-content">
+            <CheckCircle2 size={16} color="#10b981" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            className="toast-dismiss-btn"
+            onClick={() => setToastMessage(null)}
+            title="Dismiss"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -528,41 +539,6 @@ export default function InvoiceDetailPage({
               </div>
             </div>
 
-            {/* Detailed Explainer Card: WHAT IS "WAIVE"? */}
-            <div className="audit-panel-card explainer-highlight-card">
-              <div className="audit-card-header" style={{ borderBottomColor: '#fde68a' }}>
-                <Info size={16} color="#d97706" />
-                <h4 style={{ color: '#92400e' }}>What does "Waive" mean? (माफ़ / छूट)</h4>
-              </div>
-
-              <div className="audit-card-body">
-                <p className="explainer-lead-text">
-                  In commercial fleet management, <strong>"Waive"</strong> means <strong>canceling or forgiving an invoice balance</strong> so the driver or customer does not have to pay it.
-                </p>
-
-                <div className="explainer-reasons-box">
-                  <div className="reason-title">When do fleet admins use "Waive"?</div>
-                  <ul className="reason-list">
-                    <li>
-                      <strong>Vehicle Breakdown / Maintenance:</strong> The car was in the workshop for repairs, so the driver couldn't work. The rental charge for that day is waived.
-                    </li>
-                    <li>
-                      <strong>Accidental Duplicate Bill:</strong> If two invoices were generated for the same date by mistake.
-                    </li>
-                    <li>
-                      <strong>Administrative Concession:</strong> Festive bonus, driver onboarding grace period, or customer goodwill discount.
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="explainer-accounting-note">
-                  <Shield size={14} color="#059669" />
-                  <span>
-                    <strong>Accounting Rule:</strong> Clicking <em>Waive</em> issues a formal <strong>Credit Note</strong>. It marks the invoice as closed with ₹0 balance due while maintaining a transparent audit log for auditors and GST records.
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}

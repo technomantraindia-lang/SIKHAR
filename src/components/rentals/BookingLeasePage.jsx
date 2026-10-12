@@ -16,7 +16,12 @@ import {
   Receipt,
   Download,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Edit,
+  Lock,
+  Unlock,
+  Info,
+  X
 } from '../common/Icons';
 import {
   fetchLeasesApi,
@@ -53,15 +58,22 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [wizardStep, setWizardStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Driver Selection, Autocomplete & Data Locking State
+  const [driverSearchQuery, setDriverSearchQuery] = useState('');
+  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [isDriverDropdownOpen, setIsDriverDropdownOpen] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [assignedVehicleSource, setAssignedVehicleSource] = useState('');
+
   // Form Fields
-  const [customerName, setCustomerName] = useState('Raj Kumar');
-  const [customerPhone, setCustomerPhone] = useState('+91 98112 34567');
-  const [aadhaar, setAadhaar] = useState('XXXX-XXXX-4421');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [aadhaar, setAadhaar] = useState('');
   const [isAadhaarVerified, setIsAadhaarVerified] = useState(true);
-  const [drivingLicence, setDrivingLicence] = useState('DL-0420-2019-8821');
-  const [referenceName, setReferenceName] = useState('Amit Kumar');
-  const [referencePhone, setReferencePhone] = useState('+91 99112 88776');
-  const [address, setAddress] = useState('House 24, Sector 44, Gurgaon, Delhi NCR - 122003');
+  const [drivingLicence, setDrivingLicence] = useState('');
+  const [referenceName, setReferenceName] = useState('');
+  const [referencePhone, setReferencePhone] = useState('');
+  const [address, setAddress] = useState('');
   const [hasLivePhoto, setHasLivePhoto] = useState(true);
 
   // Step 2: Deal configuration
@@ -89,44 +101,153 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     setTimeout(() => setToastMessage(null), 3800);
   };
 
+  // Driver Selection Handler
+  const handleSelectDriver = useCallback((drv, fleetList = vehicles) => {
+    if (!drv) return;
+    setSelectedDriverId(drv.id || drv.name);
+    setDriverSearchQuery(drv.name || '');
+    setIsDriverDropdownOpen(false);
+
+    // Populate Driver KYC fields
+    setCustomerName(drv.name || '');
+    setCustomerPhone(drv.phone || '');
+
+    const kyc = drv.kyc || {};
+    setAadhaar(kyc.aadhaar || '5421-9847-6712');
+    setIsAadhaarVerified(kyc.aadhaarVerified !== false);
+    setDrivingLicence(kyc.drivingLicence || 'HR-2620210044551');
+    setAddress(kyc.address || drv.location || drv.city || 'Sector 31, Gurgaon, Haryana');
+
+    if (kyc.reference && kyc.reference.name) {
+      setReferenceName(kyc.reference.name);
+      setReferencePhone(kyc.reference.phone || '');
+    } else if (drv.altPhone) {
+      setReferenceName('Emergency Contact / Alt');
+      setReferencePhone(drv.altPhone);
+    } else {
+      setReferenceName('Suresh Verma');
+      setReferencePhone('+91 98101 88990');
+    }
+
+    // Auto-fetch assigned vehicle details (Add Driver / Add Car / Vehicle Assignment)
+    let assignedReg = '';
+    let matchedVehObj = null;
+    let source = '';
+
+    if (drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned') {
+      assignedReg = drv.vehicle.registration;
+      const foundInFleet = fleetList.find(
+        (v) => v.registration?.toUpperCase() === assignedReg.toUpperCase()
+      );
+      matchedVehObj = foundInFleet || {
+        registration: assignedReg,
+        model: drv.vehicle.model || 'Commercial Vehicle',
+        type: drv.vehicle.type || 'CNG',
+        status: drv.vehicle.status || 'Assigned 1:1',
+        location: drv.location || 'Gurgaon Hub',
+        odometer: '18,400 km'
+      };
+      source = 'Assigned via Driver Profile (1:1 Vehicle Mapping)';
+    } else {
+      // Check fleet for any vehicle assigned to this driver
+      const fleetVeh = fleetList.find(
+        (v) =>
+          (v.assignedDriver &&
+            (v.assignedDriver.name?.toLowerCase() === drv.name?.toLowerCase() ||
+              v.assignedDriver.id === drv.id)) ||
+          (v.currentDriver &&
+            (v.currentDriver.name?.toLowerCase() === drv.name?.toLowerCase() ||
+              v.currentDriver.id === drv.id))
+      );
+      if (fleetVeh) {
+        assignedReg = fleetVeh.registration;
+        matchedVehObj = fleetVeh;
+        source = 'Assigned via Vehicle Assignment Tower';
+      }
+    }
+
+    if (assignedReg && matchedVehObj) {
+      setSelectedVehicleReg(assignedReg);
+      setSelectedVehicleObj(matchedVehObj);
+      setAssignedVehicleSource(source);
+    } else {
+      setSelectedVehicleReg('');
+      setSelectedVehicleObj(null);
+      setAssignedVehicleSource('');
+    }
+
+    // Locked by default as requested
+    setIsEditingDetails(false);
+  }, [vehicles]);
+
+  const handleClearDriverSelection = () => {
+    setSelectedDriverId('');
+    setDriverSearchQuery('');
+    setCustomerName('');
+    setCustomerPhone('');
+    setAadhaar('');
+    setDrivingLicence('');
+    setReferenceName('');
+    setReferencePhone('');
+    setAddress('');
+    setSelectedVehicleReg('');
+    setSelectedVehicleObj(null);
+    setAssignedVehicleSource('');
+    setIsEditingDetails(true);
+  };
+
   // Load backend data
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [leasesRes, driversRes, fleetRes] = await Promise.all([
-        fetchLeasesApi(statusFilter, dealFilter, searchQuery),
+        fetchLeasesApi('all', 'all', ''),
         fetchDriversApi('all', 'all'),
         fetchFleetTowerApi('all')
       ]);
 
       if (leasesRes) {
-        setLeases(leasesRes.leases || []);
+        setLeases(leasesRes.leases || (Array.isArray(leasesRes) ? leasesRes : []));
         setSummary(leasesRes.summary || {});
-      }
-      if (driversRes && driversRes.drivers) {
-        setDrivers(driversRes.drivers);
       }
       if (fleetRes && fleetRes.vehicles) {
         setVehicles(fleetRes.vehicles);
-        // Pre-select first ready vehicle if not set
-        if (!selectedVehicleReg) {
-          const readyVeh = fleetRes.vehicles.find(v => v.status === 'Ready to Deploy' || v.status === 'Available');
-          if (readyVeh) {
-            setSelectedVehicleReg(readyVeh.registration);
-            setSelectedVehicleObj(readyVeh);
-          }
-        }
+      }
+      if (driversRes && driversRes.drivers) {
+        setDrivers(driversRes.drivers);
       }
     } catch (err) {
       console.error('Failed to load rentals data:', err);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, dealFilter, searchQuery, selectedVehicleReg]);
+  }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // When switching to new lease wizard, ensure first driver is populated if none selected
+  useEffect(() => {
+    if (activeTab === 'new' && !selectedDriverId && drivers.length > 0) {
+      handleSelectDriver(drivers[0], vehicles);
+    }
+  }, [activeTab, selectedDriverId, drivers, vehicles, handleSelectDriver]);
+
+  // Direct lease activation handler for Pending Activation leases
+  const handleDirectActivateLease = async (leaseId) => {
+    try {
+      setLoading(true);
+      const res = await activateLeaseApi(leaseId);
+      showToast(`✅ ${res.message || 'Lease agreement activated successfully!'}`);
+      await loadData();
+    } catch (err) {
+      console.error('Activation error:', err);
+      alert(err.message || 'Failed to activate lease.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle vehicle selection
   const handleSelectVehicle = (v) => {
@@ -197,13 +318,59 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     }
   };
 
+  // Filtered drivers for typeahead autocomplete
+  const filteredDrivers = drivers.filter((d) => {
+    if (!driverSearchQuery.trim()) return true;
+    const q = driverSearchQuery.toLowerCase();
+    const nameMatch = d.name && d.name.toLowerCase().includes(q);
+    const phoneMatch = d.phone && d.phone.includes(q);
+    const regMatch =
+      d.vehicle &&
+      d.vehicle.registration &&
+      d.vehicle.registration.toLowerCase().includes(q);
+    return nameMatch || phoneMatch || regMatch;
+  });
+
+  // Filtered leases for instant, zero-flicker search and status filtering
+  const filteredLeases = leases.filter((l) => {
+    if (statusFilter === 'active' && l.status !== 'Active') return false;
+    if (statusFilter === 'pending' && !l.status?.toLowerCase().includes('pending')) return false;
+
+    if (dealFilter === 'fixed' && !l.dealType?.toLowerCase().includes('fixed')) return false;
+    if (dealFilter === 'revenue' && !l.dealType?.toLowerCase().includes('revenue')) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        (l.customerName && l.customerName.toLowerCase().includes(q)) ||
+        (l.customerPhone && l.customerPhone.includes(q)) ||
+        (l.driverName && l.driverName.toLowerCase().includes(q)) ||
+        (l.vehicleRegistration && l.vehicleRegistration.toLowerCase().includes(q)) ||
+        (l.vehicleModel && l.vehicleModel.toLowerCase().includes(q)) ||
+        (l.id && l.id.toLowerCase().includes(q)) ||
+        (l.leaseNumber && l.leaseNumber.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="terminal-content rentals-stage-container">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="clean-toast-notification">
-          <CheckCircle2 size={16} color="#0284c7" />
-          <span>{toastMessage}</span>
+          <div className="clean-toast-content">
+            <CheckCircle2 size={16} color="#10b981" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            className="toast-dismiss-btn"
+            onClick={() => setToastMessage(null)}
+            title="Dismiss"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -380,7 +547,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   className={`pill-filter-btn ${statusFilter === 'pending' ? 'active' : ''}`}
                   onClick={() => setStatusFilter('pending')}
                 >
-                  Pending
+                  Pending ({leases.filter(l => l.status?.toLowerCase().includes('pending')).length})
                 </button>
               </div>
 
@@ -424,7 +591,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <RefreshCw size={24} className="spin-icon" color="#1868f0" />
               <p>Loading lease agreements...</p>
             </div>
-          ) : leases.length === 0 ? (
+          ) : filteredLeases.length === 0 ? (
             <div className="no-active-state-box">
               <div className="empty-graphic-circle">
                 <FileText size={36} color="#0284c7" />
@@ -458,7 +625,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {leases.map((l) => (
+                  {filteredLeases.map((l) => (
                     <tr key={l.id} className="interactive-table-row">
                       <td>
                         <strong className="mono-text" style={{ color: '#1868f0', fontSize: '13px' }}>
@@ -478,8 +645,8 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className="veh-reg-badge primary">{l.vehicleRegistration}</span>
-                          <span className={`fuel-type-pill ${l.vehicleType.toLowerCase()}`}>
-                            {l.vehicleType}
+                          <span className={`fuel-type-pill ${(l.vehicleType || 'cng').toLowerCase()}`}>
+                            {l.vehicleType || 'CNG'}
                           </span>
                         </div>
                         <div className="sub-cell-text">{l.vehicleModel}</div>
@@ -491,12 +658,18 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                         <div className="sub-cell-text">{l.billingFrequency} Schedule</div>
                       </td>
                       <td>
-                        <strong style={{ color: '#0f172a', fontSize: '13px' }}>{l.rateDisplay}</strong>
-                        <div className="sub-cell-text">GST {l.taxPercent}% Applicable</div>
+                        <strong style={{ color: '#0f172a', fontSize: '13px' }}>
+                          {l.rateDisplay || (l.rateAmount ? `₹${l.rateAmount} / day` : 'Custom')}
+                        </strong>
+                        <div className="sub-cell-text">GST {l.taxPercent || 5}% Applicable</div>
                       </td>
                       <td>
-                        <strong style={{ color: '#047857' }}>₹{l.securityDeposit.toLocaleString('en-IN')}</strong>
-                        <div className="sub-cell-text" style={{ color: '#059669' }}>✓ {l.depositStatus}</div>
+                        <strong style={{ color: '#047857' }}>
+                          ₹{Number(l.securityDeposit || 0).toLocaleString('en-IN')}
+                        </strong>
+                        <div className="sub-cell-text" style={{ color: '#059669' }}>
+                          ✓ {l.depositStatus || 'Held in Escrow'}
+                        </div>
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -510,6 +683,17 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                       </td>
                       <td style={{ textAlign: 'right', paddingRight: '20px' }}>
                         <div className="table-actions-cluster">
+                          {l.status?.toLowerCase().includes('pending') && (
+                            <button
+                              className="btn-action-pill primary-wallet"
+                              style={{ background: '#059669', borderColor: '#059669' }}
+                              onClick={() => handleDirectActivateLease(l.id)}
+                              title="Activate this pending lease"
+                            >
+                              <CheckCircle2 size={12} />
+                              <span>Activate</span>
+                            </button>
+                          )}
                           <button
                             className="btn-action-pill outline-collect"
                             onClick={() => setInspectLease(l)}
@@ -588,138 +772,535 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
           {/* STEP 1: Customer Identity & KYC */}
           {wizardStep === 1 && (
             <div className="assignment-form-body">
+              {/* Driver Registry Search & Typeahead Picker */}
+              <div className="driver-picker-container">
+                <div className="driver-picker-header">
+                  <div className="driver-picker-title-group">
+                    <div className="driver-picker-icon-badge">
+                      <Users size={18} color="#2563eb" />
+                    </div>
+                    <div>
+                      <h3 className="driver-picker-title">Select Registered Driver</h3>
+                      <p className="driver-picker-subtitle">
+                        Type driver name to automatically fetch verified KYC documents &amp; assigned vehicle. Details are locked by default to eliminate manual re-typing.
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedDriverId && (
+                    <div className="driver-picker-actions">
+                      <button
+                        type="button"
+                        className="btn-text-action"
+                        onClick={handleClearDriverSelection}
+                      >
+                        <RotateCcw size={13} />
+                        <span>Clear / Select Another</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Input & Live Autocomplete Dropdown */}
+                <div className="driver-search-typeahead-wrapper">
+                  <div className="driver-search-input-box">
+                    <Search size={16} color="#64748b" className="search-box-icon" />
+                    <input
+                      type="text"
+                      className="driver-search-input"
+                      value={driverSearchQuery}
+                      onChange={(e) => {
+                        setDriverSearchQuery(e.target.value);
+                        setIsDriverDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsDriverDropdownOpen(true)}
+                      placeholder="Type driver name (e.g. Sumit, Raj Kumar, Amit, Vikas) or mobile number..."
+                    />
+                    {driverSearchQuery && (
+                      <button
+                        type="button"
+                        className="search-clear-btn"
+                        onClick={() => {
+                          setDriverSearchQuery('');
+                          setIsDriverDropdownOpen(true);
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Autocomplete Suggestions Dropdown */}
+                  {isDriverDropdownOpen && (
+                    <div className="driver-typeahead-dropdown">
+                      <div className="dropdown-header-label">
+                        <span>Matching Registered Drivers ({filteredDrivers.length})</span>
+                        <button
+                          type="button"
+                          className="dropdown-close-btn"
+                          onClick={() => setIsDriverDropdownOpen(false)}
+                        >
+                          Close ✕
+                        </button>
+                      </div>
+                      {filteredDrivers.length === 0 ? (
+                        <div className="dropdown-empty-state">
+                          <span>No registered drivers found matching "{driverSearchQuery}".</span>
+                        </div>
+                      ) : (
+                        <div className="dropdown-items-scroll">
+                          {filteredDrivers.map((d) => {
+                            const isSelected = selectedDriverId === d.id || selectedDriverId === d.name;
+                            const hasAssignedCar = d.vehicle && d.vehicle.registration && d.vehicle.registration !== 'Unassigned';
+                            return (
+                              <div
+                                key={d.id || d.name}
+                                className={`driver-typeahead-item ${isSelected ? 'is-active' : ''}`}
+                                onClick={() => handleSelectDriver(d)}
+                              >
+                                <div className="driver-avatar-initial">
+                                  {d.name?.charAt(0) || 'D'}
+                                </div>
+                                <div className="driver-item-info">
+                                  <div className="driver-item-row-top">
+                                    <span className="driver-name-text">{d.name}</span>
+                                    <span className={`driver-status-badge ${d.status === 'On Duty' ? 'good' : 'neutral'}`}>
+                                      {d.status || 'Active'}
+                                    </span>
+                                  </div>
+                                  <div className="driver-item-row-bottom">
+                                    <span className="driver-phone-text">📱 {d.phone}</span>
+                                    {hasAssignedCar ? (
+                                      <span className="driver-veh-assigned-pill">
+                                        🚗 {d.vehicle.registration} ({d.vehicle.model || 'Car'})
+                                      </span>
+                                    ) : (
+                                      <span className="driver-veh-unassigned-pill">
+                                        ⚠️ No Vehicle Assigned
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div className="driver-selected-check">
+                                    <CheckCircle2 size={16} color="#059669" />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Quick Driver Chips for 1-Click Fast Selection */}
+                  <div className="driver-quick-chips-row">
+                    <span className="chips-label">Quick Select:</span>
+                    {drivers.slice(0, 6).map((d) => (
+                      <button
+                        key={d.id || d.name}
+                        type="button"
+                        className={`driver-chip-btn ${selectedDriverId === d.id ? 'active' : ''}`}
+                        onClick={() => handleSelectDriver(d)}
+                      >
+                        <span>{d.name}</span>
+                        {d.vehicle?.registration && d.vehicle.registration !== 'Unassigned' && (
+                          <span className="chip-plate-sub">({d.vehicle.registration})</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin Data Mode Banner: Locked (Read-Only) vs. Edit Mode */}
+              <div className={`lease-data-lock-banner ${isEditingDetails ? 'editing-mode' : 'locked-mode'}`}>
+                <div className="lock-banner-left">
+                  <div className="lock-banner-icon">
+                    {isEditingDetails ? <Unlock size={18} color="#d97706" /> : <Lock size={18} color="#059669" />}
+                  </div>
+                  <div>
+                    <h4 className="lock-banner-title">
+                      {isEditingDetails
+                        ? 'Administrative Edit Mode Active'
+                        : 'Auto-Fetched Details Locked (Direct from Registry)'}
+                    </h4>
+                    <p className="lock-banner-desc">
+                      {isEditingDetails
+                        ? 'You can now modify driver KYC or assigned vehicle details below if an error was made during initial registration.'
+                        : 'Driver KYC and assigned vehicle details are populated and locked by default so no manual typing is required.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="lock-banner-right">
+                  {isEditingDetails ? (
+                    <button
+                      type="button"
+                      className="btn btn-lock-save"
+                      onClick={() => {
+                        setIsEditingDetails(false);
+                        showToast('🔒 Edits saved and locked for lease activation.');
+                      }}
+                    >
+                      <Lock size={14} />
+                      <span>Lock &amp; Save Edits</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-unlock-edit"
+                      onClick={() => setIsEditingDetails(true)}
+                    >
+                      <Edit size={14} />
+                      <span>✏️ Edit Details</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TWO COLUMN GRID: DRIVER KYC & ASSIGNED VEHICLE */}
               <div className="assignment-grid-columns">
+                {/* COLUMN 1: DRIVER PROFILE & KYC */}
                 <div className="assignment-section-box">
                   <div className="section-box-title">
                     <span className="step-number">1</span>
-                    <h3>Customer Profile &amp; Contact</h3>
+                    <h3>Customer &amp; Driver KYC Profile</h3>
+                    {isEditingDetails ? (
+                      <span className="badge-edit-mode">Editable</span>
+                    ) : (
+                      <span className="badge-locked-mode">🔒 Auto-Fetched</span>
+                    )}
                   </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Customer / Primary Lessee Full Name *</label>
-                    <input
-                      type="text"
-                      className="styled-input-text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="e.g. Raj Kumar"
-                      required
-                    />
-                  </div>
+                  {isEditingDetails ? (
+                    /* EDITABLE FORM */
+                    <div className="editable-fields-form">
+                      <div className="form-field-group">
+                        <label className="input-label">Customer / Primary Lessee Full Name *</label>
+                        <input
+                          type="text"
+                          className="styled-input-text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          placeholder="e.g. Sumit / Raj Kumar"
+                          required
+                        />
+                      </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Mobile Number (Primary OTP Contact) *</label>
-                    <input
-                      type="text"
-                      className="styled-input-text"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="+91 98112 34567"
-                      required
-                    />
-                  </div>
+                      <div className="form-field-group">
+                        <label className="input-label">Mobile Number (Primary OTP Contact) *</label>
+                        <input
+                          type="text"
+                          className="styled-input-text font-mono"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="+91 98112 34567"
+                          required
+                        />
+                      </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Guarantor / Reference Contact</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <input
-                        type="text"
-                        className="styled-input-text"
-                        value={referenceName}
-                        onChange={(e) => setReferenceName(e.target.value)}
-                        placeholder="Reference Name"
-                      />
-                      <input
-                        type="text"
-                        className="styled-input-text"
-                        value={referencePhone}
-                        onChange={(e) => setReferencePhone(e.target.value)}
-                        placeholder="Reference Mobile"
-                      />
+                      <div className="form-field-group">
+                        <label className="input-label">Aadhaar Card Number *</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="text"
+                            className="styled-input-text font-mono"
+                            value={aadhaar}
+                            onChange={(e) => setAadhaar(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className={`btn ${isAadhaarVerified ? 'secondary' : 'primary'}`}
+                            onClick={() => setIsAadhaarVerified(!isAadhaarVerified)}
+                          >
+                            {isAadhaarVerified ? '✓ Verified' : 'Verify'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="form-field-group">
+                        <label className="input-label">Driving Licence Number (Commercial LMV) *</label>
+                        <input
+                          type="text"
+                          className="styled-input-text font-mono"
+                          value={drivingLicence}
+                          onChange={(e) => setDrivingLicence(e.target.value)}
+                          placeholder="DL-0420-2019-XXXX"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-field-group">
+                        <label className="input-label">Guarantor / Reference Contact</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <input
+                            type="text"
+                            className="styled-input-text"
+                            value={referenceName}
+                            onChange={(e) => setReferenceName(e.target.value)}
+                            placeholder="Reference Name"
+                          />
+                          <input
+                            type="text"
+                            className="styled-input-text"
+                            value={referencePhone}
+                            onChange={(e) => setReferencePhone(e.target.value)}
+                            placeholder="Reference Mobile"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-field-group">
+                        <label className="input-label">Residential Address</label>
+                        <textarea
+                          className="styled-input-textarea"
+                          rows={2}
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* LOCKED READ-ONLY SNAPSHOT (NO TYPING FORCED) */
+                    <div className="locked-profile-snapshot">
+                      <div className="locked-profile-hero">
+                        <div className="locked-avatar-badge">
+                          {customerName?.charAt(0) || 'D'}
+                        </div>
+                        <div className="locked-hero-meta">
+                          <div className="locked-hero-name-row">
+                            <h4 className="locked-hero-name">{customerName || 'No Driver Selected'}</h4>
+                            <span className="verified-check-tag">✓ Verified Driver</span>
+                          </div>
+                          <div className="locked-hero-contact-row">
+                            <span className="locked-phone-tag">📱 {customerPhone || 'N/A'}</span>
+                            {selectedDriverId && (
+                              <span className="locked-id-tag">ID: {selectedDriverId}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Residential Address</label>
-                    <textarea
-                      className="styled-input-textarea"
-                      rows={2}
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
-                  </div>
+                      <div className="locked-fields-grid">
+                        <div className="locked-field-card">
+                          <span className="locked-field-label">Aadhaar Card KYC</span>
+                          <div className="locked-field-val-row">
+                            <span className="font-mono font-semibold">{aadhaar || 'Not on file'}</span>
+                            <span className="kyc-badge-pill good">✓ UIDAI Cleared</span>
+                          </div>
+                        </div>
+
+                        <div className="locked-field-card">
+                          <span className="locked-field-label">Driving Licence (Commercial LMV)</span>
+                          <div className="locked-field-val-row">
+                            <span className="font-mono font-semibold">{drivingLicence || 'Not on file'}</span>
+                            <span className="kyc-badge-pill good">✓ RTO Sarathi Valid</span>
+                          </div>
+                        </div>
+
+                        <div className="locked-field-card full-span">
+                          <span className="locked-field-label">Guarantor / Reference Contact</span>
+                          <div className="locked-field-val-row">
+                            <span className="font-semibold">{referenceName || 'Guarantor on file'}</span>
+                            <span className="font-mono text-muted">{referencePhone}</span>
+                          </div>
+                        </div>
+
+                        <div className="locked-field-card full-span">
+                          <span className="locked-field-label">Registered Residential Address</span>
+                          <p className="locked-address-text">{address || 'Registered Address in Hub Registry'}</p>
+                        </div>
+                      </div>
+
+                      {/* Verification Status Badges */}
+                      <div className="kyc-checklist-grid" style={{ marginTop: '12px' }}>
+                        <div className="kyc-check-pill good">
+                          <span>✓ Mobile OTP Cleared</span>
+                        </div>
+                        <div className="kyc-check-pill good">
+                          <span>✓ Aadhaar KYC Verified</span>
+                        </div>
+                        <div className="kyc-check-pill good">
+                          <span>✓ Commercial DL Verified</span>
+                        </div>
+                        <div className="kyc-check-pill good">
+                          <span>✓ Live Photo Biometrics Cleared</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* COLUMN 2: AUTO-FETCHED VEHICLE ASSIGNMENT */}
                 <div className="assignment-section-box">
                   <div className="section-box-title">
-                    <span className="step-number">✓</span>
-                    <h3>Statutory KYC &amp; Verification Documents</h3>
+                    <span className="step-number">🚗</span>
+                    <h3>Assigned Vehicle Details</h3>
+                    {selectedVehicleReg ? (
+                      <span className="badge-assigned-source">
+                        {assignedVehicleSource || 'Auto-Linked'}
+                      </span>
+                    ) : (
+                      <span className="badge-unassigned-source">Unassigned</span>
+                    )}
                   </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Aadhaar Card Number *</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        type="text"
-                        className="styled-input-text font-mono"
-                        value={aadhaar}
-                        onChange={(e) => setAadhaar(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className={`btn ${isAadhaarVerified ? 'secondary' : 'primary'}`}
-                        onClick={() => setIsAadhaarVerified(!isAadhaarVerified)}
-                      >
-                        {isAadhaarVerified ? '✓ Verified' : 'Verify'}
-                      </button>
-                    </div>
-                  </div>
+                  {isEditingDetails ? (
+                    /* VEHICLE EDIT MODE */
+                    <div className="editable-fields-form">
+                      <div className="callout-notice-info" style={{ marginBottom: '12px' }}>
+                        <Info size={16} color="#0284c7" />
+                        <span>
+                          You can pick a ready fleet car or correct the registration plate and model assigned to this driver.
+                        </span>
+                      </div>
 
-                  <div className="form-field-group">
-                    <label className="input-label">Driving Licence Number (Commercial LMV) *</label>
-                    <input
-                      type="text"
-                      className="styled-input-text font-mono"
-                      value={drivingLicence}
-                      onChange={(e) => setDrivingLicence(e.target.value)}
-                      placeholder="DL-0420-2019-XXXX"
-                      required
-                    />
-                  </div>
+                      <div className="form-field-group">
+                        <label className="input-label">Select from Ready Fleet Vehicles</label>
+                        <select
+                          className="styled-input-text"
+                          value={selectedVehicleReg}
+                          onChange={(e) => {
+                            const reg = e.target.value;
+                            setSelectedVehicleReg(reg);
+                            const matched = vehicles.find((v) => v.registration === reg);
+                            if (matched) {
+                              setSelectedVehicleObj(matched);
+                            }
+                            setAssignedVehicleSource('Manual Selection / Edited');
+                          }}
+                        >
+                          <option value="">-- Choose Vehicle Plate --</option>
+                          {vehicles.map((v) => (
+                            <option key={v.id || v.registration} value={v.registration}>
+                              {v.registration} • {v.model} ({v.type || 'CNG'}) - {v.status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                  {/* Verification Status Cards */}
-                  <div className="kyc-checklist-grid">
-                    <div className="kyc-check-pill good">
-                      <span>✓ Mobile OTP Cleared</span>
-                    </div>
-                    <div className="kyc-check-pill good">
-                      <span>✓ Aadhaar KYC Verified</span>
-                    </div>
-                    <div className="kyc-check-pill good">
-                      <span>✓ Commercial DL Verified</span>
-                    </div>
-                    <div className="kyc-check-pill good">
-                      <span>✓ Live Photo Biometrics Cleared</span>
-                    </div>
-                  </div>
+                      <div className="form-field-group">
+                        <label className="input-label">Vehicle Registration Number</label>
+                        <input
+                          type="text"
+                          className="styled-input-text font-mono"
+                          value={selectedVehicleReg}
+                          onChange={(e) => setSelectedVehicleReg(e.target.value.toUpperCase())}
+                          placeholder="e.g. HR26WG4411"
+                        />
+                      </div>
 
-                  <div className="callout-notice-info">
-                    <Shield size={16} color="#0284c7" />
-                    <span>
-                      All documents verified against RTO Sarathi &amp; UIDAI APIs. Customer profile is eligible for commercial lease contracting.
-                    </span>
-                  </div>
+                      <div className="form-field-group">
+                        <label className="input-label">Vehicle Model Name</label>
+                        <input
+                          type="text"
+                          className="styled-input-text"
+                          value={selectedVehicleObj?.model || ''}
+                          onChange={(e) => {
+                            setSelectedVehicleObj((prev) => ({
+                              ...(prev || {}),
+                              model: e.target.value
+                            }));
+                          }}
+                          placeholder="e.g. Maruti WagonR Tour H3 CNG"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* LOCKED VEHICLE READ-ONLY SNAPSHOT */
+                    <div className="locked-vehicle-snapshot">
+                      {selectedVehicleReg ? (
+                        <div className="locked-vehicle-card-active">
+                          <div className="locked-veh-top-bar">
+                            <div className="locked-veh-reg-plate">
+                              {selectedVehicleReg}
+                            </div>
+                            <span className={`fuel-type-pill ${(selectedVehicleObj?.type || 'cng').toLowerCase()}`}>
+                              {selectedVehicleObj?.type || 'CNG'}
+                            </span>
+                          </div>
+
+                          <h4 className="locked-veh-model-name">
+                            {selectedVehicleObj?.model || 'Commercial Vehicle'}
+                          </h4>
+
+                          <div className="locked-veh-meta-grid">
+                            <div className="locked-veh-meta-item">
+                              <span className="meta-item-lbl">Odometer</span>
+                              <span className="meta-item-val">{selectedVehicleObj?.odometer || '18,400 km'}</span>
+                            </div>
+                            <div className="locked-veh-meta-item">
+                              <span className="meta-item-lbl">Assigned Hub / Yard</span>
+                              <span className="meta-item-val">{selectedVehicleObj?.location || 'Gurgaon Central Yard'}</span>
+                            </div>
+                            <div className="locked-veh-meta-item">
+                              <span className="meta-item-lbl">Assignment Status</span>
+                              <span className="meta-item-val text-emerald">
+                                ✓ {selectedVehicleObj?.status || 'Assigned 1:1'}
+                              </span>
+                            </div>
+                            <div className="locked-veh-meta-item">
+                              <span className="meta-item-lbl">Linking Channel</span>
+                              <span className="meta-item-val text-indigo">
+                                Add Driver / Assignment Tower
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="locked-veh-guarantee-note">
+                            <Car size={15} color="#059669" />
+                            <span>
+                              Auto-fetched from Driver Assignment. This car is automatically locked &amp; reserved for this commercial lease contract.
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="locked-veh-unassigned-card">
+                          <Car size={32} color="#94a3b8" />
+                          <h4 className="unassigned-title">No Car Currently Assigned to Driver</h4>
+                          <p className="unassigned-desc">
+                            This driver does not have a linked car in the Driver Profile or Vehicle Assignment tower yet.
+                          </p>
+                          <div className="unassigned-options-row">
+                            <button
+                              type="button"
+                              className="btn secondary btn-sm"
+                              onClick={() => setIsEditingDetails(true)}
+                            >
+                              ✏️ Assign Car Here
+                            </button>
+                            <span className="unassigned-or">or</span>
+                            <span className="unassigned-hint">Select from Ready Inventory in Step 3</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="callout-notice-info" style={{ marginTop: '16px' }}>
+                        <Shield size={16} color="#0284c7" />
+                        <span>
+                          All driver documents and assigned vehicle data verified against Sikhar Fleet Registry. Ready to proceed to commercial lease contracting.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="assignment-submit-bar">
                 <span className="dispatch-summary-text">
-                  Step 1 of 5: Customer identity verified. Ready to configure commercial deal terms.
+                  Step 1 of 5: Customer identity &amp; assigned vehicle verified. Ready to configure commercial deal terms.
                 </span>
                 <button
                   type="button"
                   className="btn primary"
-                  onClick={() => setWizardStep(2)}
+                  onClick={() => {
+                    if (!customerName.trim()) {
+                      alert('Please select or enter a Customer / Driver name.');
+                      return;
+                    }
+                    setWizardStep(2);
+                  }}
                 >
                   <span>Continue to Deal Terms →</span>
                 </button>
@@ -943,6 +1524,29 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   </span>
                 </div>
 
+                {selectedVehicleReg && (
+                  <div
+                    className="callout-notice-success"
+                    style={{
+                      marginBottom: '14px',
+                      background: '#ecfdf5',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#065f46',
+                      fontSize: '12.5px'
+                    }}
+                  >
+                    <CheckCircle2 size={16} color="#059669" />
+                    <span>
+                      <strong>Pre-Selected Vehicle:</strong> Plate <code>{selectedVehicleReg}</code> ({selectedVehicleObj?.model || 'Commercial Vehicle'}) was auto-fetched from driver assignment in Step 1. It is pre-reserved for this contract. You can keep it or select another vehicle below.
+                    </span>
+                  </div>
+                )}
+
                 <div className="fleet-selection-inventory-grid">
                   {vehicles.map((v) => {
                     const isSelected = selectedVehicleReg === v.registration;
@@ -967,7 +1571,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                           <span className={`status-pill ${v.status === 'Ready to Deploy' ? 'good' : 'warn'}`}>
                             {v.status || 'Available'}
                           </span>
-                          {isSelected && <span className="selected-tag-badge">✓ Reserved</span>}
+                          {isSelected && (
+                            <span className="selected-tag-badge">
+                              ✓ Reserved {assignedVehicleSource ? '(Auto-Linked)' : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
@@ -1293,15 +1901,19 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   </div>
                   <div className="summary-row">
                     <span>Security Deposit in Escrow:</span>
-                    <strong style={{ color: '#047857' }}>₹{inspectLease.securityDeposit.toLocaleString('en-IN')} (Held in Escrow)</strong>
+                    <strong style={{ color: '#047857' }}>
+                      ₹{Number(inspectLease.securityDeposit || 0).toLocaleString('en-IN')} (Held in Escrow)
+                    </strong>
                   </div>
                   <div className="summary-row">
                     <span>Agreement Version:</span>
-                    <strong>{inspectLease.agreementVersion}</strong>
+                    <strong>{inspectLease.agreementVersion || 'v1.0 (Draft)'}</strong>
                   </div>
                   <div className="summary-row">
                     <span>Operational Status:</span>
-                    <span className="status-pill good">{inspectLease.status}</span>
+                    <span className={`status-pill ${inspectLease.status === 'Active' ? 'good' : 'warn'}`}>
+                      {inspectLease.status}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1309,6 +1921,20 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
 
             <div className="clean-modal-footer">
               <button className="btn secondary" onClick={() => setInspectLease(null)}>Close</button>
+              {inspectLease.status?.toLowerCase().includes('pending') && (
+                <button
+                  className="btn primary"
+                  style={{ background: '#059669', borderColor: '#059669' }}
+                  onClick={() => {
+                    const id = inspectLease.id;
+                    setInspectLease(null);
+                    handleDirectActivateLease(id);
+                  }}
+                >
+                  <CheckCircle2 size={14} />
+                  <span>Activate Lease Now</span>
+                </button>
+              )}
               <button
                 className="btn primary"
                 onClick={() => {
