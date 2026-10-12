@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import fleetRoutes from './routes/fleetRoutes.js';
@@ -7,6 +9,9 @@ import driverRoutes from './routes/driverRoutes.js';
 import assignmentRoutes from './routes/assignmentRoutes.js';
 import rentalRoutes from './routes/rentalRoutes.js';
 import { testDbConnection, getDbStatus } from './config/db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || process.env.HOSTINGER_PORT || 5000;
@@ -45,6 +50,22 @@ app.use('/api/fleet', fleetRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/rentals', rentalRoutes);
+
+// Serve Frontend Vite Static Build (dist) if it exists
+const distPath = path.resolve(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// For SPA routing: serve index.html for any non-API route
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) {
+      next();
+    }
+  });
+});
 
 // Start Server
 app.listen(PORT, async () => {
