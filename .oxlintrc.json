@@ -1,4 +1,4 @@
- if admin cick the vheicles then only the{
+{
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": [
     "react",
