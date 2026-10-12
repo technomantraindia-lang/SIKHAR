@@ -133,7 +133,7 @@ router.put('/:id/status', (req, res) => {
   });
 });
 
-// POST /api/drivers/:id/wallet/topup - Instant Wallet Credit / Top-Up
+// POST /api/drivers/:id/wallet/topup - Instant Wallet Credit / Top-Up & Outstanding Clearance
 router.post('/:id/wallet/topup', (req, res) => {
   const { id } = req.params;
   const { amount, method = 'Admin Credit Voucher', reference = `ADM-${Date.now()}` } = req.body;
@@ -150,31 +150,80 @@ router.post('/:id/wallet/topup', (req, res) => {
   }
 
   const driver = data.drivers[index];
-  driver.wallet.postedBalance += numAmount;
-  driver.wallet.spendableBalance += numAmount;
-  if (driver.wallet.spendableBalance > 500) {
-    driver.wallet.status = 'Healthy';
-  } else if (driver.wallet.spendableBalance >= 0) {
-    driver.wallet.status = 'Low Balance';
+  if (!driver.wallet) {
+    driver.wallet = { postedBalance: 0, activeHolds: 0, spendableBalance: 0, status: 'Healthy', recentTransactions: [] };
   }
 
-  const newTxn = {
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  const newTopupTxn = {
     id: `WTX-${Date.now().toString().slice(-4)}`,
-    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    date: dateStr,
     type: 'Wallet Top-up',
     amount: `+₹${numAmount.toLocaleString('en-IN')}`,
     method: `${method} (${reference})`,
     status: 'Success'
   };
 
-  driver.wallet.recentTransactions = [newTxn, ...(driver.wallet.recentTransactions || [])];
-  driver.wallet.lastTopup = `${newTxn.date} · ₹${numAmount.toLocaleString('en-IN')}`;
+  const outstanding = Number(driver.wallet.outstandingDues) || 0;
+
+  if (outstanding > 0) {
+    if (numAmount >= outstanding) {
+      const leftover = numAmount - outstanding;
+      driver.wallet.outstandingDues = 0;
+      driver.wallet.postedBalance = (driver.wallet.postedBalance || 0) + numAmount;
+      driver.wallet.spendableBalance = leftover;
+      driver.wallet.status = leftover > 500 ? 'Healthy' : 'Low Balance';
+
+      const clearTxn = {
+        id: `WTX-CLR-${Date.now().toString().slice(-4)}`,
+        date: dateStr,
+        type: 'Outstanding Rental Clearance',
+        amount: `-₹${outstanding.toLocaleString('en-IN')}.00`,
+        method: 'Auto-Settled & Cleared from Top-Up',
+        status: 'Cleared & Settled'
+      };
+
+      driver.wallet.recentTransactions = [clearTxn, newTopupTxn, ...(driver.wallet.recentTransactions || [])];
+      driver.wallet.lastTopup = `${dateStr} · ₹${numAmount.toLocaleString('en-IN')} (Cleared ₹${outstanding} Outstanding)`;
+    } else {
+      // Partial clearance
+      driver.wallet.outstandingDues = outstanding - numAmount;
+      driver.wallet.postedBalance = (driver.wallet.postedBalance || 0) + numAmount;
+      driver.wallet.spendableBalance = 0;
+      driver.wallet.status = 'Pending Payment';
+
+      const partialTxn = {
+        id: `WTX-PART-${Date.now().toString().slice(-4)}`,
+        date: dateStr,
+        type: 'Partial Outstanding Clearance',
+        amount: `-₹${numAmount.toLocaleString('en-IN')}.00`,
+        method: `Remaining Due: ₹${driver.wallet.outstandingDues.toLocaleString('en-IN')}`,
+        status: 'Partial Clearance'
+      };
+
+      driver.wallet.recentTransactions = [partialTxn, newTopupTxn, ...(driver.wallet.recentTransactions || [])];
+      driver.wallet.lastTopup = `${dateStr} · ₹${numAmount.toLocaleString('en-IN')} (Remaining Due: ₹${driver.wallet.outstandingDues})`;
+    }
+  } else {
+    driver.wallet.postedBalance = (driver.wallet.postedBalance || 0) + numAmount;
+    driver.wallet.spendableBalance = (driver.wallet.spendableBalance || 0) + numAmount;
+    if (driver.wallet.spendableBalance > 500) {
+      driver.wallet.status = 'Healthy';
+    } else if (driver.wallet.spendableBalance >= 0) {
+      driver.wallet.status = 'Low Balance';
+    }
+    driver.wallet.recentTransactions = [newTopupTxn, ...(driver.wallet.recentTransactions || [])];
+    driver.wallet.lastTopup = `${dateStr} · ₹${numAmount.toLocaleString('en-IN')}`;
+  }
 
   writeDriversData(data);
 
   res.json({
     success: true,
-    message: `₹${numAmount} successfully credited to ${driver.name}'s wallet.`,
+    message: outstanding > 0 
+      ? `₹${numAmount.toLocaleString('en-IN')} credited. Outstanding vehicle rent of ₹${Math.min(numAmount, outstanding).toLocaleString('en-IN')} was settled.`
+      : `₹${numAmount.toLocaleString('en-IN')} successfully credited to ${driver.name}'s wallet.`,
     data: driver
   });
 });
@@ -254,33 +303,60 @@ router.post('/', (req, res) => {
     vehicle: assignedVehicle,
     todayGross: '₹0',
     todayTrips: 0,
-    wallet: {
-      postedBalance: numInitial,
-      activeHolds: 0,
-      spendableBalance: numInitial,
-      status: numInitial > 0 ? 'Healthy' : 'Zero Balance',
-      autoTopup: false,
-      lastTopup: numInitial > 0 ? `Opening Balance: ₹${numInitial}` : 'Awaiting First Recharge',
-      recentTransactions: numInitial > 0 ? [
-        {
-          id: `WTX-${Date.now().toString().slice(-4)}`,
-          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
-          type: 'Initial Deposit',
-          amount: `+₹${numInitial.toLocaleString('en-IN')}.00`,
-          method: 'Initial Credit',
-          status: 'Success'
-        }
-      ] : [
-        {
-          id: `WTX-${Date.now().toString().slice(-4)}`,
-          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
-          type: 'Account Created',
-          amount: '₹0.00',
-          method: 'System Onboarding',
-          status: 'Ready for Recharge'
-        }
-      ]
-    },
+    wallet: (() => {
+      const parsedRate = parseInt((agreedRate || '1000').toString().replace(/[^0-9]/g, '')) || 1000;
+      const isCarAssigned = !!assignedVehicle;
+      const isZeroWallet = numInitial <= 0;
+      const outstandingAmt = (isCarAssigned && isZeroWallet) ? parsedRate : 0;
+
+      return {
+        postedBalance: numInitial - outstandingAmt,
+        activeHolds: 0,
+        spendableBalance: Math.max(0, numInitial - outstandingAmt),
+        outstandingDues: outstandingAmt,
+        status: outstandingAmt > 0 ? 'Pending Payment' : (numInitial > 0 ? 'Healthy' : 'Zero Balance'),
+        autoTopup: false,
+        lastTopup: outstandingAmt > 0 
+          ? `Zero Balance · Pending Car Rent ₹${outstandingAmt.toLocaleString('en-IN')}` 
+          : (numInitial > 0 ? `Opening Balance: ₹${numInitial}` : 'Awaiting First Recharge'),
+        recentTransactions: outstandingAmt > 0 ? [
+          {
+            id: `WTX-DUE-${Date.now().toString().slice(-4)}`,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
+            type: 'Vehicle Rental Allocation Due',
+            amount: `-₹${outstandingAmt.toLocaleString('en-IN')}.00`,
+            method: `Allocated Car: ${assignedVehicle.model} [${assignedVehicle.registration}]`,
+            status: 'Outstanding Pending Payment'
+          },
+          {
+            id: `WTX-${Date.now().toString().slice(-4)}`,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
+            type: 'Account Created',
+            amount: '₹0.00',
+            method: 'Zero Balance Onboarding',
+            status: 'Pending First Recharge'
+          }
+        ] : (numInitial > 0 ? [
+          {
+            id: `WTX-${Date.now().toString().slice(-4)}`,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
+            type: 'Initial Deposit',
+            amount: `+₹${numInitial.toLocaleString('en-IN')}.00`,
+            method: 'Initial Credit',
+            status: 'Success'
+          }
+        ] : [
+          {
+            id: `WTX-${Date.now().toString().slice(-4)}`,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', 10:00 AM',
+            type: 'Account Created',
+            amount: '₹0.00',
+            method: 'System Onboarding',
+            status: 'Ready for Recharge'
+          }
+        ])
+      };
+    })(),
     kyc: {
       aadhaar: aadhaar.trim(),
       aadhaarVerified: true,
@@ -360,6 +436,27 @@ router.put('/:id/vehicle', (req, res) => {
       status: 'Assigned 1:1'
     };
     data.drivers[index].status = 'On Duty';
+
+    // If driver's wallet is zero/empty, the car rental amount stays as outstanding pending payment
+    const driver = data.drivers[index];
+    if (!driver.wallet) {
+      driver.wallet = { postedBalance: 0, spendableBalance: 0, activeHolds: 0, status: 'Zero Balance', recentTransactions: [] };
+    }
+    const rentRate = parseInt((driver.deal?.rate || '1000').toString().replace(/[^0-9]/g, '')) || 1000;
+    if ((driver.wallet.spendableBalance || 0) <= 0) {
+      driver.wallet.outstandingDues = (driver.wallet.outstandingDues || 0) + rentRate;
+      driver.wallet.postedBalance = (driver.wallet.postedBalance || 0) - rentRate;
+      driver.wallet.status = 'Pending Payment';
+      const rentTxn = {
+        id: `WTX-DUE-${Date.now().toString().slice(-4)}`,
+        date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        type: 'Vehicle Rental Allocation Due',
+        amount: `-₹${rentRate.toLocaleString('en-IN')}.00`,
+        method: `Assigned Car: ${vehicleModel} [${vehicleRegistration}]`,
+        status: 'Outstanding Pending Payment'
+      };
+      driver.wallet.recentTransactions = [rentTxn, ...(driver.wallet.recentTransactions || [])];
+    }
   } else {
     data.drivers[index].vehicle = null;
     data.drivers[index].status = 'Ready';

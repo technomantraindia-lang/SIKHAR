@@ -1088,14 +1088,31 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                     </div>
                     <span className="adp-field-hint">Driver wallet opens with ₹0. When the driver recharges via UPI or Cash, daily rent (₹{Number(formData.agreedRate || 1000).toLocaleString('en-IN')}) will be debited automatically.</span>
                   </div>
+
+                  {/* Outstanding Vehicle Rental Alert when Balance is 0 */}
+                  {Number(formData.initialBalance || 0) <= 0 && formData.selectedVehicleReg && (
+                    <div className="adp-callout-banner amber full-width" style={{ marginTop: '6px', background: '#fff7ed', borderColor: '#fdba74' }}>
+                      <AlertTriangle size={18} className="callout-icon" style={{ color: '#ea580c' }} />
+                      <div className="callout-text">
+                        <strong style={{ color: '#9a3412' }}>Vehicle Rent Stays as Outstanding Pending Payment</strong>
+                        <p style={{ color: '#7c2d12' }}>
+                          Because this new driver is starting with <strong>₹0 wallet balance</strong> and car <strong>{selectedVehicleObj ? `${selectedVehicleObj.model} [${selectedVehicleObj.reg}]` : formData.selectedVehicleReg}</strong> is allocated, the car rental fee of <strong>₹{Number(formData.agreedRate || 1000).toLocaleString('en-IN')}</strong> will remain recorded as <strong>Outstanding Pending Payment</strong> on their account. When they recharge their wallet, the system automatically clears and settles this balance.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* 3-Pocket Smart Wallet Preview */}
+                {/* 3-Pocket Smart Wallet Preview + Outstanding Dues Pocket */}
                 <div className="adp-three-pocket-preview">
                   <div className="pocket-preview-box">
                     <span className="p-badge">POCKET 1</span>
                     <span className="p-title">POSTED BALANCE</span>
-                    <strong className="p-num">₹{Number(formData.initialBalance || 0).toLocaleString('en-IN')}</strong>
+                    <strong className={`p-num ${Number(formData.initialBalance || 0) <= 0 && formData.selectedVehicleReg ? 'text-red' : ''}`}>
+                      ₹{Number(formData.initialBalance || 0) <= 0 && formData.selectedVehicleReg 
+                        ? `-${Number(formData.agreedRate || 1000).toLocaleString('en-IN')}` 
+                        : Number(formData.initialBalance || 0).toLocaleString('en-IN')}
+                    </strong>
                     <span className="p-sub">Total verified funds credited</span>
                   </div>
                   <div className="pocket-preview-box hold">
@@ -1107,9 +1124,17 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   <div className="pocket-preview-box spendable">
                     <span className="p-badge spendable">POCKET 3</span>
                     <span className="p-title">SPENDABLE FUNDS</span>
-                    <strong className="p-num text-green">₹{Number(formData.initialBalance || 0).toLocaleString('en-IN')}</strong>
+                    <strong className="p-num text-green">₹{Math.max(0, Number(formData.initialBalance || 0)).toLocaleString('en-IN')}</strong>
                     <span className="p-sub">Available for daily lease debit</span>
                   </div>
+                  {Number(formData.initialBalance || 0) <= 0 && formData.selectedVehicleReg && (
+                    <div className="pocket-preview-box" style={{ background: '#fff7ed', borderColor: '#fed7aa' }}>
+                      <span className="p-badge" style={{ background: '#ffedd5', color: '#c2410c' }}>OUTSTANDING</span>
+                      <span className="p-title" style={{ color: '#9a3412' }}>VEHICLE RENT DUE</span>
+                      <strong className="p-num" style={{ color: '#ea580c' }}>₹{Number(formData.agreedRate || 1000).toLocaleString('en-IN')}</strong>
+                      <span className="p-sub" style={{ color: '#9a3412' }}>Pending First Top-Up</span>
+                    </div>
+                  )}
                 </div>
 
                 {viewMode === 'wizard' && (

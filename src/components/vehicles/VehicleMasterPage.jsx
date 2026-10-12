@@ -9,11 +9,13 @@ import {
   Users,
   Fuel,
   ChevronRight,
-  Zap
+  Zap,
+  Car,
+  ArrowLeftRight
 } from '../common/Icons';
 import { fetchFleetTowerApi } from '../../services/api';
 
-export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, onBackToDashboard }) {
+export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, onOpenAssignment, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [vehicles, setVehicles] = useState([]);
@@ -147,6 +149,31 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
             <span>+ Onboard Vehicle</span>
           </button>
         </div>
+      </div>
+
+      {/* Vehicles Section Sub-Navigation Tabs */}
+      <div className="sikhar-vehicle-subnav-bar">
+        <button className="vehicle-subnav-pill is-active">
+          <Car size={16} />
+          <span>All Vehicles (Directory)</span>
+          <span className="subnav-pill-count">{vehicles.length}</span>
+        </button>
+
+        <button
+          className="vehicle-subnav-pill"
+          onClick={() => onOpenAssignment && onOpenAssignment()}
+        >
+          <ArrowLeftRight size={16} />
+          <span>Driver Vehicle Allocation</span>
+        </button>
+
+        <button
+          className="vehicle-subnav-pill"
+          onClick={() => onOpenAddVehicle && onOpenAddVehicle()}
+        >
+          <Plus size={15} />
+          <span>Onboard Vehicle</span>
+        </button>
       </div>
 
       {/* Top Quick Stats Strip */}

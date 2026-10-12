@@ -1,0 +1,93 @@
+{
+  "activeAssignments": [
+    {
+      "id": "ASG-2026-7815",
+      "driverId": "drv-11",
+      "driverName": "chetan",
+      "driverPhone": "9687564235",
+      "originalVehicle": {
+        "registration": "DL52GD6605",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Ready to Deploy"
+      },
+      "assignedVehicle": {
+        "registration": "HR55BD6737",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "startOdometer": "31,220 km"
+      },
+      "assignmentType": "permanent",
+      "durationDays": 2,
+      "startDate": "2026-10-12T04:09:00.846Z",
+      "endDate": "2026-10-14T04:09:00.846Z",
+      "reason": "VIP Corporate 7-Seater Duty",
+      "notes": "Assigned TATA TIGOR EV XPRESS T to chetan for 7 days.",
+      "oldVehicleAction": "yard_reserve",
+      "status": "Active",
+      "assignedBy": "Fleet Administrator",
+      "createdAt": "2026-10-12T04:09:00.853Z"
+    }
+  ],
+  "history": [
+    {
+      "id": "ASG-2026-9195",
+      "driverId": "drv-08",
+      "driverName": "Sumit",
+      "driverPhone": "9811877654",
+      "originalVehicle": {
+        "registration": "HR26WG4411",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Assigned 1:1"
+      },
+      "assignedVehicle": {
+        "registration": "DL01ER2026",
+        "model": "MARUTI SUZUKI ERTIGA VXI CNG (7-SEATER)",
+        "type": "CNG",
+        "startOdometer": "18,400 km",
+        "endOdometer": "18,520 km"
+      },
+      "assignmentType": "temporary",
+      "durationDays": 2,
+      "startDate": "2026-10-12T04:06:37.187Z",
+      "endDate": "2026-10-14T04:06:37.187Z",
+      "reason": "VIP Corporate 7-Seater Duty",
+      "notes": "Testing 2-day duty swap for Sumit",
+      "oldVehicleAction": "yard_reserve",
+      "status": "Completed",
+      "assignedBy": "Fleet Administrator",
+      "createdAt": "2026-10-12T04:06:37.189Z",
+      "returnedAt": "2026-10-12T04:06:47.109Z",
+      "returnNotes": "Duty completed by Sumit. Ertiga returned in pristine condition."
+    },
+    {
+      "id": "ASG-2026-0001",
+      "driverId": "drv-02",
+      "driverName": "Amit Singh",
+      "driverPhone": "+91 98101 67890",
+      "originalVehicle": {
+        "registration": "HR38AK1234",
+        "model": "WagonR H3 CNG",
+        "type": "CNG"
+      },
+      "assignedVehicle": {
+        "registration": "DL8CAZ7788",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "startOdometer": "23,900 km",
+        "endOdometer": "24,190 km"
+      },
+      "assignmentType": "temporary",
+      "durationDays": 2,
+      "startDate": "2026-10-07T08:00:00.000Z",
+      "endDate": "2026-10-09T08:00:00.000Z",
+      "returnedAt": "2026-10-09T08:30:00.000Z",
+      "reason": "WagonR Under Routine Clutch Inspection",
+      "notes": "Temporary replacement while primary car underwent OEM 40K service. Returned in pristine condition.",
+      "oldVehicleAction": "workshop",
+      "status": "Completed",
+      "assignedBy": "Fleet Administrator"
+    }
+  ]
+}

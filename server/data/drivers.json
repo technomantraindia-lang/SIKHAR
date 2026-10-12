@@ -1,8 +1,8 @@
 {
   "summary": {
-    "totalDrivers": 12,
+    "totalDrivers": 13,
     "activeContracts": 57,
-    "onDuty": 8,
+    "onDuty": 9,
     "onLeave": 1,
     "suspended": 1,
     "unassigned": 1,
@@ -54,6 +54,93 @@
     }
   ],
   "drivers": [
+    {
+      "id": "drv-08",
+      "name": "Sumit",
+      "phone": "9811877654",
+      "altPhone": "9811899882",
+      "city": "Gurgaon Operations Hub",
+      "photo": "",
+      "mobileVerified": true,
+      "status": "On Duty",
+      "rating": 4.9,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "shiftType": "24-Hour Dedicated",
+      "coDriver": null,
+      "location": "Cyber City • Phase 2, Gurgaon",
+      "vehicle": {
+        "registration": "HR26WG4411",
+        "model": "WagonR H3 CNG",
+        "type": "CNG",
+        "status": "Assigned 1:1"
+      },
+      "todayGross": "₹1,850",
+      "todayTrips": 9,
+      "wallet": {
+        "postedBalance": 1500,
+        "activeHolds": 0,
+        "spendableBalance": 1500,
+        "status": "Healthy",
+        "autoTopup": true,
+        "lastTopup": "11 Oct 2026 · ₹1,500 (UPI)",
+        "recentTransactions": [
+          {
+            "id": "WTX-INV-0194",
+            "date": "12 Oct 2026, 10:38 AM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹900.00",
+            "method": "Invoice Paid: INV-26-08-03351 [HR26WG4411]",
+            "status": "Settled"
+          },
+          {
+            "id": "WTX-8801",
+            "date": "11 Oct 2026, 09:30 AM",
+            "type": "Wallet Top-up",
+            "amount": "+₹1,500.00",
+            "method": "UPI Auto-pay",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "5421-9847-6712",
+        "aadhaarVerified": true,
+        "drivingLicence": "HR-2620210044551",
+        "dlExpiry": "2031-08-18",
+        "dlCategory": "Commercial LMV",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "9811899882 (Brother)",
+        "reference": {
+          "name": "Suresh Verma",
+          "phone": "98101 88990",
+          "relation": "Guarantor",
+          "address": "Sector 14, Gurgaon"
+        },
+        "address": "Sector 31, Gurgaon, Haryana",
+        "panCard": "SMTHP9821K",
+        "panVerified": true
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "frequency": "Weekly Cycle (Every Monday)",
+        "startDate": "01 Jan 2026",
+        "contractMonths": 12,
+        "agreementVersion": "v1.0 (Master Commercial Lease)",
+        "agreementSigned": true,
+        "depositReceipt": "UTR-89127632",
+        "depositStatus": "Held in Escrow",
+        "handoverOdometer": "42,000 km",
+        "handoverStatus": "Completed & QC Inspected"
+      },
+      "attendance": {
+        "presentDays": 28,
+        "leaveDays": 0,
+        "punctuality": "99%"
+      }
+    },
     {
       "id": "drv-12",
       "name": "dhruv",
@@ -144,10 +231,10 @@
       "shift": "07:00 AM - 07:00 PM (Standard)",
       "location": "South Delhi Hub",
       "vehicle": {
-        "registration": "DL52GD6605",
-        "model": "WagonR H3 CNG",
-        "type": "CNG",
-        "status": "Ready to Deploy"
+        "registration": "HR55BD6737",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "status": "Assigned 1:1"
       },
       "todayGross": "₹0",
       "todayTrips": 0,

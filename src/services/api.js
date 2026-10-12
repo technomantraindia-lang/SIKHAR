@@ -273,6 +273,78 @@ export async function amendDriverDealApi(driverId, dealData) {
   }
 }
 
+// ========================================================
+// DRIVER-VEHICLE ASSIGNMENT & SWAP APIS
+// ========================================================
+
+export async function fetchAssignmentsApi() {
+  try {
+    const response = await fetch(`${API_BASE}/assignments`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve assignment records.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch assignments error:', err);
+    throw err;
+  }
+}
+
+export async function createAssignmentApi(payload) {
+  try {
+    const response = await fetch(`${API_BASE}/assignments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to assign vehicle.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create assignment error:', err);
+    throw err;
+  }
+}
+
+export async function revertAssignmentApi(assignmentId, returnOdometer = '', returnNotes = '') {
+  try {
+    const response = await fetch(`${API_BASE}/assignments/${encodeURIComponent(assignmentId)}/revert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnOdometer, returnNotes })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to revert assignment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Revert assignment error:', err);
+    throw err;
+  }
+}
+
+export async function extendAssignmentApi(assignmentId, additionalDays = 1, newEndDate = '', extendReason = '') {
+  try {
+    const response = await fetch(`${API_BASE}/assignments/${encodeURIComponent(assignmentId)}/extend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ additionalDays, newEndDate, extendReason })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to extend assignment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Extend assignment error:', err);
+    throw err;
+  }
+}
+
 export function getCachedAdminUser() {
   const stored = localStorage.getItem('sikhar_admin_user');
   if (stored) {
@@ -296,3 +368,200 @@ export function logoutAdminApi() {
   localStorage.removeItem('sikhar_admin_token');
   localStorage.removeItem('sikhar_admin_user');
 }
+
+// =========================================================================
+// RENTALS & COLLECTIONS API CLIENT (Bookings, Leases & Invoices)
+// =========================================================================
+
+export async function fetchLeasesApi(status = 'all', dealType = 'all', search = '') {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/rentals/leases`);
+    if (status && status !== 'all') url.searchParams.append('status', status);
+    if (dealType && dealType !== 'all') url.searchParams.append('dealType', dealType);
+    if (search) url.searchParams.append('search', search);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve lease agreements.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Fetch leases error:', err);
+    throw err;
+  }
+}
+
+export async function fetchLeaseDetailApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/leases/${encodeURIComponent(id)}`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch lease details.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Fetch lease detail error:', err);
+    throw err;
+  }
+}
+
+export async function createLeaseApi(payload) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/leases`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create lease agreement.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create lease error:', err);
+    throw err;
+  }
+}
+
+export async function signLeaseAgreementApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/leases/${encodeURIComponent(id)}/sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to sign agreement.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Sign lease error:', err);
+    throw err;
+  }
+}
+
+export async function confirmLeaseDepositApi(id, amount, reference) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/leases/${encodeURIComponent(id)}/deposit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, reference })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to confirm deposit.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Confirm deposit error:', err);
+    throw err;
+  }
+}
+
+export async function activateLeaseApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/leases/${encodeURIComponent(id)}/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to activate lease.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Activate lease error:', err);
+    throw err;
+  }
+}
+
+export async function fetchInvoicesApi(status = 'all', search = '') {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/rentals/invoices`);
+    if (status && status !== 'all') url.searchParams.append('status', status);
+    if (search) url.searchParams.append('search', search);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve rental invoices.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Fetch invoices error:', err);
+    throw err;
+  }
+}
+
+export async function createInvoiceApi(payload) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/invoices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to generate invoice.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create invoice error:', err);
+    throw err;
+  }
+}
+
+export async function payInvoiceWalletApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/invoices/${encodeURIComponent(id)}/pay-wallet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to process wallet payment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Pay invoice via wallet error:', err);
+    throw err;
+  }
+}
+
+export async function payInvoiceDirectApi(id, paymentMethod = 'UPI', reference = '') {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/invoices/${encodeURIComponent(id)}/pay-direct`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentMethod, reference })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to record direct payment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Pay invoice direct error:', err);
+    throw err;
+  }
+}
+
+export async function waiveInvoiceApi(id, reason = '') {
+  try {
+    const response = await fetch(`${API_BASE}/rentals/invoices/${encodeURIComponent(id)}/waive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to waive invoice.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Waive invoice error:', err);
+    throw err;
+  }
+}
+

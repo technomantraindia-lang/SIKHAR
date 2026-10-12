@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import VehicleMasterPage from './VehicleMasterPage';
 import VehicleDetailPage from './VehicleDetailPage';
 import AddVehiclePage from './AddVehiclePage';
+import VehicleAssignmentPage from './VehicleAssignmentPage';
 
-export default function VehicleManager({ initialVehicleId = null, onNavigate, onBackToDashboard }) {
+export default function VehicleManager({ subRoute = null, initialVehicleId = null, onNavigate, onBackToDashboard }) {
   const getInitialView = () => {
+    if (subRoute === 'assignment') return 'assignment';
     if (initialVehicleId) return 'detail';
     try {
       const savedMode = localStorage.getItem('sikhar_vehicle_view_mode');
       const savedId = localStorage.getItem('sikhar_vehicle_selected_id');
+      if (savedMode === 'assignment') return 'assignment';
       if (savedMode === 'detail' && savedId) return 'detail';
       if (savedMode === 'add') return 'add';
     } catch {
@@ -28,6 +31,25 @@ export default function VehicleManager({ initialVehicleId = null, onNavigate, on
 
   const [viewMode, setViewMode] = useState(getInitialView);
   const [selectedVehicleId, setSelectedVehicleId] = useState(getInitialId);
+
+  // Sync subRoute prop changes from sidebar navigation
+  useEffect(() => {
+    if (subRoute === 'assignment') {
+      setViewMode('assignment');
+      try {
+        localStorage.setItem('sikhar_vehicle_view_mode', 'assignment');
+      } catch {
+        // ignore
+      }
+    } else if (subRoute === 'master' && viewMode === 'assignment') {
+      setViewMode('master');
+      try {
+        localStorage.setItem('sikhar_vehicle_view_mode', 'master');
+      } catch {
+        // ignore
+      }
+    }
+  }, [subRoute]);
 
   const handleSelectVehicle = (vehicleId) => {
     setSelectedVehicleId(vehicleId);
@@ -49,9 +71,24 @@ export default function VehicleManager({ initialVehicleId = null, onNavigate, on
     }
   };
 
+  const handleOpenAssignment = () => {
+    setViewMode('assignment');
+    if (onNavigate) {
+      onNavigate('vehicle-assignments');
+    }
+    try {
+      localStorage.setItem('sikhar_vehicle_view_mode', 'assignment');
+    } catch {
+      // ignore
+    }
+  };
+
   const handleBackToMaster = () => {
     setViewMode('master');
     setSelectedVehicleId(null);
+    if (onNavigate) {
+      onNavigate('vehicles');
+    }
     try {
       localStorage.setItem('sikhar_vehicle_view_mode', 'master');
       localStorage.removeItem('sikhar_vehicle_selected_id');
@@ -93,10 +130,21 @@ export default function VehicleManager({ initialVehicleId = null, onNavigate, on
     );
   }
 
+  if (viewMode === 'assignment') {
+    return (
+      <VehicleAssignmentPage
+        onNavigateToAllVehicles={handleBackToMaster}
+        onNavigateToAddVehicle={handleOpenAddVehicle}
+        onBackToDashboard={onBackToDashboard}
+      />
+    );
+  }
+
   return (
     <VehicleMasterPage
       onSelectVehicle={handleSelectVehicle}
       onOpenAddVehicle={handleOpenAddVehicle}
+      onOpenAssignment={handleOpenAssignment}
       onBackToDashboard={onBackToDashboard}
     />
   );

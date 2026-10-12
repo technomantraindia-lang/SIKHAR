@@ -587,11 +587,38 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated }) 
           <div className="detail-section-white-card">
             <h3 className="section-block-title">3-Pocket Smart Wallet Balance</h3>
 
-            {/* 3-Pocket Smart Balance Grid */}
+            {/* Outstanding Vehicle Rental Pending Payment Alert (Zero Balance Logic) */}
+            {driver.wallet?.outstandingDues > 0 && (
+              <div className="outstanding-dues-alert-banner">
+                <div className="dues-alert-left">
+                  <div className="dues-alert-icon-wrap">
+                    <AlertTriangle size={22} color="#b45309" />
+                  </div>
+                  <div>
+                    <h4 className="dues-alert-title">
+                      Outstanding Vehicle Rental: ₹{driver.wallet.outstandingDues.toLocaleString('en-IN')} Pending Clearance
+                    </h4>
+                    <p className="dues-alert-desc">
+                      Driver joined or was allocated <strong>{driver.vehicle?.model || 'vehicle'} ({driver.vehicle?.registration || '—'})</strong> with ₹0 wallet balance. The daily vehicle rental payment is currently outstanding. Any wallet recharge will automatically deduct and settle this pending balance.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-settle-outstanding"
+                  onClick={() => setTopupAmount(driver.wallet.outstandingDues.toString())}
+                >
+                  <span>Pay &amp; Settle Dues</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* 3-Pocket Smart Balance Grid + Outstanding Pocket */}
             <div className="wallet-three-pocket-grid-lg">
               <div className="pocket-box-lg posted">
                 <span className="pocket-lbl-lg">POSTED BALANCE</span>
-                <strong className="pocket-val-lg">
+                <strong className={`pocket-val-lg ${(driver.wallet?.postedBalance || 0) < 0 ? 'text-red' : ''}`}>
                   ₹{(driver.wallet?.postedBalance || 0).toLocaleString('en-IN')}
                 </strong>
                 <span className="pocket-sub-lg">Total ledger funds</span>
@@ -612,6 +639,16 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated }) 
                 </strong>
                 <span className="pocket-sub-lg">Available for rent debit</span>
               </div>
+
+              {driver.wallet?.outstandingDues > 0 && (
+                <div className="pocket-box-lg outstanding-pocket">
+                  <span className="pocket-lbl-lg text-amber">OUTSTANDING DUES</span>
+                  <strong className="pocket-val-lg text-amber">
+                    ₹{driver.wallet.outstandingDues.toLocaleString('en-IN')}
+                  </strong>
+                  <span className="pocket-sub-lg">Pending Car Rental</span>
+                </div>
+              )}
             </div>
 
             {/* Credit Wallet / Issue Top-Up Voucher Form */}

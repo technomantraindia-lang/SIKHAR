@@ -5,6 +5,10 @@ import ExecutiveDashboard from './components/dashboard/ExecutiveDashboard';
 import FleetControlTower from './components/fleet/FleetControlTower';
 import DriverControlTower from './components/drivers/DriverControlTower';
 import VehicleManager from './components/vehicles/VehicleManager';
+import BookingLeasePage from './components/rentals/BookingLeasePage';
+import InvoicesPage from './components/rentals/InvoicesPage';
+import GenerateInvoicePage from './components/rentals/GenerateInvoicePage';
+import InvoiceDetailPage from './components/rentals/InvoiceDetailPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
 import { getCachedAdminUser, logoutAdminApi } from './services/api';
@@ -114,10 +118,33 @@ export default function App() {
             <DriverControlTower
               onNavigate={(target) => navigateTo(target)}
             />
-          ) : activeRoute === 'vehicles' ? (
+          ) : (activeRoute === 'vehicles' || activeRoute === 'vehicle-assignments') ? (
             <VehicleManager
+              subRoute={activeRoute === 'vehicle-assignments' ? 'assignment' : 'master'}
               onNavigate={(target) => navigateTo(target)}
               onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'bookings' ? (
+            <BookingLeasePage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'invoices' ? (
+            <InvoicesPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'generate-invoice' ? (
+            <GenerateInvoicePage
+              onBackToInvoices={() => navigateTo('invoices')}
+              onBackToDashboard={() => navigateTo('dashboard')}
+              onNavigate={(target) => navigateTo(target)}
+            />
+          ) : activeRoute === 'invoice-detail' ? (
+            <InvoiceDetailPage
+              onBackToInvoices={() => navigateTo('invoices')}
+              onBackToDashboard={() => navigateTo('dashboard')}
+              onNavigate={(target) => navigateTo(target)}
             />
           ) : (
             <ModuleViewer
@@ -130,3 +157,4 @@ export default function App() {
     </div>
   );
 }
+

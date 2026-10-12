@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Home,
   Truck,
@@ -8,30 +8,80 @@ import {
   Wrench,
   Fuel,
   FileText,
+  Receipt,
   Shield,
   BarChart3,
   Settings,
   ChevronRight,
-  LogOut
+  LogOut,
+  ArrowLeftRight,
+  Plus
 } from '../common/Icons';
 
-// Menu items matching user reference image order & style
-const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, hasSubmenu: false },
-  { id: 'fleet', label: 'Fleet', icon: Truck, hasSubmenu: true },
-  { id: 'drivers', label: 'Drivers', icon: Users, hasSubmenu: true },
-  { id: 'vehicles', label: 'Vehicles', icon: Car, hasSubmenu: true },
-  { id: 'trips', label: 'Trips', icon: Activity, hasSubmenu: true },
-  { id: 'maintenance', label: 'Maintenance', icon: Wrench, hasSubmenu: false },
-  { id: 'fuel', label: 'Fuel', icon: Fuel, hasSubmenu: false },
-  { id: 'compliance', label: 'RTO & Compliance', icon: Shield, hasSubmenu: true },
-  { id: 'bookings', label: 'Rentals & Billing', icon: FileText, hasSubmenu: true },
-  { id: 'finance-overview', label: 'Finance', icon: BarChart3, hasSubmenu: false },
-  { id: 'reports', label: 'Reports', icon: BarChart3, hasSubmenu: true },
-  { id: 'settings', label: 'Settings', icon: Settings, hasSubmenu: false }
+// Grouped Menu Sections matching User Screenshot & Wireframe v8
+const MENU_SECTIONS = [
+  {
+    title: 'OPERATIONS',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: Home, hasSubmenu: false },
+      { id: 'fleet', label: 'Fleet Control Tower', icon: Truck, hasSubmenu: false },
+      { id: 'drivers', label: 'Drivers', icon: Users, hasSubmenu: false },
+      {
+        id: 'vehicles',
+        label: 'Vehicles',
+        icon: Car,
+        hasSubmenu: true,
+        subItems: [
+          { id: 'vehicles', label: 'All Vehicles', icon: Car },
+          { id: 'vehicle-assignments', label: 'Vehicle Assignment', icon: ArrowLeftRight }
+        ]
+      },
+      { id: 'trips', label: 'Trips', icon: Activity, hasSubmenu: false },
+      { id: 'maintenance', label: 'Maintenance', icon: Wrench, hasSubmenu: false },
+      { id: 'fuel', label: 'Fuel', icon: Fuel, hasSubmenu: false },
+      { id: 'compliance', label: 'RTO & Compliance', icon: Shield, hasSubmenu: false }
+    ]
+  },
+  {
+    title: 'RENTALS & COLLECTIONS',
+    items: [
+      { id: 'bookings', label: 'Bookings / Leases', icon: FileText, hasSubmenu: false },
+      { id: 'invoices', label: 'Rental Invoices', icon: Receipt, hasSubmenu: false },
+      { id: 'generate-invoice', label: 'Generate Invoice', icon: Plus, hasSubmenu: false }
+    ]
+  },
+  {
+    title: 'FINANCE & CONTROL',
+    items: [
+      { id: 'finance-overview', label: 'Finance Overview', icon: BarChart3, hasSubmenu: false },
+      { id: 'reports', label: 'Reports', icon: BarChart3, hasSubmenu: false },
+      { id: 'settings', label: 'Settings', icon: Settings, hasSubmenu: false }
+    ]
+  }
 ];
 
 export default function Sidebar({ activeRoute, onSelectRoute, onLogout }) {
+  // Only expand when admin clicks on Vehicles
+  const [expandedMenus, setExpandedMenus] = useState(() => ({
+    vehicles: activeRoute === 'vehicles' || activeRoute === 'vehicle-assignments'
+  }));
+
+  const handleItemClick = (item) => {
+    if (item.subItems) {
+      // Toggle expansion when admin clicks on Vehicles
+      setExpandedMenus(prev => ({
+        ...prev,
+        [item.id]: !prev[item.id]
+      }));
+      // Navigate to current active or default to the clicked route
+      if (activeRoute !== 'vehicles' && activeRoute !== 'vehicle-assignments') {
+        onSelectRoute('vehicles');
+      }
+    } else {
+      onSelectRoute(item.id);
+    }
+  };
+
   return (
     <aside className="sikhar-dark-sidebar-v2">
       {/* Top Brand Logo matching reference */}
@@ -59,27 +109,66 @@ export default function Sidebar({ activeRoute, onSelectRoute, onLogout }) {
         </div>
       </div>
 
-      {/* Navigation Menu List */}
+      {/* Navigation Menu List Organized into Sections */}
       <nav className="sidebar-nav-container">
-        {MENU_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeRoute === item.id;
-          return (
-            <button
-              key={item.id}
-              className={`sidebar-nav-pill ${isActive ? 'is-active' : ''}`}
-              onClick={() => onSelectRoute(item.id)}
-            >
-              <div className="nav-pill-left">
-                <Icon size={17} className="nav-pill-icon" />
-                <span className="nav-pill-label">{item.label}</span>
-              </div>
-              {item.hasSubmenu && (
-                <ChevronRight size={14} className="nav-pill-chevron" />
-              )}
-            </button>
-          );
-        })}
+        {MENU_SECTIONS.map((section, sIdx) => (
+          <div key={section.title || sIdx} className="sidebar-nav-section-group">
+            <div className="sidebar-section-title">{section.title}</div>
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isItemActive = activeRoute === item.id || (item.id === 'invoices' && activeRoute === 'invoice-detail');
+              const isChildActive = item.subItems?.some(s => s.id === activeRoute);
+              const isParentActive = isItemActive || isChildActive;
+              const isExpanded = !!expandedMenus[item.id];
+
+              return (
+                <div key={item.id} className="sidebar-nav-item-wrap">
+                  <button
+                    className={`sidebar-nav-pill ${isParentActive ? 'is-active' : ''} ${isChildActive && !isItemActive ? 'is-family-active' : ''}`}
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="nav-pill-left">
+                      <Icon size={17} className="nav-pill-icon" />
+                      <span className="nav-pill-label">{item.label}</span>
+                    </div>
+                    {item.hasSubmenu && (
+                      <ChevronRight
+                        size={14}
+                        className={`nav-pill-chevron ${isExpanded ? 'is-rotated-down' : ''}`}
+                      />
+                    )}
+                  </button>
+
+                  {/* Submenu List - Only shown when admin clicks to expand */}
+                  {item.subItems && isExpanded && (
+                    <div className="sidebar-submenu-block">
+                      {item.subItems.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = activeRoute === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            className={`sidebar-submenu-item ${isSubActive ? 'is-active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectRoute(sub.id);
+                            }}
+                          >
+                            <div className="sub-item-left">
+                              <span className={`sub-bullet-dot ${isSubActive ? 'active' : ''}`} />
+                              <SubIcon size={13} className="sub-item-icon" />
+                              <span className="sub-item-label">{sub.label}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
 
         {/* Menu Divider */}
         <div className="sidebar-nav-divider"></div>
@@ -98,11 +187,11 @@ export default function Sidebar({ activeRoute, onSelectRoute, onLogout }) {
         </button>
       </nav>
 
-      {/* Atmospheric Twilight Highway Car Graphic (Replacing truck as requested) */}
+      {/* Atmospheric Twilight Highway Car Graphic */}
       <div className="sidebar-bottom-car-banner">
         <div className="car-banner-img-wrap">
-          <img 
-            src="/images/sidebar_car_twilight.jpg" 
+          <img
+            src="/images/sidebar_car_twilight.jpg"
             alt="Sikhar Fleet Vehicle on Mountain Highway"
             className="car-banner-photo"
           />

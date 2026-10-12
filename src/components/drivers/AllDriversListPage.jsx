@@ -398,28 +398,44 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                       {/* Wallet Balance */}
                       <td>
                         <div className="table-wallet-cell">
-                          <strong
-                            className={`wallet-amt-text ${
-                              drv.wallet?.status === 'Breached'
-                                ? 'bad'
-                                : drv.wallet?.status === 'Low Balance'
-                                ? 'warn'
-                                : 'good'
-                            }`}
-                          >
-                            ₹{drv.wallet?.spendableBalance?.toLocaleString('en-IN') || 0}
-                          </strong>
-                          <span
-                            className={`table-wallet-tag ${
-                              drv.wallet?.status === 'Breached'
-                                ? 'bad'
-                                : drv.wallet?.status === 'Low Balance'
-                                ? 'warn'
-                                : 'good'
-                            }`}
-                          >
-                            {drv.wallet?.status || 'Healthy'}
-                          </span>
+                          {drv.wallet?.outstandingDues > 0 ? (
+                            <>
+                              <strong className="wallet-amt-text bad text-amber" style={{ color: '#ea580c' }}>
+                                Due: ₹{drv.wallet.outstandingDues.toLocaleString('en-IN')}
+                              </strong>
+                              <span
+                                className="table-wallet-tag"
+                                style={{ background: '#fff7ed', color: '#c2410c', borderColor: '#fdba74', fontWeight: '700' }}
+                              >
+                                ⏳ Pending Payment
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <strong
+                                className={`wallet-amt-text ${
+                                  drv.wallet?.status === 'Breached'
+                                    ? 'bad'
+                                    : drv.wallet?.status === 'Low Balance'
+                                    ? 'warn'
+                                    : 'good'
+                                }`}
+                              >
+                                ₹{drv.wallet?.spendableBalance?.toLocaleString('en-IN') || 0}
+                              </strong>
+                              <span
+                                className={`table-wallet-tag ${
+                                  drv.wallet?.status === 'Breached'
+                                    ? 'bad'
+                                    : drv.wallet?.status === 'Low Balance'
+                                    ? 'warn'
+                                    : 'good'
+                                }`}
+                              >
+                                {drv.wallet?.status || 'Healthy'}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </td>
 
@@ -535,13 +551,22 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                     <strong className="metric-val text-navy">{drv.todayTrips || 0} trips</strong>
                   </div>
                   <div className="card-metric-cell">
-                    <span className="metric-lbl">SPENDABLE</span>
+                    <span className="metric-lbl">
+                      {drv.wallet?.outstandingDues > 0 ? 'OUTSTANDING' : 'SPENDABLE'}
+                    </span>
                     <strong
                       className={`metric-val ${
-                        drv.wallet?.status === 'Breached' ? 'text-red' : 'text-navy'
+                        drv.wallet?.outstandingDues > 0
+                          ? 'text-amber'
+                          : drv.wallet?.status === 'Breached'
+                          ? 'text-red'
+                          : 'text-navy'
                       }`}
+                      style={drv.wallet?.outstandingDues > 0 ? { color: '#ea580c' } : {}}
                     >
-                      ₹{drv.wallet?.spendableBalance?.toLocaleString('en-IN') || 0}
+                      {drv.wallet?.outstandingDues > 0
+                        ? `₹${drv.wallet.outstandingDues.toLocaleString('en-IN')}`
+                        : `₹${drv.wallet?.spendableBalance?.toLocaleString('en-IN') || 0}`}
                     </strong>
                   </div>
                 </div>
