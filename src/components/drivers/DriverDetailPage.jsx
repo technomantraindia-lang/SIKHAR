@@ -31,7 +31,7 @@ const AVAILABLE_CARS = [
   { reg: 'UP16HT7788', model: 'Tigor EV Fleet', type: 'EV' }
 ];
 
-export default function DriverDetailPage({ driverId, onBack, onStatusUpdated }) {
+export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, onNavigate }) {
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -406,66 +406,14 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated }) 
                 </div>
                 <button
                   type="button"
-                  className="btn-assign-veh-pill"
-                  onClick={() => {
-                    setSelectedVehicleToAssign(driver.vehicle ? driver.vehicle.registration : '');
-                    setIsAssigningVehicle(!isAssigningVehicle);
-                  }}
+                  className="btn secondary small"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => onNavigate && onNavigate('vehicle-assignments')}
+                  title="Manage vehicle assignment in Vehicle Assignment"
                 >
-                  {isAssigningVehicle ? '✕ Close' : (driver.vehicle ? '⚙ Change Car' : '+ Assign Car')}
+                  <span>{driver.vehicle ? 'Manage in Vehicle Assignment →' : '+ Assign in Vehicle Assignment →'}</span>
                 </button>
               </div>
-
-              {/* In-Place Vehicle Assignment Selector Drawer */}
-              {isAssigningVehicle && (
-                <div className="driver-assign-car-drawer">
-                  <div className="drawer-title-row">
-                    <strong>Select Fleet Car to Assign to {driver.name}</strong>
-                    <span className="drawer-sub">Instant 1:1 asset pairing with live IoT tracking</span>
-                  </div>
-
-                  <div className="drawer-car-options-grid">
-                    {AVAILABLE_CARS.map((c) => {
-                      const isCurrent = driver.vehicle && driver.vehicle.registration === c.reg;
-                      return (
-                        <div
-                          key={c.reg}
-                          className={`drawer-car-option-card ${selectedVehicleToAssign === c.reg ? 'selected' : ''}`}
-                          onClick={() => setSelectedVehicleToAssign(c.reg)}
-                        >
-                          <div className="opt-car-top">
-                            <span className="opt-reg">{c.reg}</span>
-                            <span className={`pill ${c.type === 'EV' ? 'blue' : 'green'}`}>{c.type}</span>
-                          </div>
-                          <span className="opt-model">{c.model}</span>
-                          {isCurrent && <span className="opt-current-tag">● Currently Assigned</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="drawer-actions-bar">
-                    {driver.vehicle && (
-                      <button
-                        type="button"
-                        disabled={isVehicleAssignLoading}
-                        className="btn-unassign-car"
-                        onClick={() => handleAssignVehicle('')}
-                      >
-                        Unassign (Standby)
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={isVehicleAssignLoading || !selectedVehicleToAssign}
-                      className="btn-confirm-assign-car"
-                      onClick={() => handleAssignVehicle(selectedVehicleToAssign)}
-                    >
-                      {isVehicleAssignLoading ? 'Assigning...' : `✓ Pair Car: ${selectedVehicleToAssign || 'Select'}`}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {driver.vehicle ? (
                 <div className="detail-vehicle-preview-box">
@@ -506,9 +454,18 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated }) 
                   </div>
                 </div>
               ) : (
-                <div className="detail-unassigned-notice">
-                  <AlertTriangle size={24} className="text-orange" />
-                  <p>No vehicle assigned to this driver currently. Driver is on standby list.</p>
+                <div className="detail-unassigned-notice" style={{ padding: '24px 18px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                  <Car size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+                  <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#475569', fontWeight: '500' }}>
+                    No vehicle assigned to this driver currently. Pair this driver to a fleet car in the <strong>Vehicle Assignment</strong> terminal.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn primary small"
+                    onClick={() => onNavigate && onNavigate('vehicle-assignments')}
+                  >
+                    Open Vehicle Assignment Terminal →
+                  </button>
                 </div>
               )}
 

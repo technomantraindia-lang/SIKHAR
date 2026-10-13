@@ -292,6 +292,19 @@ export default function InvoiceDetailPage({
                   <div className="party-details">
                     Model: {invoice.vehicleModel}<br />
                     Period: {invoice.period}<br />
+                    {invoice.leaseNumber && (
+                      <>
+                        Lease Agreement:{' '}
+                        <span
+                          style={{ color: '#2563eb', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                          onClick={() => onNavigate && onNavigate('bookings')}
+                          title="View Lease Agreement"
+                        >
+                          {invoice.leaseNumber}
+                        </span>
+                        <br />
+                      </>
+                    )}
                     Billing Type: Commercial Fleet Lease<br />
                     Terms: Immediate Wallet Auto-Debit / Prepaid UPI
                   </div>
@@ -301,14 +314,14 @@ export default function InvoiceDetailPage({
               {/* Line Items Table */}
               <table className="tax-invoice-items-table">
                 <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Description of Commercial Supply</th>
-                    <th>HSN / SAC</th>
-                    <th>Taxable Base</th>
-                    <th>CGST (2.5%)</th>
-                    <th>SGST (2.5%)</th>
-                    <th style={{ textAlign: 'right' }}>Total (₹)</th>
+                  <tr style={{ background: '#0f172a' }}>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>#</th>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>Description of Commercial Supply</th>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>HSN / SAC</th>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>Taxable Base</th>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>CGST (2.5%)</th>
+                    <th style={{ color: '#ffffff', background: '#0f172a' }}>SGST (2.5%)</th>
+                    <th style={{ textAlign: 'right', color: '#ffffff', background: '#0f172a' }}>Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>

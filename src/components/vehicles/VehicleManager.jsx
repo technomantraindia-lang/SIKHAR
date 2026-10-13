@@ -117,6 +117,7 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
         vehicleId={selectedVehicleId}
         onBack={handleBackToMaster}
         onNavigateToDriver={handleNavigateToDriver}
+        onNavigateToAssignment={handleOpenAssignment}
       />
     );
   }
@@ -136,6 +137,7 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
         onNavigateToAllVehicles={handleBackToMaster}
         onNavigateToAddVehicle={handleOpenAddVehicle}
         onBackToDashboard={onBackToDashboard}
+        onNavigate={onNavigate}
       />
     );
   }

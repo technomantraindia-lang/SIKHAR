@@ -239,13 +239,21 @@
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 1000,
+        "postedBalance": 800,
         "activeHolds": 0,
-        "spendableBalance": 1000,
+        "spendableBalance": 800,
         "status": "Healthy",
         "autoTopup": true,
         "lastTopup": "12 Oct 2026, 03:24 PM · ₹500",
         "recentTransactions": [
+          {
+            "id": "WTX-INV-7508",
+            "date": "12 Oct 2026, 05:26 PM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹200.00",
+            "method": "Invoice Paid: INV-26-673787 [HR55BD6737]",
+            "status": "Settled"
+          },
           {
             "id": "WTX-8996",
             "date": "12 Oct 2026, 03:24 PM",

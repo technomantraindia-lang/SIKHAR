@@ -1,13 +1,38 @@
 {
   "summary": {
-    "totalInvoices": 11,
-    "totalBilled": 11800,
-    "totalCollected": 5300,
+    "totalInvoices": 12,
+    "totalBilled": 12000,
+    "totalCollected": 5500,
     "totalPending": 6500,
     "overdueCount": 6,
-    "paidCount": 5
+    "paidCount": 6
   },
   "invoices": [
+    {
+      "id": "INV-26-673787",
+      "invoiceNumber": "INV-26-673787",
+      "customerName": "chetan",
+      "customerId": "CUST-26-73759",
+      "driverId": "drv-3759",
+      "driverName": "chetan",
+      "driverPhone": "9687564235",
+      "vehicleRegistration": "HR55BD6737",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "invoiceDate": "2026-10-12",
+      "dueDate": "2026-10-12",
+      "period": "12 Oct 2026",
+      "baseAmount": 190.48,
+      "gstPercent": 5,
+      "gstAmount": 9.52,
+      "totalAmount": 200,
+      "amountPaid": 200,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "Driver Spendable Wallet",
+      "paidDate": "2026-10-12T11:56:37.512Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "WTX-INV-7508"
+    },
     {
       "id": "INV-26-849039",
       "invoiceNumber": "INV-26-849039",

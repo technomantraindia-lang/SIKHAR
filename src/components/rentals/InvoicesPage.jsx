@@ -332,6 +332,31 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
                       >
                         {inv.invoiceNumber}
                       </strong>
+                      {(inv.leaseNumber || inv.leaseId) && (
+                        <div style={{ marginTop: '2px' }}>
+                          <span
+                            className="sub-cell-text"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: '#eff6ff',
+                              color: '#1d4ed8',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontSize: '10.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => {
+                              if (onNavigate) onNavigate('bookings');
+                            }}
+                            title="Linked Commercial Lease Agreement — Click to view Leases"
+                          >
+                            📄 {inv.leaseNumber || inv.leaseId}
+                          </span>
+                        </div>
+                      )}
                       <div className="sub-cell-text">Due: {inv.dueDate}</div>
                     </td>
                     <td>

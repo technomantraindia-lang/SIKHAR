@@ -13,7 +13,7 @@ import {
 } from '../common/Icons';
 import { fetchVehicleDetailApi, executeVehicleActionApi } from '../../services/api';
 
-export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver }) {
+export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver, onNavigateToAssignment }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [vehicle, setVehicle] = useState(null);
@@ -490,9 +490,12 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
                 <div className="empty-assignment-box">
                   <div style={{ fontSize: '36px', marginBottom: '8px' }}>🅿️</div>
                   <h4>Vehicle Currently in Yard Stock</h4>
-                  <p>This asset is ready for deployment. Assign an onboarded driver with verified KYC and escrow deposit.</p>
-                  <button className="btn primary" onClick={() => setShowDeployModal(true)}>
-                    + Assign Driver &amp; Deploy
+                  <p>This asset is ready for deployment. Pair with an active driver via the dedicated Vehicle Assignment terminal.</p>
+                  <button
+                    className="btn primary"
+                    onClick={() => onNavigateToAssignment && onNavigateToAssignment()}
+                  >
+                    + Pair Driver in Vehicle Assignment →
                   </button>
                 </div>
               )}

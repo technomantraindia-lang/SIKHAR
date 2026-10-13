@@ -118,6 +118,11 @@ router.post('/leases', (req, res) => {
     rapidoDriverId = '',
     taxPercent = 5,
     securityDeposit = 75000,
+    depositStatus = 'Held in Escrow',
+    depositPaid,
+    depositPending,
+    depositReceiptRef = '',
+    isDepositConfirmed = true,
     vehicleRegistration = '',
     vehicleModel = '',
     vehicleType = 'CNG',
@@ -140,6 +145,12 @@ router.post('/leases', (req, res) => {
 
   const isRevShare = dealType.toLowerCase().includes('revenue');
 
+  const isConfirmed = isDepositConfirmed === true || depositStatus === 'Held in Escrow';
+  const depStatus = isConfirmed ? 'Held in Escrow' : 'Pending';
+  const numDeposit = Number(securityDeposit) || 75000;
+  const paidAmt = isConfirmed ? numDeposit : (Number(depositPaid) || 0);
+  const pendAmt = isConfirmed ? 0 : (depositPending !== undefined ? Number(depositPending) : numDeposit);
+
   const newLease = {
     id: orderId,
     leaseNumber,
@@ -160,8 +171,11 @@ router.post('/leases', (req, res) => {
     driverSharePercent: isRevShare ? Number(driverSharePercent) || 75 : null,
     sikharSharePercent: isRevShare ? Number(sikharSharePercent) || 25 : null,
     rapidoDriverId: isRevShare ? (rapidoDriverId || `RAPIDO-${customerName.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}${Date.now().toString().slice(-4)}`) : null,
-    securityDeposit: Number(securityDeposit) || 75000,
-    depositStatus: 'Held in Escrow',
+    securityDeposit: numDeposit,
+    depositStatus: depStatus,
+    depositPaid: paidAmt,
+    depositPending: pendAmt,
+    depositReceipt: isConfirmed ? (depositReceiptRef || `UTR-ESC-${Date.now().toString().slice(-4)}`) : null,
     agreementVersion: 'v1.0 (Executed)',
     agreementSigned: true,
     signedDate: new Date().toISOString(),
@@ -178,7 +192,8 @@ router.post('/leases', (req, res) => {
   data.summary.activeLeases = data.leases.filter(l => l.status === 'Active').length;
   data.summary.fixedLeases = data.leases.filter(l => l.dealType === 'Fixed Lease').length;
   data.summary.revenueShareLeases = data.leases.filter(l => l.dealType === 'Revenue Share').length;
-  data.summary.totalEscrowDeposits = data.leases.reduce((sum, l) => sum + (Number(l.securityDeposit) || 0), 0);
+  data.summary.totalEscrowDeposits = data.leases.filter(l => l.depositStatus === 'Held in Escrow').reduce((sum, l) => sum + (Number(l.depositPaid || l.securityDeposit) || 0), 0);
+  data.summary.pendingEscrowDeposits = data.leases.filter(l => l.depositStatus === 'Pending').reduce((sum, l) => sum + (Number(l.depositPending || l.securityDeposit) || 0), 0);
 
   writeJson(LEASES_FILE, data);
 
@@ -288,7 +303,14 @@ router.post('/leases/:id/deposit', (req, res) => {
 
   data.leases[index].depositStatus = 'Held in Escrow';
   data.leases[index].securityDeposit = Number(amount) || 75000;
+  data.leases[index].depositPaid = Number(amount) || 75000;
+  data.leases[index].depositPending = 0;
   data.leases[index].depositReceipt = reference;
+
+  if (data.summary) {
+    data.summary.totalEscrowDeposits = data.leases.filter(l => l.depositStatus === 'Held in Escrow').reduce((sum, l) => sum + (Number(l.depositPaid || l.securityDeposit) || 0), 0);
+    data.summary.pendingEscrowDeposits = data.leases.filter(l => l.depositStatus === 'Pending').reduce((sum, l) => sum + (Number(l.depositPending || l.securityDeposit) || 0), 0);
+  }
   writeJson(LEASES_FILE, data);
 
   res.json({
@@ -372,6 +394,8 @@ router.post('/invoices', (req, res) => {
     driverId,
     vehicleRegistration,
     vehicleModel = 'Maruti WagonR Tour H3',
+    leaseId = null,
+    leaseNumber = null,
     amount = 1000,
     dueDate,
     notes = 'Daily lease rental fee'
@@ -397,6 +421,8 @@ router.post('/invoices', (req, res) => {
     driverPhone: driverPhone || '+91 98112 34567',
     vehicleRegistration: (vehicleRegistration || 'HR26DK8821').trim().toUpperCase(),
     vehicleModel,
+    leaseId: leaseId || null,
+    leaseNumber: leaseNumber || null,
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: dueDate || new Date().toISOString().split('T')[0],
     period: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),

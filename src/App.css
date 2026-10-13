@@ -14388,14 +14388,14 @@
 }
 
 .tax-invoice-items-table th {
-  background: #f1f5f9;
+  background: #0f172a;
   font-size: 11px;
   font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #334155;
-  padding: 10px 12px;
-  border-bottom: 1.5px solid #cbd5e1;
+  color: #ffffff;
+  padding: 11px 13px;
+  border-bottom: 1.5px solid #1e293b;
   text-align: left;
 }
 
@@ -14854,7 +14854,7 @@
 }
 
 .styled-input-text.currency-field {
-  padding-left: 32px;
+  padding-left: 36px !important;
   font-weight: 700;
   font-size: 15px;
   color: #0f172a;
@@ -17875,18 +17875,30 @@
 }
 
 .tax-invoice-items-table thead tr {
-  background: #0f172a;
+  background: #0f172a !important;
 }
 
+.tax-invoice-items-table thead th,
 .tax-invoice-items-table th {
-  color: #ffffff;
-  font-size: 10.5px;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 13px 15px;
   text-align: left;
   border-bottom: 2px solid #1e293b;
+}
+
+.tax-invoice-items-table thead tr th:first-child,
+.tax-invoice-items-table th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.tax-invoice-items-table thead tr th:last-child,
+.tax-invoice-items-table th:last-child {
+  border-top-right-radius: 8px;
 }
 
 .tax-invoice-items-table td {
@@ -18190,6 +18202,28 @@
 .styled-input-text:focus {
   border-color: #1769ff !important;
   box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.14) !important;
+}
+
+.styled-input-text.currency-field,
+.adp-currency-input-wrap .styled-input-text,
+.adp-currency-input-wrap input,
+.adp-text-input.currency-field,
+.currency-field {
+  padding-left: 36px !important;
+}
+
+.adp-currency-input-wrap .currency-symbol,
+.currency-symbol {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  font-weight: 700;
+  color: #64748b;
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
 }
 
 /* Audit Trail Timeline */

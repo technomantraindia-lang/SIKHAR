@@ -19,7 +19,7 @@ import FleetLiveLocationMap from './FleetLiveLocationMap';
 import AddDriverPage from './AddDriverPage';
 import AllDriversListPage from './AllDriversListPage';
 
-export default function DriverControlTower() {
+export default function DriverControlTower({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     summary: {},
@@ -128,6 +128,7 @@ export default function DriverControlTower() {
         driverId={selectedDriverId}
         onBack={handleBackToTower}
         onStatusUpdated={loadDrivers}
+        onNavigate={onNavigate}
       />
     );
   }

@@ -65,17 +65,30 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
         if (lseRes?.leases) setLeases(lseRes.leases);
         if (fltRes?.vehicles) setVehicles(fltRes.vehicles);
 
-        // Prefill with first active lease or driver if available
-        if (lseRes?.leases && lseRes.leases.length > 0) {
-          const firstLease = lseRes.leases[0];
-          setSelectedLeaseId(firstLease.id);
-          setCustomerName(firstLease.customerName);
-          setDriverName(firstLease.driverName || firstLease.customerName);
-          setDriverPhone(firstLease.driverPhone || firstLease.customerPhone);
-          setVehicleRegistration(firstLease.vehicleRegistration);
-          setVehicleModel(firstLease.vehicleModel);
-          setVehicleType(firstLease.vehicleType || 'CNG');
-          setTotalAmount(firstLease.rateAmount || 1000);
+        // Check if coming directly from a specific lease (e.g. from Active Leases table)
+        let initialLease = null;
+        try {
+          const targetLeaseId = localStorage.getItem('sikhar_invoice_target_lease_id');
+          if (targetLeaseId && lseRes?.leases) {
+            initialLease = lseRes.leases.find(ls => ls.id === targetLeaseId);
+            localStorage.removeItem('sikhar_invoice_target_lease_id');
+          }
+        } catch (e) {}
+
+        if (!initialLease && lseRes?.leases && lseRes.leases.length > 0) {
+          initialLease = lseRes.leases[0];
+        }
+
+        if (initialLease) {
+          setSelectedLeaseId(initialLease.id);
+          setCustomerName(initialLease.customerName);
+          setDriverName(initialLease.driverName || initialLease.customerName);
+          setDriverPhone(initialLease.driverPhone || initialLease.customerPhone);
+          setVehicleRegistration(initialLease.vehicleRegistration);
+          setVehicleModel(initialLease.vehicleModel);
+          setVehicleType(initialLease.vehicleType || 'CNG');
+          setTotalAmount(initialLease.rateAmount || 1000);
+          setSelectedDriverId(initialLease.driverId || '');
         }
       } catch (err) {
         console.error('Failed to load invoice generation data:', err);
@@ -117,6 +130,7 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
       setVehicleModel(l.vehicleModel);
       setVehicleType(l.vehicleType || 'CNG');
       setTotalAmount(l.rateAmount || 1000);
+      setSelectedDriverId(l.driverId || '');
     }
   };
 
@@ -138,6 +152,8 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
     try {
       setIsSubmitting(true);
       const payload = {
+        leaseId: selectedLeaseId || undefined,
+        leaseNumber: selectedLeaseId || undefined,
         customerName: customerName.trim(),
         customerId: `CUST-26-${Date.now().toString().slice(-5)}`,
         driverId: selectedDriverId || 'drv-01',
@@ -151,12 +167,18 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
       };
 
       const res = await createInvoiceApi(payload);
-      if (res.success) {
+      if (res.success || res.invoice) {
+        const invId = res.invoice?.id || res.id;
+        if (invId) {
+          try {
+            localStorage.setItem('sikhar_selected_invoice_id', invId);
+          } catch (e) {}
+        }
         alert(`✅ ${res.message || 'Invoice generated and posted to ledger!'}`);
-        if (onBackToInvoices) {
+        if (onNavigate) {
+          onNavigate('invoice-detail');
+        } else if (onBackToInvoices) {
           onBackToInvoices();
-        } else if (onNavigate) {
-          onNavigate('invoices');
         }
       }
     } catch (err) {
@@ -221,20 +243,51 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
 
             {/* Quick Prefill from Active Leases */}
             <div className="form-field-group">
-              <label className="input-label">Auto-Fill from Active Lease Order (Optional)</label>
+              <label className="input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Commercial Lease Agreement (Primary Flow)</span>
+                <span style={{ color: '#059669', fontSize: '11px', fontWeight: 600 }}>Auto-pulls Lessee, Vehicle &amp; Rate</span>
+              </label>
               <select
                 className="styled-input-select"
                 value={selectedLeaseId}
                 onChange={(e) => handleLeaseChange(e.target.value)}
+                style={{ borderColor: selectedLeaseId ? '#10b981' : undefined }}
               >
-                <option value="">-- Or Select from Active Leases --</option>
+                <option value="">-- Choose Commercial Lease Agreement --</option>
                 {leases.map(l => (
                   <option key={l.id} value={l.id}>
-                    {l.id} — {l.customerName} ({l.vehicleRegistration}) [{l.dealType} - {l.rateDisplay}]
+                    📄 {l.id} — {l.customerName} ({l.vehicleRegistration}) [{l.dealType} • ₹{l.rateAmount || 1000}/day]
                   </option>
                 ))}
               </select>
             </div>
+
+            {selectedLeaseId && (
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                marginBottom: '14px',
+                fontSize: '12px',
+                color: '#166534',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div>
+                  <strong>✓ Active Commercial Lease Linked ({selectedLeaseId})</strong>
+                  <div style={{ color: '#15803d', fontSize: '11.5px', marginTop: '2px' }}>
+                    Lessee: {customerName} · Vehicle: {vehicleRegistration} ({vehicleModel}) · Agreed Rate: ₹{totalAmount}/day
+                  </div>
+                </div>
+                <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '10.5px' }}>
+                  LEASE ATTACHED
+                </span>
+              </div>
+            )}
 
             {/* Select Driver from Registry */}
             <div className="form-field-group">
@@ -389,6 +442,7 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
                   <input
                     type="number"
                     className="styled-input-text currency-field font-mono"
+                    style={{ paddingLeft: '38px' }}
                     value={totalAmount}
                     onChange={(e) => setTotalAmount(e.target.value)}
                     min="100"
@@ -404,6 +458,7 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
                   <input
                     type="number"
                     className="styled-input-text currency-field font-mono"
+                    style={{ paddingLeft: '38px' }}
                     value={additionalCharges}
                     onChange={(e) => setAdditionalCharges(e.target.value)}
                     min="0"
@@ -540,14 +595,14 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
             {/* Supply Line Items Table */}
             <table className="tax-invoice-items-table">
               <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Description of Commercial Supply</th>
-                  <th>HSN/SAC</th>
-                  <th>Base (₹)</th>
-                  <th>CGST (2.5%)</th>
-                  <th>SGST (2.5%)</th>
-                  <th style={{ textAlign: 'right' }}>Total (₹)</th>
+                <tr style={{ background: '#0f172a' }}>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>#</th>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>Description of Commercial Supply</th>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>HSN/SAC</th>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>Base (₹)</th>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>CGST (2.5%)</th>
+                  <th style={{ color: '#ffffff', background: '#0f172a' }}>SGST (2.5%)</th>
+                  <th style={{ textAlign: 'right', color: '#ffffff', background: '#0f172a' }}>Total (₹)</th>
                 </tr>
               </thead>
               <tbody>

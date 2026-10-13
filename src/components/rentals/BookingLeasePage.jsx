@@ -30,7 +30,8 @@ import {
   confirmLeaseDepositApi,
   activateLeaseApi,
   fetchDriversApi,
-  fetchFleetTowerApi
+  fetchFleetTowerApi,
+  fetchAssignmentsApi
 } from '../../services/api';
 
 export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
@@ -39,10 +40,17 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [summary, setSummary] = useState({});
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Tab View: 'active' | 'new' | 'revshare'
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('sikhar_lease_active_tab') || 'active';
+    } catch {
+      return 'active';
+    }
+  });
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,12 +137,29 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       setReferencePhone('+91 98101 88990');
     }
 
-    // Auto-fetch assigned vehicle details (Add Driver / Add Car / Vehicle Assignment)
+    // Auto-fetch assigned vehicle details (Vehicle Assignment Terminal / Driver Profile)
     let assignedReg = '';
     let matchedVehObj = null;
     let source = '';
 
-    if (drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned') {
+    // Priority 1: Check active vehicle assignments from the Vehicle Assignment terminal
+    const asgMatch = assignments.find(
+      (a) =>
+        (a.driverId && a.driverId === drv.id) ||
+        (a.driverName && a.driverName.toLowerCase() === drv.name?.toLowerCase())
+    );
+
+    if (asgMatch && asgMatch.assignedVehicle?.registration) {
+      assignedReg = asgMatch.assignedVehicle.registration;
+      matchedVehObj = {
+        registration: asgMatch.assignedVehicle.registration,
+        model: asgMatch.assignedVehicle.model || 'Commercial Vehicle',
+        type: asgMatch.assignedVehicle.type || 'CNG',
+        status: 'Assigned 1:1',
+        location: 'Assigned Terminal'
+      };
+      source = `Directly Paired in Vehicle Assignment (${asgMatch.id})`;
+    } else if (drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned') {
       assignedReg = drv.vehicle.registration;
       const foundInFleet = fleetList.find(
         (v) => v.registration?.toUpperCase() === assignedReg.toUpperCase()
@@ -147,7 +172,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
         location: drv.location || 'Gurgaon Hub',
         odometer: '18,400 km'
       };
-      source = 'Assigned via Driver Profile (1:1 Vehicle Mapping)';
+      source = 'Assigned via Vehicle Assignment Terminal';
     } else {
       // Check fleet for any vehicle assigned to this driver
       const fleetVeh = fleetList.find(
@@ -178,7 +203,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
 
     // Locked by default as requested
     setIsEditingDetails(false);
-  }, [vehicles]);
+  }, [vehicles, assignments]);
 
   const handleClearDriverSelection = () => {
     setSelectedDriverId('');
@@ -200,10 +225,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [leasesRes, driversRes, fleetRes] = await Promise.all([
+      const [leasesRes, driversRes, fleetRes, asgRes] = await Promise.all([
         fetchLeasesApi('all', 'all', ''),
         fetchDriversApi('all', 'all'),
-        fetchFleetTowerApi('all')
+        fetchFleetTowerApi('all'),
+        fetchAssignmentsApi()
       ]);
 
       if (leasesRes) {
@@ -216,6 +242,9 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       if (driversRes && driversRes.drivers) {
         setDrivers(driversRes.drivers);
       }
+      if (asgRes && asgRes.activeAssignments) {
+        setAssignments(asgRes.activeAssignments);
+      }
     } catch (err) {
       console.error('Failed to load rentals data:', err);
     } finally {
@@ -226,6 +255,50 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Handle prefill from Vehicle Assignment or other navigation
+  useEffect(() => {
+    try {
+      const prefillDriverId = localStorage.getItem('sikhar_lease_prefill_driver_id');
+      const prefillDriverName = localStorage.getItem('sikhar_lease_prefill_driver_name');
+      const prefillVehReg = localStorage.getItem('sikhar_lease_prefill_veh_reg');
+      const prefillVehModel = localStorage.getItem('sikhar_lease_prefill_veh_model');
+      const prefillVehType = localStorage.getItem('sikhar_lease_prefill_veh_type');
+
+      if (prefillDriverId && drivers.length > 0) {
+        setActiveTab('new');
+        const found = drivers.find(d => d.id === prefillDriverId || d.name.toLowerCase() === (prefillDriverName || '').toLowerCase());
+        if (found) {
+          handleSelectDriver(found, vehicles);
+        } else {
+          setCustomerName(prefillDriverName || '');
+          setDriverName(prefillDriverName || '');
+          setSelectedDriverId(prefillDriverId);
+        }
+
+        if (prefillVehReg) {
+          setSelectedVehicleReg(prefillVehReg);
+          setSelectedVehicleObj({
+            registration: prefillVehReg,
+            model: prefillVehModel || 'Commercial Vehicle',
+            type: prefillVehType || 'CNG'
+          });
+          setAssignedVehicleSource('Directly attached from Vehicle Assignment');
+        }
+
+        localStorage.removeItem('sikhar_lease_prefill_driver_id');
+        localStorage.removeItem('sikhar_lease_prefill_driver_name');
+        localStorage.removeItem('sikhar_lease_prefill_driver_phone');
+        localStorage.removeItem('sikhar_lease_prefill_veh_reg');
+        localStorage.removeItem('sikhar_lease_prefill_veh_model');
+        localStorage.removeItem('sikhar_lease_prefill_veh_type');
+        localStorage.removeItem('sikhar_lease_prefill_assignment_id');
+        localStorage.removeItem('sikhar_lease_active_tab');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [drivers, vehicles, handleSelectDriver]);
 
   // When switching to new lease wizard, ensure first driver is populated if none selected
   useEffect(() => {
@@ -262,6 +335,21 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     setSikharSharePercent(100 - dVal);
   };
 
+  // Confirm pending security deposit into escrow
+  const handleConfirmLeaseDeposit = async (leaseId, amount, ref) => {
+    try {
+      setLoading(true);
+      const res = await confirmLeaseDepositApi(leaseId, amount, ref);
+      showToast(`✅ ${res.message || 'Security deposit confirmed and locked in escrow!'}`);
+      await loadData();
+    } catch (err) {
+      console.error('Deposit confirmation error:', err);
+      alert(err.message || 'Failed to confirm deposit.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Complete and submit lease creation
   const handleActivateLease = async () => {
     if (!selectedVehicleReg) {
@@ -270,10 +358,6 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     }
     if (!isAgreementSigned) {
       alert('Agreement must be signed before activation.');
-      return;
-    }
-    if (!isDepositConfirmed) {
-      alert('Security deposit must be confirmed in escrow before activation.');
       return;
     }
 
@@ -295,6 +379,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
         rapidoDriverId,
         taxPercent: Number(taxPercent) || 5,
         securityDeposit: Number(securityDeposit) || 75000,
+        depositStatus: isDepositConfirmed ? 'Held in Escrow' : 'Pending',
+        depositPaid: isDepositConfirmed ? (Number(securityDeposit) || 75000) : 0,
+        depositPending: isDepositConfirmed ? 0 : (Number(securityDeposit) || 75000),
+        depositReceiptRef: isDepositConfirmed ? depositReceiptRef : '',
+        isDepositConfirmed,
         vehicleRegistration: selectedVehicleReg,
         vehicleModel: selectedVehicleObj ? selectedVehicleObj.model : 'Maruti WagonR Tour H3',
         vehicleType: selectedVehicleObj ? selectedVehicleObj.type : 'CNG',
@@ -304,7 +393,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       };
 
       const res = await createLeaseApi(payload);
-      showToast(`✅ ${res.message || 'Lease agreement activated successfully!'}`);
+      showToast(
+        isDepositConfirmed
+          ? `✅ Lease activated successfully with escrow deposit secured!`
+          : `✅ Lease activated! Security deposit of ₹${Number(securityDeposit).toLocaleString('en-IN')} recorded as Pending Dues.`
+      );
       setActiveTab('active');
       setWizardStep(1);
       setIsAgreementSigned(false);
@@ -664,11 +757,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                         <div className="sub-cell-text">GST {l.taxPercent || 5}% Applicable</div>
                       </td>
                       <td>
-                        <strong style={{ color: '#047857' }}>
+                        <strong style={{ color: l.depositStatus === 'Pending' ? '#d97706' : '#047857' }}>
                           ₹{Number(l.securityDeposit || 0).toLocaleString('en-IN')}
                         </strong>
-                        <div className="sub-cell-text" style={{ color: '#059669' }}>
-                          ✓ {l.depositStatus || 'Held in Escrow'}
+                        <div className="sub-cell-text" style={{ color: l.depositStatus === 'Pending' ? '#b45309' : '#059669', fontWeight: '600' }}>
+                          {l.depositStatus === 'Pending' ? '⏳ Pending Deposit Dues' : `✓ ${l.depositStatus || 'Held in Escrow'}`}
                         </div>
                       </td>
                       <td>
@@ -683,6 +776,20 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                       </td>
                       <td style={{ textAlign: 'right', paddingRight: '20px' }}>
                         <div className="table-actions-cluster">
+                          {l.depositStatus === 'Pending' && (
+                            <button
+                              className="btn-action-pill"
+                              style={{ background: '#fef3c7', borderColor: '#fde68a', color: '#b45309' }}
+                              onClick={() => {
+                                const ref = prompt(`Confirm escrow deposit of ₹${Number(l.securityDeposit || 75000).toLocaleString('en-IN')} for ${l.customerName}? Enter Bank UTR / Reference:`, `UTR-ESC-${Date.now().toString().slice(-6)}`);
+                                if (ref) handleConfirmLeaseDeposit(l.id, l.securityDeposit, ref);
+                              }}
+                              title="Collect / confirm pending security deposit in escrow"
+                            >
+                              <Shield size={12} />
+                              <span>Confirm Deposit</span>
+                            </button>
+                          )}
                           {l.status?.toLowerCase().includes('pending') && (
                             <button
                               className="btn-action-pill primary-wallet"
@@ -701,6 +808,20 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                           >
                             <Eye size={12} />
                             <span>View</span>
+                          </button>
+                          <button
+                            className="btn-action-pill"
+                            style={{ background: '#2563eb', borderColor: '#2563eb', color: '#fff', fontWeight: '600' }}
+                            onClick={() => {
+                              try {
+                                localStorage.setItem('sikhar_invoice_target_lease_id', l.id);
+                              } catch (e) {}
+                              if (onNavigate) onNavigate('generate-invoice');
+                            }}
+                            title="Generate a rental invoice for this lease"
+                          >
+                            <FileText size={12} />
+                            <span>+ Invoice</span>
                           </button>
                           <button
                             className="btn-action-pill primary-wallet"
@@ -772,6 +893,99 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
           {/* STEP 1: Customer Identity & KYC */}
           {wizardStep === 1 && (
             <div className="assignment-form-body">
+              {/* Fast Lane: Pre-paired Active Vehicle Assignments */}
+              {assignments && assignments.length > 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  marginBottom: '20px',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px' }}>⚡</span>
+                      <div>
+                        <strong style={{ color: '#065f46', fontSize: '14px', display: 'block' }}>
+                          Fast Lane: Take Pre-Assigned Pair Directly from Vehicle Assignments
+                        </strong>
+                        <span style={{ color: '#047857', fontSize: '12px' }}>
+                          Vehicle &amp; driver are already paired in the Vehicle Assignment terminal. Click to directly load both without manual selection.
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-text-action"
+                      style={{ color: '#059669', fontSize: '12px', fontWeight: '600' }}
+                      onClick={() => onNavigate && onNavigate('vehicle-assignments')}
+                    >
+                      Open Vehicle Assignment Page →
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {assignments.slice(0, 4).map((asg) => {
+                      const isCurrentlyLoaded = selectedDriverId === asg.driverId || customerName === asg.driverName;
+                      return (
+                        <div
+                          key={asg.id}
+                          style={{
+                            background: isCurrentlyLoaded ? '#dcfce7' : '#ffffff',
+                            border: `1.5px solid ${isCurrentlyLoaded ? '#10b981' : '#d1fae5'}`,
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isCurrentlyLoaded ? '0 0 0 2px rgba(16, 185, 129, 0.3)' : 'none'
+                          }}
+                          onClick={() => {
+                            const dMatch = drivers.find(d => d.id === asg.driverId || d.name?.toLowerCase() === asg.driverName?.toLowerCase());
+                            if (dMatch) {
+                              handleSelectDriver(dMatch, vehicles);
+                            } else {
+                              setCustomerName(asg.driverName || '');
+                              setDriverName(asg.driverName || '');
+                              setCustomerPhone(asg.driverPhone || '');
+                              setSelectedDriverId(asg.driverId);
+                              if (asg.assignedVehicle) {
+                                setSelectedVehicleReg(asg.assignedVehicle.registration);
+                                setSelectedVehicleObj(asg.assignedVehicle);
+                                setAssignedVehicleSource(`Directly paired in ${asg.id}`);
+                              }
+                            }
+                            showToast(`⚡ Loaded assignment pair: ${asg.driverName} ↔ ${asg.assignedVehicle?.registration}`);
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a' }}>
+                              👤 {asg.driverName}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#059669', fontWeight: '600' }}>
+                              🚗 {asg.assignedVehicle?.registration} ({asg.assignedVehicle?.model || 'Car'})
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            color: isCurrentlyLoaded ? '#047857' : '#2563eb',
+                            background: isCurrentlyLoaded ? '#bbf7d0' : '#eff6ff',
+                            padding: '3px 8px',
+                            borderRadius: '6px'
+                          }}>
+                            {isCurrentlyLoaded ? '✓ Loaded' : 'Take Lease ➔'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Driver Registry Search & Typeahead Picker */}
               <div className="driver-picker-container">
                 <div className="driver-picker-header">
@@ -1677,7 +1891,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                       <div>
                         <strong>Escrow Status:</strong>
                         <span className={`status-pill ${isDepositConfirmed ? 'good' : 'warn'}`} style={{ marginLeft: '6px' }}>
-                          {isDepositConfirmed ? '✓ Held in Escrow' : 'Payment Verification Pending'}
+                          {isDepositConfirmed ? '✓ Held in Escrow' : '⏳ Pending (Will Record as Pending Deposit Dues)'}
                         </span>
                       </div>
                       <button
@@ -1690,10 +1904,12 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                     </div>
                   </div>
 
-                  <div className="callout-notice-info">
-                    <Shield size={16} color="#047857" />
-                    <span>
-                      Institutional rule: A button click cannot bypass agreement signing or deposit verification. Both gate checks must be cleared before dispatch.
+                  <div className="callout-notice-info" style={{ background: isDepositConfirmed ? '#f0fdf4' : '#fffbeb', borderColor: isDepositConfirmed ? '#bbf7d0' : '#fde68a' }}>
+                    <Shield size={16} color={isDepositConfirmed ? "#047857" : "#b45309"} />
+                    <span style={{ color: isDepositConfirmed ? "#166534" : "#92400e" }}>
+                      {isDepositConfirmed
+                        ? '✓ Security deposit confirmed. Funds will be locked in institutional escrow upon activation.'
+                        : 'ℹ Optional Deposit Gate: If deposit is not confirmed now, you can still proceed with activation — the ₹' + Number(securityDeposit).toLocaleString('en-IN') + ' deposit will be tracked as Pending Deposit Dues against the driver.'}
                     </span>
                   </div>
                 </div>
@@ -1710,7 +1926,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                 <button
                   type="button"
                   className="btn primary"
-                  disabled={!isAgreementSigned || !isDepositConfirmed}
+                  disabled={!isAgreementSigned}
                   onClick={() => setWizardStep(5)}
                 >
                   <span>Proceed to Final Dispatch &amp; Activation →</span>
@@ -1748,9 +1964,13 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   </div>
 
                   <div className="summary-tile">
-                    <span className="tile-label">ESCROW DEPOSIT</span>
-                    <strong className="tile-val text-green">₹{Number(securityDeposit).toLocaleString('en-IN')}</strong>
-                    <span className="tile-sub">Verified &amp; Secured</span>
+                    <span className="tile-label">SECURITY DEPOSIT</span>
+                    <strong className="tile-val" style={{ color: isDepositConfirmed ? '#16a34a' : '#d97706' }}>
+                      ₹{Number(securityDeposit).toLocaleString('en-IN')}
+                    </strong>
+                    <span className="tile-sub" style={{ color: isDepositConfirmed ? '#059669' : '#b45309' }}>
+                      {isDepositConfirmed ? '✓ Verified & Held in Escrow' : '⏳ Pending Deposit Dues'}
+                    </span>
                   </div>
                 </div>
 
@@ -1759,7 +1979,15 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   <div className="check-line good">✓ Commercial terms and recurring billing schedule generated</div>
                   <div className="check-line good">✓ Vehicle asset {selectedVehicleReg} reserved from Central Yard</div>
                   <div className="check-line good">✓ Formal lease agreement digitally executed</div>
-                  <div className="check-line good">✓ Security deposit of ₹{Number(securityDeposit).toLocaleString('en-IN')} held in institutional escrow</div>
+                  {isDepositConfirmed ? (
+                    <div className="check-line good">
+                      ✓ Security deposit of ₹{Number(securityDeposit).toLocaleString('en-IN')} held in institutional escrow
+                    </div>
+                  ) : (
+                    <div className="check-line warn" style={{ color: '#b45309', background: '#fffbeb', padding: '7px 12px', borderRadius: '6px' }}>
+                      ⏳ Security deposit of ₹{Number(securityDeposit).toLocaleString('en-IN')} pending — will be tracked as Pending Deposit Dues
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1900,10 +2128,29 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                     <strong>{inspectLease.dealType} ({inspectLease.rateDisplay})</strong>
                   </div>
                   <div className="summary-row">
-                    <span>Security Deposit in Escrow:</span>
-                    <strong style={{ color: '#047857' }}>
-                      ₹{Number(inspectLease.securityDeposit || 0).toLocaleString('en-IN')} (Held in Escrow)
-                    </strong>
+                    <span>Security Deposit:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <strong style={{ color: inspectLease.depositStatus === 'Pending' ? '#d97706' : '#047857' }}>
+                        ₹{Number(inspectLease.securityDeposit || 0).toLocaleString('en-IN')}{' '}
+                        {inspectLease.depositStatus === 'Pending' ? '(⏳ Pending Deposit Dues)' : '(✓ Held in Escrow)'}
+                      </strong>
+                      {inspectLease.depositStatus === 'Pending' && (
+                        <button
+                          type="button"
+                          className="btn primary small"
+                          style={{ padding: '3px 8px', fontSize: '11px', background: '#059669', borderColor: '#059669' }}
+                          onClick={() => {
+                            const ref = prompt(`Confirm escrow deposit of ₹${Number(inspectLease.securityDeposit || 75000).toLocaleString('en-IN')}? Enter Bank UTR:`, `UTR-ESC-${Date.now().toString().slice(-6)}`);
+                            if (ref) {
+                              handleConfirmLeaseDeposit(inspectLease.id, inspectLease.securityDeposit, ref);
+                              setInspectLease(null);
+                            }
+                          }}
+                        >
+                          Confirm Now
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="summary-row">
                     <span>Agreement Version:</span>

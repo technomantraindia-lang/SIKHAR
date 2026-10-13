@@ -14,6 +14,7 @@ import {
   Shield,
   ChevronRight,
   Info,
+  FileText,
   X
 } from '../common/Icons';
 import {
@@ -25,7 +26,7 @@ import {
   extendAssignmentApi
 } from '../../services/api';
 
-export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavigateToAddVehicle, onBackToDashboard }) {
+export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavigateToAddVehicle, onBackToDashboard, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -1061,6 +1062,31 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                           <span>Reassign Driver</span>
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        className="btn secondary small"
+                        style={{ background: '#f0f9ff', borderColor: '#bae6fd', color: '#0369a1', fontWeight: '750' }}
+                        onClick={() => {
+                          try {
+                            localStorage.setItem('sikhar_lease_prefill_driver_id', item.driverId);
+                            localStorage.setItem('sikhar_lease_prefill_driver_name', item.driverName);
+                            localStorage.setItem('sikhar_lease_prefill_driver_phone', item.driverPhone);
+                            localStorage.setItem('sikhar_lease_prefill_veh_reg', item.assignedVehicle?.registration || '');
+                            localStorage.setItem('sikhar_lease_prefill_veh_model', item.assignedVehicle?.model || '');
+                            localStorage.setItem('sikhar_lease_prefill_veh_type', item.assignedVehicle?.type || 'CNG');
+                            localStorage.setItem('sikhar_lease_prefill_assignment_id', item.id);
+                            localStorage.setItem('sikhar_lease_active_tab', 'new');
+                          } catch (e) {
+                            console.error(e);
+                          }
+                          if (onNavigate) onNavigate('bookings');
+                        }}
+                        title="Create commercial lease agreement for this assigned driver and vehicle"
+                      >
+                        <FileText size={14} color="#0284c7" />
+                        <span>Create Lease →</span>
+                      </button>
                     </div>
                   </div>
                 );
