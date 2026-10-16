@@ -16,7 +16,8 @@ import {
   LogOut,
   ArrowLeftRight,
   Plus,
-  Wallet
+  Wallet,
+  AlertTriangle
 } from '../common/Icons';
 
 // Grouped Menu Sections matching User Screenshot & Wireframe v8
@@ -37,6 +38,7 @@ const MENU_SECTIONS = [
           { id: 'vehicle-assignments', label: 'Vehicle Assignment', icon: ArrowLeftRight }
         ]
       },
+      { id: 'escalation-master', label: 'Escalation Master', icon: AlertTriangle, hasSubmenu: false },
       { id: 'trips', label: 'Trips', icon: Activity, hasSubmenu: false },
       { id: 'maintenance', label: 'Maintenance', icon: Wrench, hasSubmenu: false },
       { id: 'fuel', label: 'Fuel', icon: Fuel, hasSubmenu: false },

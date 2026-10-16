@@ -34,10 +34,94 @@ function writeJson(filePath, data) {
   }
 }
 
+// Auto-check and expire any temporary assignments whose time is over
+function syncAndExpireAssignments() {
+  const asgData = readJson(ASSIGNMENTS_FILE, { activeAssignments: [], history: [] });
+  const driversData = readJson(DRIVERS_FILE, { summary: {}, drivers: [] });
+  const fleetData = readJson(FLEET_FILE, { summary: {}, vehicles: [] });
+  const now = new Date();
+  let changed = false;
+
+  const remainingActive = [];
+  for (const asg of asgData.activeAssignments || []) {
+    const isExpired = asg.assignmentType === 'temporary' && asg.endDate && new Date(asg.endDate) <= now;
+    if (isExpired) {
+      changed = true;
+      asg.status = 'Completed';
+      asg.completedAt = now.toISOString();
+      asg.completionReason = `Time expired: Scheduled ${asg.durationDays || 1}-day temporary allocation concluded automatically.`;
+      if (!asgData.history) asgData.history = [];
+      asgData.history.unshift(asg);
+
+      // 1. Restore driver's original vehicle
+      const drv = driversData.drivers.find(d => d.id === asg.driverId);
+      if (drv) {
+        delete drv.temporaryAssignment;
+        if (asg.originalVehicle && asg.originalVehicle.registration && asg.originalVehicle.registration !== 'Unassigned') {
+          drv.vehicle = {
+            registration: asg.originalVehicle.registration,
+            model: asg.originalVehicle.model,
+            type: asg.originalVehicle.type,
+            status: 'Assigned 1:1'
+          };
+          drv.status = 'On Duty';
+        } else {
+          drv.vehicle = null;
+          drv.status = 'Ready';
+        }
+      }
+
+      // 2. Free temporary vehicle back to Ready to Deploy
+      if (asg.assignedVehicle?.registration) {
+        const tempPlate = asg.assignedVehicle.registration.trim().toUpperCase().replace(/\s+/g, '');
+        const tempVeh = fleetData.vehicles.find(v => 
+          v.registration?.toUpperCase().replace(/\s+/g, '') === tempPlate || 
+          v.id?.toUpperCase().replace(/\s+/g, '') === tempPlate
+        );
+        if (tempVeh) {
+          tempVeh.status = 'Ready to Deploy';
+          tempVeh.driver = 'Unassigned';
+          tempVeh.driverPhone = '—';
+          tempVeh.driverStatus = 'Available in Yard (Temporary Allocation Completed)';
+          tempVeh.allocatedTo = null;
+          tempVeh.allocatedUntil = null;
+          tempVeh.nextAction = 'Put on Road';
+          tempVeh.actionType = 'PUT_ON_ROAD';
+        }
+      }
+
+      // 3. Restore original vehicle in fleet.json
+      if (asg.originalVehicle?.registration) {
+        const origPlate = asg.originalVehicle.registration.trim().toUpperCase().replace(/\s+/g, '');
+        const origVeh = fleetData.vehicles.find(v => 
+          v.registration?.toUpperCase().replace(/\s+/g, '') === origPlate || 
+          v.id?.toUpperCase().replace(/\s+/g, '') === origPlate
+        );
+        if (origVeh) {
+          origVeh.status = 'Allocated';
+          origVeh.driver = drv ? drv.name : asg.driverName;
+          origVeh.driverStatus = 'On Duty (Restored from Temporary Duty)';
+        }
+      }
+    } else {
+      remainingActive.push(asg);
+    }
+  }
+
+  if (changed) {
+    asgData.activeAssignments = remainingActive;
+    writeJson(ASSIGNMENTS_FILE, asgData);
+    writeJson(DRIVERS_FILE, driversData);
+    writeJson(FLEET_FILE, fleetData);
+  }
+
+  return asgData;
+}
+
 // GET /api/assignments - Fetch all assignments & history
 router.get('/', (req, res) => {
   try {
-    const data = readJson(ASSIGNMENTS_FILE, { activeAssignments: [], history: [] });
+    const data = syncAndExpireAssignments();
     return res.json({
       success: true,
       activeAssignments: data.activeAssignments || [],
@@ -52,6 +136,8 @@ router.get('/', (req, res) => {
 // POST /api/assignments - Assign/Reassign vehicle to driver (Temporary or Permanent)
 router.post('/', (req, res) => {
   try {
+    syncAndExpireAssignments();
+
     const {
       driverId,
       newVehicleId,
@@ -92,14 +178,44 @@ router.post('/', (req, res) => {
     }
     const newVehicle = fleetData.vehicles[newVehIndex];
 
-    // Check if new vehicle is already active with another driver (warning/swap)
+    // Enforce business rule: Vehicles in Maintenance / At Workshop CANNOT be assigned
+    const newVehStatus = (newVehicle.status || '').toLowerCase();
+    if (newVehStatus.includes('workshop') || newVehStatus.includes('maintenance')) {
+      return res.status(400).json({
+        success: false,
+        message: `Vehicle ${newVehicle.registration} is currently In Maintenance / At Workshop (${newVehicle.location || 'Workshop'}). It cannot be assigned to any driver until maintenance is completed, QC is approved, and vehicle is released to 'Ready to Deploy'.`
+      });
+    }
+
+    // STRICT BUSINESS RULE: An allocated car CANNOT be allocated to anyone else until the allocation time is over
+    const isAlreadyAllocated = (newVehicle.status === 'Allocated' || newVehicle.status === 'On Road') &&
+      newVehicle.driver &&
+      newVehicle.driver !== 'Unassigned' &&
+      newVehicle.driver.toLowerCase() !== driver.name.toLowerCase();
+
+    if (isAlreadyAllocated) {
+      return res.status(400).json({
+        success: false,
+        message: `⛔ Allocation Blocked: Vehicle ${newVehicle.registration} is currently ALLOCATED to ${newVehicle.driver}. Under Sikhar allocation policy, an allocated vehicle cannot be allocated to another driver until the allocation time is over or released.`
+      });
+    }
+
+    // STRICT BUSINESS RULE: If driver already has an active vehicle, admin cannot assign another car unless it's a Temporary Reallocation (e.g. for 1 or 2 days)
+    const hasCurrentCar = driver.vehicle && driver.vehicle.registration && driver.vehicle.registration !== 'Unassigned';
+    if (hasCurrentCar && assignmentType === 'permanent') {
+      return res.status(400).json({
+        success: false,
+        message: `⛔ Driver ${driver.name} is already operating vehicle ${driver.vehicle.model || driver.vehicle.registration}. You cannot assign another permanent car while an assignment is active. You can choose 'Temporary Reallocation' to temporarily give a replacement car (e.g. for 1 or 2 days), or end/return the current vehicle first.`
+      });
+    }
+
     const prevVehicleOfDriver = driver.vehicle ? { ...driver.vehicle } : null;
 
     // Calculate dates
     const startObj = new Date(startDate);
     let calculatedEndDate = endDate;
     if (!calculatedEndDate) {
-      const endObj = new Date(startObj.getTime() + (Number(durationDays) || 2) * 24 * 60 * 60 * 1000);
+      const endObj = new Date(startObj.getTime() + (Number(durationDays) || 1) * 24 * 60 * 60 * 1000);
       calculatedEndDate = endObj.toISOString();
     }
 
@@ -118,7 +234,7 @@ router.post('/', (req, res) => {
         startOdometer: startOdometer || newVehicle.odometer || '0 km'
       },
       assignmentType,
-      durationDays: Number(durationDays) || 2,
+      durationDays: Number(durationDays) || 1,
       startDate: startObj.toISOString(),
       endDate: calculatedEndDate,
       reason,
@@ -164,8 +280,11 @@ router.post('/', (req, res) => {
     newVehicle.driverStatus = assignmentType === 'temporary' 
       ? `On Duty (Temporary Swap · ${durationDays}d)`
       : 'On Duty';
-    newVehicle.status = 'On Road';
-    newVehicle.since = 'Assigned just now';
+    newVehicle.status = 'Allocated';
+    newVehicle.allocatedTo = driver.name;
+    newVehicle.allocatedUntil = calculatedEndDate;
+    newVehicle.allocationType = assignmentType;
+    newVehicle.since = 'Allocated just now';
     newVehicle.duration = `${durationDays}d Allocation`;
     newVehicle.nextAction = 'Operating normally';
     newVehicle.actionType = 'NORMAL';

@@ -7,24 +7,24 @@
     "metrics": {
       "totalFleet": {
         "label": "TOTAL FLEET",
-        "value": 11,
+        "value": 14,
         "subline": "100% of fleet"
       },
       "onRoad": {
         "label": "ON ROAD",
-        "value": 3,
+        "value": 6,
         "subline": "83.6% of fleet",
         "status": "good"
       },
       "atWorkshop": {
         "label": "AT WORKSHOP",
-        "value": 2,
+        "value": 1,
         "subline": "7.5% of fleet",
         "status": "warn"
       },
       "readyToDeploy": {
         "label": "READY TO DEPLOY",
-        "value": 3,
+        "value": 5,
         "subline": "4.5% of fleet",
         "status": "blue"
       },
@@ -65,21 +65,64 @@
   },
   "vehicles": [
     {
-      "id": "DL01EV9988",
-      "registration": "DL01EV9988",
-      "model": "TATA TIGOR EV XPRESS T",
+      "id": "GJ06SD1234",
+      "registration": "GJ06SD1234",
+      "model": "TATA NEXON EV PRIME",
       "type": "EV",
-      "connectorType": "CCS2 (Combined Charging System)",
-      "driver": "Raj Kumar",
+      "connectorType": "Type 2 AC Mennekes",
+      "driver": "Unassigned",
       "driverPhone": "—",
       "driverStatus": "Available in Yard",
-      "status": "On Road",
+      "status": "Ready to Deploy",
       "location": "Sikhar Hub Central Operations Yard",
       "hub": "Sikhar Hub Central Operations Yard",
       "since": "Just registered",
       "duration": "0d 0h",
       "nextAction": "Put on Road",
       "actionType": "PUT_ON_ROAD",
+      "odometer": "120 km",
+      "battery": "100%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Nov 2026",
+      "permit": "Valid · 2027-03-31",
+      "insurance": "Valid · 2027-02-28",
+      "fitness": "Valid · 2028-01-15",
+      "puc": "Valid · 2027-06-30",
+      "chassis": "SDFDSFDSFDSGFDDFDSF",
+      "lender": "Signo Financing",
+      "monthlyEmi": "₹21000",
+      "challansCount": 0,
+      "challansAmount": "₹0",
+      "dailyRentRate": "₹1150",
+      "notes": "Brandfsdbfdbfbdf new asset inducted into Sikhar commercial fleet.",
+      "assignmentHistory": [
+        {
+          "driver": "In Yard Inventory",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "10 Oct 2026",
+          "toDate": "Present",
+          "handoverKm": "120 km",
+          "status": "Active"
+        }
+      ]
+    },
+    {
+      "id": "DL01EV9988",
+      "registration": "DL01EV9988",
+      "model": "TATA TIGOR EV XPRESS T",
+      "type": "EV",
+      "connectorType": "CCS2 (Combined Charging System)",
+      "driver": "Raj Kumar",
+      "driverPhone": "+91 98101 23456",
+      "driverStatus": "On Duty",
+      "status": "On Road",
+      "location": "Sikhar Hub Central Yard",
+      "hub": "Sikhar Hub Central Operations Yard",
+      "since": "Restored today",
+      "duration": "0d 0h",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
       "odometer": "150 km",
       "battery": "100%",
       "health": "Healthy",
@@ -95,7 +138,7 @@
       "challansCount": 0,
       "challansAmount": "₹0",
       "dailyRentRate": "₹1,150",
-      "notes": "Vehicle newly inducted into Sikhar fleet asset registry.",
+      "notes": "Vehicle newly inducted into Sikhar fleet asset registry. [Duty swap: Raj Kumar temporarily allocated DL52GD6605 for 1 days. WagonR reserved in yard.] [Driver Raj Kumar restored to primary vehicle after temporary assignment completed]",
       "assignmentHistory": [
         {
           "driver": "In Yard Inventory",
@@ -114,14 +157,14 @@
       "type": "EV",
       "driver": "Unassigned",
       "driverPhone": "—",
-      "driverStatus": "Available in Yard (Temporary Reserve)",
+      "driverStatus": "Available in Yard",
       "status": "Ready to Deploy",
-      "location": "Sikhar Hub Central Yard",
-      "since": "18 Aug, 10:32 AM",
-      "duration": "1d 23h",
+      "location": "Sikhar Hub Central Operations Yard",
+      "since": "Returned just now",
+      "duration": "0d 0h",
       "nextAction": "Put on Road",
       "actionType": "PUT_ON_ROAD",
-      "odometer": "42,860 km",
+      "odometer": "42,900 km",
       "battery": "72%",
       "health": "Attention Required",
       "healthStatus": "warn",
@@ -133,7 +176,21 @@
       "chassis": "MAT612034NJB09812",
       "lender": "Signo Financing",
       "monthlyEmi": "₹21,000",
-      "notes": "Vehicle undergoing 40k periodic service and brake pad check. [Duty swap: chetan temporarily allocated HR55BD6737 for 0 days. WagonR reserved in yard.]"
+      "notes": "Vehicle undergoing 40k periodic service and brake pad check. [Duty swap: chetan temporarily allocated HR55BD6737 for 0 days. WagonR reserved in yard.] [Returned from temporary assignment with Raj Kumar on 15/10/2026]",
+      "allocatedTo": "Raj Kumar",
+      "allocatedUntil": "2026-10-16T10:20:10.868Z",
+      "allocationType": "temporary",
+      "assignmentHistory": [
+        {
+          "driver": "Raj Kumar",
+          "shiftType": "Temporary Duty (1 Days)",
+          "fromDate": "15/10/2026",
+          "toDate": "Scheduled 1d",
+          "handoverKm": "42,860 km",
+          "status": "Active",
+          "reason": "Temporary replacement car for 1 day"
+        }
+      ]
     },
     {
       "id": "HR38AK1234",

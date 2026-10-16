@@ -1,13 +1,38 @@
 {
   "summary": {
-    "totalInvoices": 12,
-    "totalBilled": 12000,
-    "totalCollected": 5500,
+    "totalInvoices": 13,
+    "totalBilled": 13000,
+    "totalCollected": 6500,
     "totalPending": 6500,
     "overdueCount": 6,
-    "paidCount": 6
+    "paidCount": 7
   },
   "invoices": [
+    {
+      "id": "INV-26-349220",
+      "invoiceNumber": "INV-26-349220",
+      "customerName": "Sumit",
+      "customerId": "CUST-26-49188",
+      "driverId": "drv-9188",
+      "driverName": "Sumit",
+      "driverPhone": "9811877654",
+      "vehicleRegistration": "HR26WG4411",
+      "vehicleModel": "MARUTI SUZUKI WAGONR H3 CNG",
+      "invoiceDate": "2026-10-16",
+      "dueDate": "2026-10-16",
+      "period": "16 Oct 2026",
+      "baseAmount": 952.38,
+      "gstPercent": 5,
+      "gstAmount": 47.62,
+      "totalAmount": 1000,
+      "amountPaid": 1000,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "Driver Spendable Wallet",
+      "paidDate": "2026-10-16T10:42:48.626Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "WTX-INV-8625"
+    },
     {
       "id": "INV-26-673787",
       "invoiceNumber": "INV-26-673787",

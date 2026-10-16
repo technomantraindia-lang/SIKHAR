@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalDrivers": 13,
+    "totalDrivers": 14,
     "activeContracts": 57,
     "onDuty": 9,
     "onLeave": 1,
@@ -55,6 +55,90 @@
   ],
   "drivers": [
     {
+      "id": "drv-14",
+      "name": "vivek",
+      "phone": "7418526852",
+      "altPhone": "",
+      "city": "Gurgaon Operations Hub",
+      "photo": "",
+      "mobileVerified": true,
+      "status": "Ready",
+      "rating": 5,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "shiftType": "24-Hour Dedicated",
+      "coDriver": null,
+      "location": "Gurgaon Operations Hub",
+      "vehicle": null,
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 1000,
+        "activeHolds": 0,
+        "spendableBalance": 1000,
+        "outstandingDues": 0,
+        "status": "Healthy",
+        "autoTopup": false,
+        "lastTopup": "15 Oct 2026, 03:26 PM · ₹500",
+        "recentTransactions": [
+          {
+            "id": "WTX-6347",
+            "date": "15 Oct 2026, 03:26 PM",
+            "type": "Wallet Top-up",
+            "amount": "+₹500",
+            "method": "UPI (UPI-58173138)",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-1394",
+            "date": "15 Oct 2026, 10:00 AM",
+            "type": "Initial Deposit",
+            "amount": "+₹500.00",
+            "method": "Initial Credit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "aadhaar": "XXXX-XXXX-9821",
+        "aadhaarVerified": true,
+        "panCard": "ABCV1234R",
+        "panVerified": true,
+        "drivingLicence": "DFGH76214+675",
+        "dlExpiry": "2030-11-14",
+        "dlCategory": "Commercial LMV",
+        "dlStatus": "Valid",
+        "policeVerification": "In Verification",
+        "emergencyContact": "7986451320 (Brother)",
+        "reference": {
+          "name": "Suresh Verma",
+          "phone": "98101 88990",
+          "relation": "Guarantor",
+          "address": "Sector 14, Gurgaon"
+        },
+        "address": "25 Mahadevnagar 2"
+      },
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "frequency": "Daily Debit (00:00 hrs)",
+        "taxRule": "GST 5% (Commercial Passenger Transport)",
+        "startDate": "15 Oct 2026",
+        "contractMonths": 12,
+        "agreementVersion": "v1.0 (Master Commercial Lease)",
+        "agreementSigned": true,
+        "depositReceipt": "UTR-89127632",
+        "depositStatus": "Held in Escrow",
+        "handoverOdometer": "45,210 km",
+        "handoverStatus": "Completed & QC Inspected"
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    },
+    {
       "id": "drv-13",
       "name": "Sumit",
       "phone": "9811877654",
@@ -77,13 +161,29 @@
       "todayGross": "₹1,850",
       "todayTrips": 9,
       "wallet": {
-        "postedBalance": 1500,
+        "postedBalance": 1000,
         "activeHolds": 0,
-        "spendableBalance": 1500,
+        "spendableBalance": 1000,
         "status": "Healthy",
         "autoTopup": true,
-        "lastTopup": "11 Oct 2026 · ₹1,500 (UPI)",
+        "lastTopup": "13 Oct 2026, 06:35 PM · ₹500",
         "recentTransactions": [
+          {
+            "id": "WTX-INV-8625",
+            "date": "16 Oct 2026, 04:12 PM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹1,000.00",
+            "method": "Invoice Paid: INV-26-349220 [HR26WG4411]",
+            "status": "Settled"
+          },
+          {
+            "id": "WTX-3860",
+            "date": "13 Oct 2026, 06:35 PM",
+            "type": "Wallet Top-up",
+            "amount": "+₹500",
+            "method": "UPI (UPI-96700926)",
+            "status": "Success"
+          },
           {
             "id": "WTX-INV-0194",
             "date": "12 Oct 2026, 10:38 AM",
@@ -906,13 +1006,21 @@
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 500,
+        "postedBalance": 501,
         "activeHolds": 0,
-        "spendableBalance": 500,
+        "spendableBalance": 501,
         "status": "Healthy",
         "autoTopup": false,
-        "lastTopup": "17 Aug 2026 · ₹500",
+        "lastTopup": "14 Oct 2026, 04:32 PM · ₹1",
         "recentTransactions": [
+          {
+            "id": "WTX-6169",
+            "date": "14 Oct 2026, 04:32 PM",
+            "type": "Wallet Top-up",
+            "amount": "+₹1",
+            "method": "UPI (UPI-75720931)",
+            "status": "Success"
+          },
           {
             "id": "WTX-1001",
             "date": "17 Aug 2026, 10:00 AM",

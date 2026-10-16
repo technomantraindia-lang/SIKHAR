@@ -11,6 +11,9 @@ import fleetRoutes from './server/routes/fleetRoutes.js';
 import driverRoutes from './server/routes/driverRoutes.js';
 import assignmentRoutes from './server/routes/assignmentRoutes.js';
 import rentalRoutes from './server/routes/rentalRoutes.js';
+import escalationRoutes from './server/routes/escalationRoutes.js';
+import tripRoutes from './server/routes/tripRoutes.js';
+import maintenanceRoutes from './server/routes/maintenanceRoutes.js';
 import { testDbConnection, getDbStatus } from './server/config/db.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
@@ -28,7 +31,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 
 // Enable Cross-Origin Resource Sharing and JSON Body Parsing
 app.use(cors());
@@ -64,6 +67,9 @@ app.use('/api/fleet', fleetRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/rentals', rentalRoutes);
+app.use('/api/escalations', escalationRoutes);
+app.use('/api/trips', tripRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Serve Frontend Vite Static Build (dist)
 const distPath = path.join(__dirname, 'dist');

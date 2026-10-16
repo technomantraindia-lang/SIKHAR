@@ -31,6 +31,37 @@
   ],
   "history": [
     {
+      "id": "ASG-2026-8648",
+      "driverId": "drv-01",
+      "driverName": "Raj Kumar",
+      "driverPhone": "+91 98101 23456",
+      "originalVehicle": {
+        "registration": "DL01EV9988",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "status": "Assigned 1:1"
+      },
+      "assignedVehicle": {
+        "registration": "DL52GD6605",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "startOdometer": "42,860 km",
+        "endOdometer": "42,900 km"
+      },
+      "assignmentType": "temporary",
+      "durationDays": 1,
+      "startDate": "2026-10-15T10:20:10.868Z",
+      "endDate": "2026-10-16T10:20:10.868Z",
+      "reason": "Temporary replacement car for 1 day",
+      "notes": "",
+      "oldVehicleAction": "yard_reserve",
+      "status": "Completed",
+      "assignedBy": "Fleet Administrator",
+      "createdAt": "2026-10-15T10:20:10.875Z",
+      "returnedAt": "2026-10-15T10:20:24.880Z",
+      "returnNotes": "Test duty finished"
+    },
+    {
       "id": "ASG-2026-9195",
       "driverId": "drv-08",
       "driverName": "Sumit",

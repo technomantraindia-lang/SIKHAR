@@ -31,7 +31,8 @@ router.get('/', (req, res) => {
       const normalizedStatus = status.toLowerCase();
       filteredVehicles = filteredVehicles.filter(v => 
         v.status.toLowerCase().includes(normalizedStatus) ||
-        (normalizedStatus === 'onroad' && v.status === 'On Road') ||
+        (normalizedStatus === 'onroad' && (v.status === 'On Road' || v.status === 'Allocated')) ||
+        (normalizedStatus === 'allocated' && (v.status === 'Allocated' || v.allocatedUntil)) ||
         (normalizedStatus === 'workshop' && v.status === 'At Workshop') ||
         (normalizedStatus === 'ready' && v.status === 'Ready to Deploy') ||
         (normalizedStatus === 'breakdown' && v.status === 'Breakdown') ||

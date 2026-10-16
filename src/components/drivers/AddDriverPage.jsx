@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   User,
@@ -9,11 +9,13 @@ import {
   FileText,
   AlertTriangle,
   MapPin,
-  Clock
+  Clock,
+  Plus,
+  X
 } from '../common/Icons';
-import { onboardDriverApi } from '../../services/api';
+import { onboardDriverApi, fetchFleetTowerApi, createVehicleApi } from '../../services/api';
 
-// Available fleet assets that can be assigned immediately
+// Fallback spare assets if network is offline
 const FLEET_AVAILABLE_VEHICLES = [
   { reg: 'DL52GD6605', model: 'WagonR H3 CNG', type: 'CNG', image: '/images/wagonr.jpg', status: 'Available', hub: 'Gurgaon Hub' },
   { reg: 'DL1Z08899', model: 'Tigor EV Fleet', type: 'EV', image: '/images/tigor.jpg', status: 'Available', hub: 'Noida Hub' },
@@ -78,9 +80,81 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     initialBalance: 0
   });
 
-  const selectedVehicleObj = FLEET_AVAILABLE_VEHICLES.find(
-    (v) => v.reg === formData.selectedVehicleReg
+  const [fleetVehicles, setFleetVehicles] = useState(FLEET_AVAILABLE_VEHICLES);
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [newVehReg, setNewVehReg] = useState('');
+  const [newVehModel, setNewVehModel] = useState('');
+  const [newVehType, setNewVehType] = useState('CNG');
+  const [newVehOdo, setNewVehOdo] = useState('100');
+  const [isSubmittingVeh, setIsSubmittingVeh] = useState(false);
+
+  useEffect(() => {
+    async function loadFleet() {
+      try {
+        const res = await fetchFleetTowerApi('all');
+        if (res && res.vehicles && res.vehicles.length > 0) {
+          const mapped = res.vehicles.map(v => ({
+            reg: v.registration,
+            model: v.model,
+            type: v.type || 'CNG',
+            status: v.status,
+            driver: v.driver,
+            hub: v.hub || v.location || 'Sikhar Central Yard',
+            image: v.type === 'EV' ? '/images/tigor.jpg' : '/images/wagonr.jpg'
+          }));
+          setFleetVehicles(mapped);
+        }
+      } catch (e) {
+        console.warn('Could not load dynamic fleet in AddDriverPage, using fallback spares:', e);
+      }
+    }
+    loadFleet();
+  }, []);
+
+  const selectedVehicleObj = fleetVehicles.find(
+    (v) => (v.reg || v.registration) === formData.selectedVehicleReg
   );
+
+  const handleCreateNewVehicle = async (e) => {
+    e.preventDefault();
+    if (!newVehReg.trim()) {
+      alert('Please enter a vehicle registration plate number.');
+      return;
+    }
+    try {
+      setIsSubmittingVeh(true);
+      const cleanPlate = newVehReg.trim().toUpperCase().replace(/\s+/g, '');
+      const payload = {
+        registration: cleanPlate,
+        model: newVehModel.trim() || 'Commercial Fleet Vehicle',
+        type: newVehType,
+        odometer: newVehOdo || '100',
+        status: 'Ready to Deploy',
+        hub: 'Sikhar Central Yard'
+      };
+      await createVehicleApi(payload);
+      const newVehItem = {
+        reg: cleanPlate,
+        model: payload.model,
+        type: payload.type,
+        status: 'Ready to Deploy',
+        driver: 'Unassigned',
+        hub: 'Sikhar Central Yard',
+        image: payload.type === 'EV' ? '/images/tigor.jpg' : '/images/wagonr.jpg'
+      };
+      setFleetVehicles(prev => [newVehItem, ...prev]);
+      updateField('selectedVehicleReg', cleanPlate);
+      updateField('handoverOdometer', payload.odometer);
+      setShowAddVehicleModal(false);
+      setNewVehReg('');
+      setNewVehModel('');
+      alert(`✅ Vehicle ${cleanPlate} (${payload.model}) successfully added to fleet and selected!`);
+    } catch (err) {
+      alert(err.message || 'Failed to add vehicle.');
+    } finally {
+      setIsSubmittingVeh(false);
+    }
+  };
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -163,7 +237,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         depositStatus: 'Held in Escrow',
         // PDF Step 06 Vehicle & Handover
         vehicleRegistration: formData.selectedVehicleReg || '',
-        vehicleModel: selectedVehicleObj ? selectedVehicleObj.model : 'WagonR H3 CNG',
+        vehicleModel: selectedVehicleObj ? (selectedVehicleObj.model || selectedVehicleObj.reg) : (formData.selectedVehicleReg ? 'Commercial Fleet Vehicle' : ''),
         vehicleType: selectedVehicleObj ? selectedVehicleObj.type : 'CNG',
         handoverOdometer: `${formData.handoverOdometer} km`,
         initialBalance: Number(formData.initialBalance) || 0
@@ -403,21 +477,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                     </div>
                   </div>
 
-                  <div className="adp-form-group">
-                    <label className="adp-field-label">
-                      Base Operating Hub <span className="req">*</span>
-                    </label>
-                    <select
-                      className="adp-select-input"
-                      value={formData.city}
-                      onChange={(e) => updateField('city', e.target.value)}
-                    >
-                      <option value="Gurgaon Operations Hub">Gurgaon Operations Hub • Sector 14 Yard</option>
-                      <option value="South Delhi Hub">South Delhi Hub • Nehru Place Terminal</option>
-                      <option value="Noida Hub">Noida Hub • Sector 62 Fleet Center</option>
-                      <option value="North Delhi Sub-Hub">North Delhi Sub-Hub • Rohini Sector 10</option>
-                    </select>
-                  </div>
+
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">Permanent Residential Address</label>
@@ -909,47 +969,86 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
                 {/* Vehicle Selection Grid */}
                 <div className="adp-vehicle-assignment-flow">
-                  <div className="adp-veh-options-header">
+                  <div className="adp-veh-options-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <span className="opt-title">Select Ready Vehicle Asset:</span>
-                    <button
-                      type="button"
-                      className={`standby-toggle-btn ${formData.selectedVehicleReg === '' ? 'is-active' : ''}`}
-                      onClick={() => updateField('selectedVehicleReg', '')}
-                    >
-                      {formData.selectedVehicleReg === '' ? '✓ Standby Pool Selected' : 'Place on Standby Pool (No Car)'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderRadius: '6px',
+                          background: '#2563eb',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                        onClick={() => setShowAddVehicleModal(true)}
+                        title="Add and onboard a new vehicle into the fleet"
+                      >
+                        <Plus size={14} />
+                        Add Vehicle
+                      </button>
+                      <button
+                        type="button"
+                        className={`standby-toggle-btn ${formData.selectedVehicleReg === '' ? 'is-active' : ''}`}
+                        onClick={() => updateField('selectedVehicleReg', '')}
+                      >
+                        {formData.selectedVehicleReg === '' ? '✓ Standby Pool Selected' : 'Place on Standby Pool (No Car)'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="adp-fleet-card-grid">
-                    {FLEET_AVAILABLE_VEHICLES.map((v) => {
-                      const isSelected = formData.selectedVehicleReg === v.reg;
+                    {fleetVehicles.map((v) => {
+                      const vReg = v.reg || v.registration;
+                      const isSelected = formData.selectedVehicleReg === vReg;
+                      const isAllocated = (v.status === 'Allocated' || v.status === 'On Road' || (v.driver && v.driver !== 'Unassigned'));
+
                       return (
                         <div
-                          key={v.reg}
-                          className={`adp-fleet-tile ${isSelected ? 'is-selected' : ''}`}
-                          onClick={() => updateField('selectedVehicleReg', v.reg)}
+                          key={vReg}
+                          className={`adp-fleet-tile ${isSelected ? 'is-selected' : ''} ${isAllocated ? 'is-allocated' : ''}`}
+                          style={isAllocated ? { opacity: 0.65, cursor: 'not-allowed', borderColor: '#cbd5e1', background: '#f8fafc' } : {}}
+                          onClick={() => {
+                            if (isAllocated) {
+                              alert(`⛔ Vehicle ${vReg} is currently ALLOCATED to ${v.driver}. It cannot be allocated to another driver until its allocation period is over.`);
+                              return;
+                            }
+                            updateField('selectedVehicleReg', vReg);
+                          }}
                         >
                           <div className="fleet-tile-img-box">
                             <img
-                              src={v.image}
+                              src={v.image || '/images/wagonr.jpg'}
                               alt={v.model}
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
                             />
-                            <span className={`fuel-type-pill ${v.type.toLowerCase()}`}>
-                              {v.type}
+                            <span className={`fuel-type-pill ${(v.type || 'CNG').toLowerCase()}`}>
+                              {v.type || 'CNG'}
                             </span>
                           </div>
                           <div className="fleet-tile-body">
                             <div className="reg-row">
-                              <strong className="reg-number">{v.reg}</strong>
-                              {isSelected && <span className="assigned-tag">Selected</span>}
+                              <strong className="reg-number">{vReg}</strong>
+                              {isSelected ? (
+                                <span className="assigned-tag">Selected</span>
+                              ) : isAllocated ? (
+                                <span style={{ fontSize: '10px', background: '#fee2e2', color: '#dc2626', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                  Allocated
+                                </span>
+                              ) : null}
                             </div>
-                            <span className="car-model-name">{v.model}</span>
+                            <span className="car-model-name">{v.model || vReg}</span>
                             <div className="hub-row">
                               <MapPin size={11} />
-                              <span>{v.hub}</span>
+                              <span>{isAllocated ? `Allocated to ${v.driver}` : (v.hub || 'Central Yard')}</span>
                             </div>
                           </div>
                         </div>
@@ -1317,6 +1416,180 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           </div>
         </aside>
       </div>
+      {/* Modal: Add New Vehicle Asset */}
+      {showAddVehicleModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              width: '460px',
+              maxWidth: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              overflow: 'hidden',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                background: '#f8fafc'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Car size={20} color="#2563eb" />
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                  Register &amp; Add New Vehicle Asset
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddVehicleModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewVehicle} style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                  Vehicle Registration Plate (e.g. DL01EV9988) *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. HR26DQ5678"
+                  value={newVehReg}
+                  onChange={(e) => setNewVehReg(e.target.value.toUpperCase())}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '14px',
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                  Vehicle Model Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Tata Nexon EV, WagonR H3, Tigor EV"
+                  value={newVehModel}
+                  onChange={(e) => setNewVehModel(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                    Powertrain Fuel Type
+                  </label>
+                  <select
+                    value={newVehType}
+                    onChange={(e) => setNewVehType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="CNG">CNG</option>
+                    <option value="EV">EV (Electric)</option>
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                    Odometer at Handover (km)
+                  </label>
+                  <input
+                    type="number"
+                    value={newVehOdo}
+                    onChange={(e) => setNewVehOdo(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddVehicleModal(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    color: '#475569'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingVeh}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {isSubmittingVeh ? 'Adding...' : '✓ Add & Select Vehicle'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

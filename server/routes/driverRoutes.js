@@ -100,6 +100,24 @@ router.get('/wallet-health', (req, res) => {
   let topupsTodayCount = 0;
   let deductionsToday = 0;
   let deductionsTodayCount = 0;
+  let allTimeTopups = 0;
+  let allTimeTopupsCount = 0;
+  let allTimeDeductions = 0;
+  let allTimeDeductionsCount = 0;
+
+  function isTransactionToday(dateStr) {
+    if (!dateStr) return false;
+    const s = String(dateStr).trim().toLowerCase();
+    if (s.startsWith('today')) return true;
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const monthShort = monthNames[today.getMonth()];
+    const year = today.getFullYear();
+    if (s.includes(`${day} ${monthShort} ${year}`) || s.includes(`${today.getDate()} ${monthShort} ${year}`)) return true;
+    if (s.includes(`${year}-${String(today.getMonth() + 1).padStart(2, '0')}-${day}`)) return true;
+    return false;
+  }
 
   const list = drivers.map(d => {
     const w = d.wallet || {
@@ -135,12 +153,23 @@ router.get('/wallet-health', (req, res) => {
     (w.recentTransactions || []).forEach(tx => {
       const amtStr = String(tx.amount || '').replace(/[^0-9.]/g, '');
       const num = parseFloat(amtStr) || 0;
-      if (tx.type?.toLowerCase().includes('top') || tx.type?.toLowerCase().includes('credit') || String(tx.amount || '').startsWith('+')) {
-        topupsToday += num;
-        topupsTodayCount++;
-      } else if (tx.type?.toLowerCase().includes('debit') || tx.type?.toLowerCase().includes('rent') || tx.type?.toLowerCase().includes('clearance') || String(tx.amount || '').startsWith('-')) {
-        deductionsToday += num;
-        deductionsTodayCount++;
+      const isTopup = tx.type?.toLowerCase().includes('top') || tx.type?.toLowerCase().includes('credit') || tx.type?.toLowerCase().includes('deposit') || String(tx.amount || '').startsWith('+');
+      const isDeduction = tx.type?.toLowerCase().includes('debit') || tx.type?.toLowerCase().includes('rent') || tx.type?.toLowerCase().includes('clearance') || tx.type?.toLowerCase().includes('invoice') || String(tx.amount || '').startsWith('-');
+
+      if (isTopup) {
+        allTimeTopups += num;
+        allTimeTopupsCount++;
+        if (isTransactionToday(tx.date)) {
+          topupsToday += num;
+          topupsTodayCount++;
+        }
+      } else if (isDeduction) {
+        allTimeDeductions += num;
+        allTimeDeductionsCount++;
+        if (isTransactionToday(tx.date)) {
+          deductionsToday += num;
+          deductionsTodayCount++;
+        }
       }
     });
 
@@ -166,12 +195,6 @@ router.get('/wallet-health', (req, res) => {
       }
     };
   });
-
-  // Base fallback if today's ledger is fresh from demo stats
-  if (topupsToday === 0) topupsToday = 18400;
-  if (topupsTodayCount === 0) topupsTodayCount = 14;
-  if (deductionsToday === 0) deductionsToday = 16950;
-  if (deductionsTodayCount === 0) deductionsTodayCount = 27;
 
   let filtered = list;
   if (status && status !== 'all') {
@@ -204,7 +227,11 @@ router.get('/wallet-health', (req, res) => {
         topupsToday,
         topupsTodayCount,
         deductionsToday,
-        deductionsTodayCount
+        deductionsTodayCount,
+        allTimeTopups,
+        allTimeTopupsCount,
+        allTimeDeductions,
+        allTimeDeductionsCount
       },
       drivers: filtered
     }

@@ -410,8 +410,12 @@ export default function ExecutiveDashboard({ onNavigate }) {
               <h3 className="bottom-card-title">Recent Alerts</h3>
               <span className="alerts-count-badge">3</span>
             </div>
-            <button className="link-view-all-btn">
-              <span>View All</span>
+            <button 
+              className="link-view-all-btn"
+              onClick={() => onNavigate && onNavigate('escalation-master')}
+              title="Open Escalation Master"
+            >
+              <span>View Escalations</span>
               <ChevronRight size={14} />
             </button>
           </div>

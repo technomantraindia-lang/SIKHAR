@@ -1,0 +1,795 @@
+{
+  "kpis": {
+    "openTickets": 5,
+    "p1Critical": 1,
+    "slaBreached": 1,
+    "resolvedToday": 4,
+    "avgResolution": "2h 18m"
+  },
+  "categories": [
+    {
+      "id": "cat-breakdown",
+      "name": "Vehicle Breakdown",
+      "team": "Fleet Operations",
+      "defaultPriority": "P1",
+      "slaHours": 1,
+      "description": "Roadside breakdowns, battery depletion, towing and vehicle immobilisation"
+    },
+    {
+      "id": "cat-wallet",
+      "name": "Wallet / Deduction",
+      "team": "Finance",
+      "defaultPriority": "P2",
+      "slaHours": 4,
+      "description": "Automated deductions, top-up disputes, deposit holds and charging reservations"
+    },
+    {
+      "id": "cat-earnings",
+      "name": "Payment / Earnings",
+      "team": "Driver Support",
+      "defaultPriority": "P2",
+      "slaHours": 4,
+      "description": "Rapido revenue share reconciliation, incentive payouts and weekly settlement"
+    },
+    {
+      "id": "cat-safety",
+      "name": "Driver Safety",
+      "team": "Fleet Operations",
+      "defaultPriority": "P1",
+      "slaHours": 1,
+      "description": "Accidents, emergency roadside assistance, SOS and driver welfare incidents"
+    },
+    {
+      "id": "cat-assignment",
+      "name": "Vehicle Assignment",
+      "team": "Fleet Operations",
+      "defaultPriority": "P3",
+      "slaHours": 24,
+      "description": "Vehicle swaps, primary driver reassignment and shift handover requests"
+    },
+    {
+      "id": "cat-lease",
+      "name": "Lease / Agreement",
+      "team": "Driver Support",
+      "defaultPriority": "P3",
+      "slaHours": 24,
+      "description": "Agreement amendments, security deposit refund and commercial deal terms"
+    },
+    {
+      "id": "cat-maintenance",
+      "name": "Maintenance",
+      "team": "Fleet Operations",
+      "defaultPriority": "P2",
+      "slaHours": 6,
+      "description": "Workshop delays, parts availability, repeat defects and service disputes"
+    },
+    {
+      "id": "cat-compliance",
+      "name": "Compliance",
+      "team": "Fleet Operations",
+      "defaultPriority": "P3",
+      "slaHours": 24,
+      "description": "Challans, insurance renewals, fitness certs and RTO permit disputes"
+    },
+    {
+      "id": "cat-other",
+      "name": "Other",
+      "team": "Driver Support",
+      "defaultPriority": "P3",
+      "slaHours": 24,
+      "description": "General queries, app access, mobile verification and account issues"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "ESC-1026",
+      "driver": "chetan",
+      "driverPhone": "7412589632",
+      "vehicle": "HR55BD6737",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Vehicle Breakdown",
+      "priority": "P1",
+      "status": "Resolved",
+      "owner": "Mohit",
+      "team": "Maintenance",
+      "sla": "Resolved (Closed)",
+      "slaBreached": false,
+      "createdAt": "2026-10-14T09:44:45.125Z",
+      "location": "Sec 44, Gurgaon",
+      "problem": "Sudden deceleration and high voltage isolation fault while driving near Cyber City ramp. Instrument cluster showing error code DTC-B204. Vehicle halted safely in parking bay.",
+      "impact": "Vehicle halted; customer ride delayed, driver requires technical workshop assistance.",
+      "source": "Admin Portal",
+      "evidence": [],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Ticket created in admin console. Auto-triaged to P1 for team Maintenance.",
+          "status": "completed",
+          "timestamp": "14 Oct, 03:14 PM",
+          "actor": "Admin"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Routed to Maintenance; assigned to Mohit. SLA timer started.",
+          "status": "completed",
+          "timestamp": "14 Oct, 03:14 PM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Investigation and operational resolution pending.",
+          "status": "completed",
+          "timestamp": "In Progress",
+          "actor": "Mohit"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Resolution recorded: Issue addressed, operational verify completed.. Driver confirmation: Verified ✓.",
+          "status": "completed",
+          "timestamp": "14 Oct, 03:15 PM",
+          "actor": "Mohit"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "HR55BD6737"
+      },
+      "timeline": [
+        {
+          "time": "14 Oct, 03:15 PM",
+          "user": "Admin",
+          "text": "Ticket marked as Resolved: \"Issue addressed, operational verify completed.\". Driver confirmed: Yes."
+        },
+        {
+          "time": "14 Oct, 03:15 PM",
+          "user": "Admin",
+          "text": "Status updated from \"Open\" to \"In Review\"."
+        },
+        {
+          "time": "14 Oct, 03:14 PM",
+          "user": "Admin",
+          "text": "Ticket ESC-1026 created for chetan (HR55BD6737) under category \"Vehicle Breakdown\"."
+        }
+      ],
+      "resolution": {
+        "note": "Issue addressed, operational verify completed.",
+        "resolvedAt": "14 Oct, 03:15 PM",
+        "driverConfirmed": true
+      }
+    },
+    {
+      "id": "ESC-1024",
+      "driver": "Raj Kumar",
+      "driverPhone": "+91 98102 34421",
+      "vehicle": "HR55BD6737",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Vehicle Breakdown",
+      "priority": "P1",
+      "status": "Resolved",
+      "owner": "Mohit",
+      "team": "Fleet Operations",
+      "sla": "Resolved (Closed)",
+      "slaBreached": false,
+      "createdAt": "2026-08-19T09:12:00Z",
+      "location": "Sec 44, Gurgaon",
+      "problem": "Vehicle stopped suddenly near Sec 44 intersection while on active trip. Motor fault indicator and high voltage interlock error illuminated on instrument cluster. Vehicle immobilized on side of road, driver safe.",
+      "impact": "High operational impact — on-road customer trip disrupted; vehicle blocking roadway, requires urgent recovery.",
+      "source": "Driver App (SOS)",
+      "evidence": [
+        "cluster_fault_photo.jpg",
+        "gps_telematics_ping_0912.json"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Driver reported breakdown via SOS in app with location. Auto-triaged to P1 Critical.",
+          "status": "completed",
+          "timestamp": "19 Aug, 09:12 AM",
+          "actor": "Driver App"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Routed to Fleet Operations; assigned to Mohit. Response timer initiated.",
+          "status": "completed",
+          "timestamp": "19 Aug, 09:16 AM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Tow truck #TRK-08 dispatched from Gurgaon yard. ABC Motors notified for immediate check-in.",
+          "status": "completed",
+          "timestamp": "19 Aug, 09:24 AM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Resolution recorded: Issue addressed, operational verify completed.. Driver confirmation: Verified ✓.",
+          "status": "completed",
+          "timestamp": "14 Oct, 03:18 PM",
+          "actor": "Mohit"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "HR55BD6737",
+        "jobCard": "JC-2026-00125",
+        "lease": "ORD-26-08-00164",
+        "chargingSession": "CHG-2026-8812"
+      },
+      "timeline": [
+        {
+          "time": "14 Oct, 03:20 PM",
+          "user": "Admin",
+          "text": "test"
+        },
+        {
+          "time": "14 Oct, 03:18 PM",
+          "user": "Admin",
+          "text": "Ticket marked as Resolved: \"Issue addressed, operational verify completed.\". Driver confirmed: Yes."
+        },
+        {
+          "time": "14 Oct, 03:18 PM",
+          "user": "Admin",
+          "text": "Status updated from \"Waiting for Driver\" to \"In Review\"."
+        },
+        {
+          "time": "14 Oct, 03:18 PM",
+          "user": "Admin",
+          "text": "Status updated from \"Open\" to \"Waiting for Driver\"."
+        },
+        {
+          "time": "19 Aug, 09:12 AM",
+          "user": "System (Driver App)",
+          "text": "Ticket ESC-1024 raised by driver Raj Kumar with priority P1."
+        },
+        {
+          "time": "19 Aug, 09:16 AM",
+          "user": "Mohit",
+          "text": "Acknowledged ticket. Contacted driver via phone, confirmed safe location."
+        },
+        {
+          "time": "19 Aug, 09:24 AM",
+          "user": "Mohit",
+          "text": "Dispatched recovery truck from Sikhar Hub. ETA 20 mins."
+        }
+      ],
+      "resolution": {
+        "note": "Issue addressed, operational verify completed.",
+        "resolvedAt": "14 Oct, 03:18 PM",
+        "driverConfirmed": true
+      }
+    },
+    {
+      "id": "ESC-1023",
+      "driver": "Amit Singh",
+      "driverPhone": "+91 98112 55431",
+      "vehicle": "DL52GD6534",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Wallet / Deduction",
+      "priority": "P2",
+      "status": "In Review",
+      "owner": "Priya",
+      "team": "Finance",
+      "sla": "1h 42m",
+      "slaBreached": false,
+      "createdAt": "2026-08-19T08:30:00Z",
+      "location": "Gurgaon Hub",
+      "problem": "Driver disputing automated lease deduction of ₹1,200 deducted twice during Sunday 05:30 AM batch scheduler run. Spendable balance fell below low threshold (₹500), triggering low balance alert.",
+      "impact": "Financial dispute — duplicate transaction debiting spendable driver funds; driver unable to start next charging reservation.",
+      "source": "Driver Support Inbound",
+      "evidence": [
+        "wallet_statement_aug18.pdf",
+        "scheduler_retry_log.txt"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Support agent captured transaction IDs TXN-WTX-26-08-00424 and TXN-WTX-26-08-00425.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:30 AM",
+          "actor": "Support Desk"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Routed to Finance collections desk; assigned to Priya.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:38 AM",
+          "actor": "Priya"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Batch retry conflict verified. Reversal credit note CN-26-08-00501 prepared for ₹1,200.",
+          "status": "in_progress",
+          "timestamp": "19 Aug, 09:05 AM",
+          "actor": "Priya"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Post wallet credit reversal and obtain driver confirmation on restored balance.",
+          "status": "pending",
+          "timestamp": "Pending",
+          "actor": "Priya"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "DL52GD6534",
+        "invoice": "INV-26-08-03353",
+        "lease": "ORD-26-08-00142"
+      },
+      "timeline": [
+        {
+          "time": "19 Aug, 08:30 AM",
+          "user": "Support Desk",
+          "text": "Ticket ESC-1023 created after driver called support hotline."
+        },
+        {
+          "time": "19 Aug, 08:38 AM",
+          "user": "Priya",
+          "text": "Inspected wallet ledger for DL52GD6534. Double deduction confirmed."
+        },
+        {
+          "time": "19 Aug, 09:05 AM",
+          "user": "Priya",
+          "text": "Drafted credit note CN-26-08-00501. Sent for finance manager approval."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1021",
+      "driver": "Vikas Kumar",
+      "driverPhone": "+91 97184 99120",
+      "vehicle": "HR55BC9124",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Payment / Earnings",
+      "priority": "P2",
+      "status": "Waiting for Driver",
+      "owner": "Rahul",
+      "team": "Driver Support",
+      "sla": "2h 15m",
+      "slaBreached": false,
+      "createdAt": "2026-08-19T07:45:00Z",
+      "location": "Noida Yard",
+      "problem": "Rapido weekly revenue share discrepancy reported. Driver expected ₹7,500 net entitlement for 42 completed trips, settlement feed credited ₹6,800. Driver requesting breakdown of deductions.",
+      "impact": "Operational dissatisfaction — driver hesitating to accept new ride requests until earnings calculation is clarified.",
+      "source": "Driver App Feedback",
+      "evidence": [
+        "rapido_settlement_week33.csv"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Ticket logged with Rapido partner driver ID RAPIDO-VK449.",
+          "status": "completed",
+          "timestamp": "19 Aug, 07:45 AM",
+          "actor": "Driver App"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Routed to Driver Support specialist Rahul.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:00 AM",
+          "actor": "Rahul"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Discrepancy analyzed: 2 trips had toll/platform commission adjustments deducted directly by Rapido.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:40 AM",
+          "actor": "Rahul"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Itemized trip explanation and ledger breakdown sent to driver. Waiting for driver acknowledgment.",
+          "status": "in_progress",
+          "timestamp": "19 Aug, 08:50 AM",
+          "actor": "Rahul"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "HR55BC9124",
+        "lease": "ORD-26-08-00161"
+      },
+      "timeline": [
+        {
+          "time": "19 Aug, 07:45 AM",
+          "user": "System",
+          "text": "Ticket raised via Driver App earnings query."
+        },
+        {
+          "time": "19 Aug, 08:00 AM",
+          "user": "Rahul",
+          "text": "Reviewing Rapido settlement data for week ending 17 Aug."
+        },
+        {
+          "time": "19 Aug, 08:50 AM",
+          "user": "Rahul",
+          "text": "Called driver Vikas, explained ₹700 toll difference. Sent WhatsApp summary."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1018",
+      "driver": "Deepak Sharma",
+      "driverPhone": "+91 99105 12890",
+      "vehicle": "HR38AK4821",
+      "vehicleModel": "WAGONR H3 CNG",
+      "category": "Vehicle Assignment",
+      "priority": "P3",
+      "status": "Resolved",
+      "owner": "Mohit",
+      "team": "Fleet Operations",
+      "sla": "Closed (Within SLA)",
+      "slaBreached": false,
+      "createdAt": "2026-08-18T14:10:00Z",
+      "location": "Sikhar Hub",
+      "problem": "Driver requested assignment swap from CNG vehicle to Tata Tigor EV to service corporate airport contract requiring zero-emission vehicle.",
+      "impact": "Operational optimization — upgrade to higher tier commercial contract.",
+      "source": "Hub Desk Walk-in",
+      "evidence": [
+        "assignment_swap_form_signed.pdf"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Request recorded at hub desk, driver KYC and deposit re-validated.",
+          "status": "completed",
+          "timestamp": "18 Aug, 02:10 PM",
+          "actor": "Hub Staff"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Assigned to Mohit; EV inventory availability checked.",
+          "status": "completed",
+          "timestamp": "18 Aug, 02:25 PM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "EV inventory reserved (HR55BC2211); agreement amendment generated and signed.",
+          "status": "completed",
+          "timestamp": "18 Aug, 03:15 PM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Vehicle handover checklist completed, odometer recorded (31,220 km), driver confirmed.",
+          "status": "completed",
+          "timestamp": "18 Aug, 04:30 PM",
+          "actor": "Mohit"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "HR38AK4821",
+        "lease": "ORD-26-08-00139"
+      },
+      "timeline": [
+        {
+          "time": "18 Aug, 02:10 PM",
+          "user": "Hub Staff",
+          "text": "Assignment change request submitted."
+        },
+        {
+          "time": "18 Aug, 03:15 PM",
+          "user": "Mohit",
+          "text": "EV Tigor HR55BC2211 assigned. Handover checklist verified."
+        },
+        {
+          "time": "18 Aug, 04:30 PM",
+          "user": "Mohit",
+          "text": "Driver completed test drive and confirmed ticket closure."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1025",
+      "driver": "Sandeep Kumar",
+      "driverPhone": "+91 98188 77210",
+      "vehicle": "DL52GD7393",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Driver Safety",
+      "priority": "P1",
+      "status": "Open",
+      "owner": "Mohit",
+      "team": "Fleet Operations",
+      "sla": "45m remaining",
+      "slaBreached": false,
+      "createdAt": "2026-08-19T08:50:00Z",
+      "location": "Sec 44, Gurgaon",
+      "problem": "Minor rear collision on Cyber City exit ramp caused by trailing commercial vehicle. Bumper dent and sensor disconnect. Driver unhurt, other party refusing to share insurance details.",
+      "impact": "Critical safety & legal — vehicle requires on-scene police report and insurance claim initiation before moving.",
+      "source": "Driver Emergency Hotline",
+      "evidence": [
+        "accident_rear_bumper.jpg",
+        "third_party_plate.jpg"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Incident logged with photographs of damage and third-party vehicle registration.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:50 AM",
+          "actor": "Support Desk"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Immediate P1 escalation to Fleet Operations Safety Lead Mohit.",
+          "status": "completed",
+          "timestamp": "19 Aug, 08:53 AM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Field supervisor dispatched to location; legal FIR advisor on conference call with driver.",
+          "status": "in_progress",
+          "timestamp": "19 Aug, 09:05 AM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Obtain police challan / claim report, move vehicle to Sai Motors workshop, complete incident audit.",
+          "status": "pending",
+          "timestamp": "Pending",
+          "actor": "Mohit"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "DL52GD7393",
+        "jobCard": "JC-2026-00123"
+      },
+      "timeline": [
+        {
+          "time": "19 Aug, 08:50 AM",
+          "user": "Support Desk",
+          "text": "Emergency call received from Sandeep Kumar."
+        },
+        {
+          "time": "19 Aug, 08:53 AM",
+          "user": "Mohit",
+          "text": "P1 Safety protocol triggered. Field supervisor en-route."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1020",
+      "driver": "Kuldeep",
+      "driverPhone": "+91 97119 44321",
+      "vehicle": "DL52GD6293",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Maintenance",
+      "priority": "P2",
+      "status": "In Review",
+      "owner": "Priya",
+      "team": "Fleet Operations",
+      "sla": "Breached by 25m",
+      "slaBreached": true,
+      "createdAt": "2026-08-19T04:15:00Z",
+      "location": "ABC Motors Workshop",
+      "problem": "Vehicle held in workshop for over 48 hours for brake shoe replacement due to out-of-stock OEM parts. Driver losing daily commercial earnings.",
+      "impact": "Operational downtime — off-road duration exceeded target; driver requesting loaner vehicle or rental billing waiver.",
+      "source": "Fleet Operations Control Alert",
+      "evidence": [
+        "workshop_parts_requisition.pdf"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Auto-triggered by Control Tower off-road duration threshold (> 48 hours).",
+          "status": "completed",
+          "timestamp": "19 Aug, 04:15 AM",
+          "actor": "System"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Assigned to Priya for workshop escalation.",
+          "status": "completed",
+          "timestamp": "19 Aug, 05:00 AM",
+          "actor": "Priya"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Emergency part sourced from alternate distributor; expedited courier dispatched.",
+          "status": "in_progress",
+          "timestamp": "19 Aug, 07:30 AM",
+          "actor": "Priya"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Part installation, QC test drive, approval of downtime rental credit note.",
+          "status": "pending",
+          "timestamp": "Pending",
+          "actor": "Priya"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "DL52GD6293",
+        "jobCard": "JC-2026-00118"
+      },
+      "timeline": [
+        {
+          "time": "19 Aug, 04:15 AM",
+          "user": "System",
+          "text": "Automated exception alert: Vehicle off-road > 48h."
+        },
+        {
+          "time": "19 Aug, 07:30 AM",
+          "user": "Priya",
+          "text": "Sourced brake pads from Okhla hub. Delivery expected at 11 AM."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1019",
+      "driver": "Anoop",
+      "driverPhone": "+91 98110 33890",
+      "vehicle": "HR55BC2211",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Compliance",
+      "priority": "P3",
+      "status": "Open",
+      "owner": "Rahul",
+      "team": "Fleet Operations",
+      "sla": "14h remaining",
+      "slaBreached": false,
+      "createdAt": "2026-08-19T06:10:00Z",
+      "location": "Sikhar Hub",
+      "problem": "E-challan of ₹2,000 issued by Delhi Traffic Police for wrong-side entry near Kashmere Gate. Driver claims GPS detour instructed by navigation.",
+      "impact": "Compliance risk — challan due on Parivahan portal; driver liability deduction needs confirmation.",
+      "source": "Parivahan Sync Alert",
+      "evidence": [
+        "echallan_notice_delhi_2000.pdf"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Challan imported from Delhi traffic portal sync.",
+          "status": "completed",
+          "timestamp": "19 Aug, 06:10 AM",
+          "actor": "System"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Assigned to Rahul to review evidence with driver.",
+          "status": "completed",
+          "timestamp": "19 Aug, 07:00 AM",
+          "actor": "Rahul"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Telematics replay confirms GPS route anomaly. Verification with driver in progress.",
+          "status": "in_progress",
+          "timestamp": "19 Aug, 08:15 AM",
+          "actor": "Rahul"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Determine driver vs company share, process challan settlement on portal, close ticket.",
+          "status": "pending",
+          "timestamp": "Pending",
+          "actor": "Rahul"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "HR55BC2211"
+      },
+      "timeline": [
+        {
+          "time": "19 Aug, 06:10 AM",
+          "user": "System",
+          "text": "E-challan detected on vehicle HR55BC2211 for ₹2,000."
+        },
+        {
+          "time": "19 Aug, 08:15 AM",
+          "user": "Rahul",
+          "text": "Telematics log downloaded. Discussing with fleet manager."
+        }
+      ]
+    },
+    {
+      "id": "ESC-1017",
+      "driver": "Suraj Mishra",
+      "driverPhone": "+91 99182 66710",
+      "vehicle": "UP16HT7788",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "category": "Lease / Agreement",
+      "priority": "P3",
+      "status": "Resolved",
+      "owner": "Priya",
+      "team": "Driver Support",
+      "sla": "Closed (Within SLA)",
+      "slaBreached": false,
+      "createdAt": "2026-08-17T11:20:00Z",
+      "location": "Noida",
+      "problem": "Driver requested adjustment to fixed lease billing frequency from weekly (₹7,000/week) to daily (₹1,000/day) to align with daily cash payouts.",
+      "impact": "Contract update — commercial billing schedule realignment.",
+      "source": "Driver App Request",
+      "evidence": [
+        "lease_amendment_v2.pdf"
+      ],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Commercial amendment request logged.",
+          "status": "completed",
+          "timestamp": "17 Aug, 11:20 AM",
+          "actor": "Driver App"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Assigned to Priya.",
+          "status": "completed",
+          "timestamp": "17 Aug, 11:35 AM",
+          "actor": "Priya"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "New lease deal version configured with daily frequency; agreement re-signed electronically.",
+          "status": "completed",
+          "timestamp": "17 Aug, 01:10 PM",
+          "actor": "Priya"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Next billing date set to 18 Aug. Driver confirmed in app.",
+          "status": "completed",
+          "timestamp": "17 Aug, 02:40 PM",
+          "actor": "Priya"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "UP16HT7788",
+        "lease": "ORD-26-08-00122"
+      },
+      "timeline": [
+        {
+          "time": "17 Aug, 11:20 AM",
+          "user": "Driver App",
+          "text": "Request submitted by Suraj Mishra."
+        },
+        {
+          "time": "17 Aug, 01:10 PM",
+          "user": "Priya",
+          "text": "Generated digital addendum for daily billing."
+        },
+        {
+          "time": "17 Aug, 02:40 PM",
+          "user": "Priya",
+          "text": "Digital signature confirmed. Ticket resolved."
+        }
+      ]
+    }
+  ]
+}

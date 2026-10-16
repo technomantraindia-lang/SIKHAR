@@ -10,6 +10,9 @@ import InvoicesPage from './components/rentals/InvoicesPage';
 import GenerateInvoicePage from './components/rentals/GenerateInvoicePage';
 import InvoiceDetailPage from './components/rentals/InvoiceDetailPage';
 import WalletHealthPage from './components/wallet/WalletHealthPage';
+import EscalationMasterPage from './components/escalations/EscalationMasterPage';
+import TripsMasterPage from './components/trips/TripsMasterPage';
+import MaintenanceMasterPage from './components/maintenance/MaintenanceMasterPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
 import { getCachedAdminUser, logoutAdminApi } from './services/api';
@@ -149,6 +152,21 @@ export default function App() {
             />
           ) : activeRoute === 'wallet' ? (
             <WalletHealthPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'escalation-master' ? (
+            <EscalationMasterPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'trips' ? (
+            <TripsMasterPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'maintenance' ? (
+            <MaintenanceMasterPage
               onNavigate={(target) => navigateTo(target)}
               onBackToDashboard={() => navigateTo('dashboard')}
             />

@@ -270,7 +270,7 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
             </div>
           </div>
 
-          {/* KPI Stat Cards Strip (Exact Wireframe 7 KPIs) */}
+          {/* KPI Stat Cards Strip */}
           <div className="wallet-kpis-strip">
             <div
               className={`wallet-kpi-card ${statusFilter === 'all' ? 'active-filter' : ''}`}
@@ -278,8 +278,8 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
               title="Click to view all wallets"
             >
               <div className="wallet-kpi-lbl">TOTAL WALLETS</div>
-              <div className="wallet-kpi-num">{metrics.totalWallets || drivers.length}</div>
-              <div className="wallet-kpi-sub">{metrics.activeWallets || 61} active</div>
+              <div className="wallet-kpi-num">{metrics.totalWallets ?? drivers.length}</div>
+              <div className="wallet-kpi-sub">{metrics.activeWallets ?? drivers.filter(d => d.status !== 'Suspended').length} active</div>
             </div>
 
             <div
@@ -288,9 +288,9 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
               title="Filter by Healthy wallets"
             >
               <div className="wallet-kpi-lbl">HEALTHY</div>
-              <div className="wallet-kpi-num text-green">{metrics.healthyCount || 38}</div>
+              <div className="wallet-kpi-num text-green">{metrics.healthyCount ?? 0}</div>
               <div className="wallet-kpi-sub text-green">
-                ₹{(metrics.healthyBalance || 124750).toLocaleString('en-IN')} balance
+                ₹{(metrics.healthyBalance ?? 0).toLocaleString('en-IN')} balance
               </div>
             </div>
 
@@ -300,7 +300,7 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
               title="Filter by Low Balance"
             >
               <div className="wallet-kpi-lbl">LOW BALANCE</div>
-              <div className="wallet-kpi-num text-amber">{metrics.lowBalanceCount || 11}</div>
+              <div className="wallet-kpi-num text-amber">{metrics.lowBalanceCount ?? 0}</div>
               <div className="wallet-kpi-sub">Recharge recommended</div>
             </div>
 
@@ -310,16 +310,16 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
               title="Filter by Breached wallets"
             >
               <div className="wallet-kpi-lbl">BREACHED</div>
-              <div className="wallet-kpi-num text-red">{metrics.breachedCount || 14}</div>
+              <div className="wallet-kpi-num text-red">{metrics.breachedCount ?? 0}</div>
               <div className="wallet-kpi-sub text-red">
-                ₹{(metrics.breachedOutstanding || 14960).toLocaleString('en-IN')} outstanding
+                ₹{(metrics.breachedOutstanding ?? 0).toLocaleString('en-IN')} outstanding
               </div>
             </div>
 
             <div className="wallet-kpi-card">
               <div className="wallet-kpi-lbl">TOTAL BALANCE</div>
               <div className="wallet-kpi-num">
-                ₹{(metrics.totalBalance || 139710).toLocaleString('en-IN')}
+                ₹{(metrics.totalBalance ?? 0).toLocaleString('en-IN')}
               </div>
               <div className="wallet-kpi-sub">Across driver wallets</div>
             </div>
@@ -327,17 +327,31 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
             <div className="wallet-kpi-card">
               <div className="wallet-kpi-lbl">TOP-UPS TODAY</div>
               <div className="wallet-kpi-num text-green">
-                ₹{(metrics.topupsToday || 18400).toLocaleString('en-IN')}
+                ₹{(metrics.topupsToday ?? 0).toLocaleString('en-IN')}
               </div>
-              <div className="wallet-kpi-sub">{metrics.topupsTodayCount || 14} transactions</div>
+              <div className="wallet-kpi-sub">
+                {metrics.topupsTodayCount ?? 0} transactions today
+                {metrics.allTimeTopups > 0 && (
+                  <span style={{ display: 'block', fontSize: '10px', opacity: 0.75, marginTop: '2px' }}>
+                    All-time: ₹{metrics.allTimeTopups.toLocaleString('en-IN')} ({metrics.allTimeTopupsCount})
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="wallet-kpi-card">
               <div className="wallet-kpi-lbl">DEDUCTIONS TODAY</div>
               <div className="wallet-kpi-num">
-                ₹{(metrics.deductionsToday || 16950).toLocaleString('en-IN')}
+                ₹{(metrics.deductionsToday ?? 0).toLocaleString('en-IN')}
               </div>
-              <div className="wallet-kpi-sub">{metrics.deductionsTodayCount || 27} transactions</div>
+              <div className="wallet-kpi-sub">
+                {metrics.deductionsTodayCount ?? 0} deductions today
+                {metrics.allTimeDeductions > 0 && (
+                  <span style={{ display: 'block', fontSize: '10px', opacity: 0.75, marginTop: '2px' }}>
+                    All-time: ₹{metrics.allTimeDeductions.toLocaleString('en-IN')} ({metrics.allTimeDeductionsCount})
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

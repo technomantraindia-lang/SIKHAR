@@ -133,6 +133,36 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
       return;
     }
 
+    // Business Rule: Vehicles in Maintenance / At Workshop CANNOT be assigned
+    const isMaintenance = selectedVehicle && (
+      (selectedVehicle.status || '').toLowerCase().includes('workshop') ||
+      (selectedVehicle.status || '').toLowerCase().includes('maintenance') ||
+      (selectedVehicle.actionType || '').toLowerCase() === 'job_card'
+    );
+    if (isMaintenance) {
+      alert(`⛔ Assignment Blocked: Vehicle ${selectedVehicle.registration} is currently In Maintenance / At Workshop. Under fleet policy, vehicles undergoing maintenance cannot be assigned to any driver until maintenance is completed, QC is approved, and vehicle is released to 'Ready to Deploy'.`);
+      return;
+    }
+
+    // Business Rule: An allocated car CANNOT be allocated to anyone else until the allocation time is over
+    const isAllocated = selectedVehicle && (
+      (selectedVehicle.status === 'Allocated' || selectedVehicle.status === 'On Road') &&
+      selectedVehicle.driver &&
+      selectedVehicle.driver !== 'Unassigned' &&
+      selectedVehicle.driver.toLowerCase() !== selectedDriver?.name?.toLowerCase()
+    );
+    if (isAllocated) {
+      alert(`⛔ Allocation Blocked: Vehicle ${selectedVehicle.registration} is currently ALLOCATED to ${selectedVehicle.driver}. Under Sikhar allocation policy, an allocated vehicle cannot be allocated to another driver until the allocation time is over or released.`);
+      return;
+    }
+
+    // Business Rule: If driver already has an assigned car, admin cannot assign another permanent car
+    const hasCurrentCar = selectedDriver?.vehicle && selectedDriver.vehicle.registration && selectedDriver.vehicle.registration !== 'Unassigned';
+    if (hasCurrentCar && assignmentType === 'permanent') {
+      alert(`⛔ Driver ${selectedDriver.name} is already assigned to ${selectedDriver.vehicle.model || selectedDriver.vehicle.registration}. You cannot assign another permanent car while an active car is allocated. You can choose 'Temporary Allocation / Duty Swap' to reallocate a replacement car (e.g. for 1 or 2 days), or return their current car first.`);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const finalReason = reason === 'Other' && customReason.trim() ? customReason : reason;
@@ -478,21 +508,30 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                     required
                   >
                     <option value="">-- Choose Vehicle from Fleet --</option>
-                    <optgroup label="Ready in Yard / Available Fleet">
+                    <optgroup label="🟢 Available Spares (Ready to Allocate)">
                       {vehicles
-                        .filter(v => v.status === 'Ready to Deploy' || v.driver === 'Unassigned')
+                        .filter(v => (v.status === 'Ready to Deploy' || v.driver === 'Unassigned') && !((v.status || '').toLowerCase().includes('workshop') || (v.status || '').toLowerCase().includes('maintenance')))
                         .map(v => (
                           <option key={v.id} value={v.id}>
-                            {v.registration} — {v.model} ({v.type}) [{v.location || 'Central Yard'}]
+                            🟢 {v.registration} — {v.model} ({v.type}) [{v.location || 'Central Yard'}]
                           </option>
                         ))}
                     </optgroup>
-                    <optgroup label="Other Vehicles in Fleet">
+                    <optgroup label="🔒 ALLOCATED TO DRIVERS (LOCKED — CANNOT ALLOCATE UNTIL DUTY ENDS)">
                       {vehicles
-                        .filter(v => v.status !== 'Ready to Deploy' && v.driver !== 'Unassigned')
+                        .filter(v => (v.status === 'Allocated' || v.status === 'On Road' || (v.driver && v.driver !== 'Unassigned')) && !((v.status || '').toLowerCase().includes('workshop') || (v.status || '').toLowerCase().includes('maintenance')))
                         .map(v => (
-                          <option key={v.id} value={v.id}>
-                            {v.registration} — {v.model} (Currently with: {v.driver})
+                          <option key={v.id} value={v.id} disabled style={{ color: '#64748b', background: '#f8fafc' }}>
+                            🔒 {v.registration} — {v.model} [ALLOCATED TO {v.driver?.toUpperCase() || 'DRIVER'}]
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="⛔ IN MAINTENANCE / AT WORKSHOP (LOCKED — UNDER SERVICE)">
+                      {vehicles
+                        .filter(v => (v.status || '').toLowerCase().includes('workshop') || (v.status || '').toLowerCase().includes('maintenance'))
+                        .map(v => (
+                          <option key={v.id} value={v.id} disabled style={{ color: '#ef4444', background: '#fee2e2' }}>
+                            ⛔ {v.registration} — {v.model} [IN MAINTENANCE — LOCKED]
                           </option>
                         ))}
                     </optgroup>
@@ -510,10 +549,43 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                         <div className="snapshot-name">{selectedVehicle.model}</div>
                         <div className="veh-reg-badge">{selectedVehicle.registration}</div>
                       </div>
-                      <span className={`status-pill ${selectedVehicle.status === 'Ready to Deploy' ? 'good' : 'warn'}`}>
-                        {selectedVehicle.status}
+                      <span className={`status-pill ${
+                        (selectedVehicle.status || '').toLowerCase().includes('workshop') || (selectedVehicle.status || '').toLowerCase().includes('maintenance')
+                          ? 'bad'
+                          : selectedVehicle.status === 'Ready to Deploy'
+                          ? 'good'
+                          : 'warn'
+                      }`}>
+                        {(selectedVehicle.status || '').toLowerCase().includes('workshop') || (selectedVehicle.status || '').toLowerCase().includes('maintenance')
+                          ? 'In Maintenance'
+                          : selectedVehicle.status}
                       </span>
                     </div>
+
+                    {/* Prominent Maintenance Alert Banner if In Maintenance */}
+                    {((selectedVehicle.status || '').toLowerCase().includes('workshop') || (selectedVehicle.status || '').toLowerCase().includes('maintenance')) && (
+                      <div style={{
+                        background: '#fef2f2',
+                        border: '1.5px solid #ef4444',
+                        color: '#991b1b',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        marginTop: '12px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                      }}>
+                        <AlertTriangle size={20} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <strong style={{ fontSize: '13px', display: 'block', color: '#b91c1c' }}>
+                            ⛔ LOCKED FOR ASSIGNMENT: VEHICLE IN MAINTENANCE
+                          </strong>
+                          <div style={{ fontSize: '12px', marginTop: '3px', lineHeight: 1.4 }}>
+                            <strong>{selectedVehicle.registration}</strong> is currently at workshop/undergoing service at <strong>{selectedVehicle.location || 'Workshop'}</strong>. Under SIKHAR fleet policy, vehicles in maintenance CANNOT be assigned to any driver until maintenance is completed, QC passes, and vehicle status changes to <em>'Ready to Deploy'</em>.
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="veh-specs-grid">
                       <div className="spec-tile">
@@ -534,7 +606,7 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                       </div>
                     </div>
 
-                    {selectedVehicle.driver && selectedVehicle.driver !== 'Unassigned' && (
+                    {selectedVehicle.driver && selectedVehicle.driver !== 'Unassigned' && !((selectedVehicle.status || '').toLowerCase().includes('workshop')) && (
                       <div className="warning-callout">
                         <AlertTriangle size={15} color="#eab308" />
                         <span>Warning: Vehicle currently attached to {selectedVehicle.driver}. Reassigning will swap their vehicle.</span>
@@ -748,23 +820,35 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn primary"
-                  disabled={!selectedDriverId || !selectedVehicleId || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw size={15} className="spin-icon" />
-                      <span>Dispatching Vehicle...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={15} />
-                      <span>Confirm &amp; Dispatch Vehicle</span>
-                    </>
-                  )}
-                </button>
+                {selectedVehicle && ((selectedVehicle.status || '').toLowerCase().includes('workshop') || (selectedVehicle.status || '').toLowerCase().includes('maintenance')) ? (
+                  <button
+                    type="button"
+                    className="btn primary"
+                    disabled
+                    style={{ background: '#94a3b8', borderColor: '#94a3b8', cursor: 'not-allowed' }}
+                    title="This vehicle is currently undergoing maintenance and cannot be assigned."
+                  >
+                    <span>⛔ Locked — Vehicle in Maintenance</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="btn primary"
+                    disabled={!selectedDriverId || !selectedVehicleId || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw size={15} className="spin-icon" />
+                        <span>Dispatching Vehicle...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={15} />
+                        <span>Confirm &amp; Dispatch Vehicle</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </form>

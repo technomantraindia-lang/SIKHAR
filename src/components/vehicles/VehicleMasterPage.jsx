@@ -203,8 +203,9 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
         <div className="vm-stat-divider" />
         <div className="vm-stat-pill">
           <span className="pulse-dot amber" />
-          <span className="vm-stat-label">At Workshop:</span>
+          <span className="vm-stat-label">In Maintenance:</span>
           <strong className="vm-stat-value amber">{counts.workshop}</strong>
+          <span className="vm-stat-sub">(Workshop Locked)</span>
         </div>
         <div className="vm-stat-divider" />
         <div className="vm-stat-pill">
@@ -232,7 +233,7 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
           {[
             { id: 'all', label: 'All Fleet', count: counts.all },
             { id: 'onroad', label: 'On Road', count: counts.onroad },
-            { id: 'workshop', label: 'Workshop', count: counts.workshop },
+            { id: 'workshop', label: 'In Maintenance', count: counts.workshop },
             { id: 'ready', label: 'Ready to Deploy', count: counts.ready },
             { id: 'breakdown', label: 'Breakdown', count: counts.breakdown },
             { id: 'leave', label: 'Driver Leave', count: counts.leave },
@@ -376,13 +377,14 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
             const isEv = vehicle.type === 'EV';
             const batteryNum = parseInt(vehicle.battery) || (isEv ? 85 : 75);
             
-            // Clean status theme
+            const isMaintenance = (vehicle.status || '').toLowerCase().includes('workshop') || (vehicle.status || '').toLowerCase().includes('maintenance');
             let statusTheme = 'blue';
             let statusText = vehicle.status;
             if (vehicle.status === 'On Road') {
               statusTheme = 'green';
-            } else if (vehicle.status.includes('Workshop')) {
+            } else if (isMaintenance) {
               statusTheme = 'amber';
+              statusText = 'In Maintenance';
             } else if (vehicle.status.includes('Breakdown')) {
               statusTheme = 'red';
             } else if (vehicle.status.includes('Leave')) {
@@ -469,8 +471,8 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                     </div>
                   </div>
 
-                  <span className={`cvc-assignment-badge ${isAssigned ? 'assigned' : 'idle'}`}>
-                    {isAssigned ? '24h Shift' : 'Idle Yard'}
+                  <span className={`cvc-assignment-badge ${isMaintenance ? 'locked' : isAssigned ? 'assigned' : 'idle'}`}>
+                    {isMaintenance ? '⛔ Maintenance (Locked)' : isAssigned ? '24h Shift' : 'Idle Yard'}
                   </span>
                 </div>
 
@@ -514,10 +516,14 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                   const isEv = vehicle.type === 'EV';
                   const batteryVal = parseInt(vehicle.battery) || 80;
 
+                  const isMaintenance = (vehicle.status || '').toLowerCase().includes('workshop') || (vehicle.status || '').toLowerCase().includes('maintenance');
                   let statusTheme = 'blue';
+                  let statusText = vehicle.status;
                   if (vehicle.status === 'On Road') statusTheme = 'green';
-                  else if (vehicle.status.includes('Workshop')) statusTheme = 'amber';
-                  else if (vehicle.status.includes('Breakdown')) statusTheme = 'red';
+                  else if (isMaintenance) {
+                    statusTheme = 'amber';
+                    statusText = 'In Maintenance';
+                  } else if (vehicle.status.includes('Breakdown')) statusTheme = 'red';
                   else if (vehicle.status.includes('Leave')) statusTheme = 'purple';
                   else if (vehicle.status.includes('Non-Ops')) statusTheme = 'muted';
 
@@ -560,8 +566,13 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                       <td>
                         <span className={`table-status-pill ${statusTheme}`}>
                           <span className={`table-status-dot ${statusTheme}`} />
-                          <span>{vehicle.status}</span>
+                          <span>{statusText}</span>
                         </span>
+                        {isMaintenance && (
+                          <div style={{ fontSize: '9.5px', color: '#b45309', fontWeight: 700, marginTop: '2px' }}>
+                            At Workshop · Locked
+                          </div>
+                        )}
                       </td>
 
                       <td>

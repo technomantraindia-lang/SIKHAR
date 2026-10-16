@@ -583,3 +583,390 @@ export async function waiveInvoiceApi(id, reason = '') {
   }
 }
 
+// ========================================================
+// ESCALATIONS & TICKETING SERVICE API
+// ========================================================
+
+export async function fetchEscalationsApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/escalations`);
+    if (filters.status && filters.status !== 'all') url.searchParams.append('status', filters.status);
+    if (filters.priority && filters.priority !== 'all') url.searchParams.append('priority', filters.priority);
+    if (filters.category && filters.category !== 'all') url.searchParams.append('category', filters.category);
+    if (filters.search) url.searchParams.append('search', filters.search);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch escalations.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch escalations API error:', err);
+    throw err;
+  }
+}
+
+export async function fetchEscalationDetailApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to fetch escalation ${id}.`);
+    }
+    return data.ticket;
+  } catch (err) {
+    console.error('Fetch escalation detail error:', err);
+    throw err;
+  }
+}
+
+export async function createEscalationApi(payload) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create escalation ticket.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create escalation error:', err);
+    throw err;
+  }
+}
+
+export async function updateEscalationApi(id, payload) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to update escalation ${id}.`);
+    }
+    return data;
+  } catch (err) {
+    console.error('Update escalation error:', err);
+    throw err;
+  }
+}
+
+export async function addEscalationNoteApi(id, note, user = 'Admin') {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note, user })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to add note.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Add escalation note error:', err);
+    throw err;
+  }
+}
+
+export async function resolveEscalationApi(id, resolutionNote = '', driverConfirmed = true) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolutionNote, driverConfirmed })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to resolve escalation.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Resolve escalation error:', err);
+    throw err;
+  }
+}
+
+// ========================================================
+// TRIPS & REVENUE SHARE API SUITE
+// ========================================================
+
+export async function fetchTripsApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/trips`);
+    if (filters.status && filters.status !== 'all') url.searchParams.append('status', filters.status);
+    if (filters.source && filters.source !== 'all') url.searchParams.append('source', filters.source);
+    if (filters.vehicle && filters.vehicle !== 'all') url.searchParams.append('vehicle', filters.vehicle);
+    if (filters.driver && filters.driver !== 'all') url.searchParams.append('driver', filters.driver);
+    if (filters.search && filters.search.trim()) url.searchParams.append('search', filters.search.trim());
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve trips telemetry.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch trips error:', err);
+    throw err;
+  }
+}
+
+export async function fetchTripDetailApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/trips/${encodeURIComponent(id)}`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to fetch trip ${id}.`);
+    }
+    return data.trip;
+  } catch (err) {
+    console.error('Fetch trip detail error:', err);
+    throw err;
+  }
+}
+
+export async function createTripApi(tripData) {
+  try {
+    const response = await fetch(`${API_BASE}/trips`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tripData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to log manual trip.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create trip error:', err);
+    throw err;
+  }
+}
+
+export async function importTripsApi(tripsArray) {
+  try {
+    const response = await fetch(`${API_BASE}/trips/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trips: tripsArray })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to import trips statement.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Import trips error:', err);
+    throw err;
+  }
+}
+
+export async function updateTripStatusApi(id, statusData) {
+  try {
+    const response = await fetch(`${API_BASE}/trips/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(statusData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to update trip ${id}.`);
+    }
+    return data;
+  } catch (err) {
+    console.error('Update trip status error:', err);
+    throw err;
+  }
+}
+
+export async function escalateTripApi(id, escalationData) {
+  try {
+    const response = await fetch(`${API_BASE}/trips/${encodeURIComponent(id)}/escalate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(escalationData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to raise escalation for trip.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Escalate trip error:', err);
+    throw err;
+  }
+}
+
+// ========================================================
+// MAINTENANCE CONTROL CENTER API SUITE (10-STAGE PIPELINE)
+// ========================================================
+
+export async function fetchMaintenanceApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/maintenance`);
+    if (filters.stage && filters.stage !== 'all') url.searchParams.append('stage', filters.stage);
+    if (filters.status && filters.status !== 'all') url.searchParams.append('status', filters.status);
+    if (filters.vehicle && filters.vehicle !== 'all') url.searchParams.append('vehicle', filters.vehicle);
+    if (filters.search && filters.search.trim()) url.searchParams.append('search', filters.search.trim());
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve maintenance records.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch maintenance error:', err);
+    throw err;
+  }
+}
+
+export async function fetchJobCardDetailApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to fetch job card ${id}.`);
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch job card detail error:', err);
+    throw err;
+  }
+}
+
+export async function createJobCardApi(cardData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/job-cards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cardData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create job card.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create job card error:', err);
+    throw err;
+  }
+}
+
+export async function advanceMaintenanceStageApi(id, stageData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/advance-stage`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(stageData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Failed to advance stage for ${id}.`);
+    }
+    return data;
+  } catch (err) {
+    console.error('Advance maintenance stage error:', err);
+    throw err;
+  }
+}
+
+export async function approveEstimateApi(id, estimateData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/estimate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(estimateData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to approve estimate.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Approve estimate error:', err);
+    throw err;
+  }
+}
+
+export async function submitQcApi(id, qcData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/qc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(qcData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to submit QC report.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Submit QC error:', err);
+    throw err;
+  }
+}
+
+export async function verifyMaintenanceBillApi(id, billData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/bill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(billData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to verify final vendor invoice.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Verify bill error:', err);
+    throw err;
+  }
+}
+
+export async function recordMaintenancePaymentApi(id, paymentData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to record maintenance vendor payment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Record payment error:', err);
+    throw err;
+  }
+}
+
+export async function releaseVehicleApi(id, releaseData) {
+  try {
+    const response = await fetch(`${API_BASE}/maintenance/${encodeURIComponent(id)}/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(releaseData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to release vehicle from maintenance.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Release vehicle error:', err);
+    throw err;
+  }
+}
+
+
+
