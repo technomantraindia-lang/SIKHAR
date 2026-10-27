@@ -21,7 +21,9 @@ import {
   Lock,
   Unlock,
   Info,
-  X
+  X,
+  Scan,
+  Camera
 } from '../common/Icons';
 import {
   fetchLeasesApi,
@@ -33,6 +35,8 @@ import {
   fetchFleetTowerApi,
   fetchAssignmentsApi
 } from '../../services/api';
+import CommercialLeaseAgreementPreviewModal from './CommercialLeaseAgreementPreviewModal';
+import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 
 export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -103,6 +107,20 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [isAgreementSigned, setIsAgreementSigned] = useState(false);
   const [isDepositConfirmed, setIsDepositConfirmed] = useState(false);
   const [depositReceiptRef, setDepositReceiptRef] = useState('UTR-ESC-2026-9901');
+
+  // Agreement Preview & Document OCR Modals
+  const [showAgreementPreviewModal, setShowAgreementPreviewModal] = useState(false);
+  const [showOcrScannerModal, setShowOcrScannerModal] = useState(false);
+  const [ocrTargetType, setOcrTargetType] = useState('all');
+
+  const handleOcrExtracted = (data) => {
+    if (data.name) setCustomerName(data.name);
+    if (data.drivingLicence) setDrivingLicence(data.drivingLicence);
+    if (data.aadhaar) setAadhaar(data.aadhaar);
+    if (data.address) setAddress(data.address);
+    setIsEditingDetails(true);
+    showToast(`✓ OCR scanned: Extracted ${data.docType || 'Document'} details.`);
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -1177,14 +1195,31 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <div className="assignment-grid-columns">
                 {/* COLUMN 1: DRIVER PROFILE & KYC */}
                 <div className="assignment-section-box">
-                  <div className="section-box-title">
-                    <span className="step-number">1</span>
-                    <h3>Customer &amp; Driver KYC Profile</h3>
-                    {isEditingDetails ? (
-                      <span className="badge-edit-mode">Editable</span>
-                    ) : (
-                      <span className="badge-locked-mode">🔒 Auto-Fetched</span>
-                    )}
+                  <div className="section-box-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="step-number">1</span>
+                      <h3>Customer &amp; Driver KYC Profile</h3>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn secondary small"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', padding: '4px 9px', background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd' }}
+                        onClick={() => {
+                          setOcrTargetType('all');
+                          setShowOcrScannerModal(true);
+                        }}
+                        title="Scan Document with AI OCR (Upload or Camera)"
+                      >
+                        <Scan size={13} color="#0284c7" />
+                        <span>📷 Document OCR</span>
+                      </button>
+                      {isEditingDetails ? (
+                        <span className="badge-edit-mode">Editable</span>
+                      ) : (
+                        <span className="badge-locked-mode">🔒 Auto-Fetched</span>
+                      )}
+                    </div>
                   </div>
 
                   {isEditingDetails ? (
@@ -1823,9 +1858,21 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <div className="assignment-grid-columns">
                 {/* Agreement Document Card */}
                 <div className="assignment-section-box">
-                  <div className="section-box-title">
-                    <span className="step-number">4A</span>
-                    <h3>Prefilled Commercial Lease Agreement</h3>
+                  <div className="section-box-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="step-number">4A</span>
+                      <h3>Prefilled Commercial Lease Agreement</h3>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn secondary small"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', padding: '4px 10px', background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd' }}
+                      onClick={() => setShowAgreementPreviewModal(true)}
+                      title="Open full legal lease agreement preview"
+                    >
+                      <Eye size={13} />
+                      <span>Preview Full Agreement</span>
+                    </button>
                   </div>
 
                   <div className="digital-agreement-preview-box">
@@ -1844,17 +1891,28 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                         <li><strong>Security Deposit:</strong> ₹{Number(securityDeposit).toLocaleString('en-IN')} (Refundable upon clean handover)</li>
                       </ul>
                     </div>
-                    <div className="agreement-signing-row">
+                    <div className="agreement-signing-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <span className={`status-pill ${isAgreementSigned ? 'good' : 'warn'}`}>
                         {isAgreementSigned ? '✓ Digital Agreement Signed' : 'Awaiting Digital Signature'}
                       </span>
-                      <button
-                        type="button"
-                        className={`btn ${isAgreementSigned ? 'secondary' : 'primary'} small`}
-                        onClick={() => setIsAgreementSigned(!isAgreementSigned)}
-                      >
-                        {isAgreementSigned ? 'Undo Signature' : 'Sign Agreement Digitally'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn secondary small"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => setShowAgreementPreviewModal(true)}
+                        >
+                          <Eye size={13} />
+                          <span>Preview</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${isAgreementSigned ? 'secondary' : 'primary'} small`}
+                          onClick={() => setIsAgreementSigned(!isAgreementSigned)}
+                        >
+                          {isAgreementSigned ? 'Undo Signature' : 'Sign Agreement Digitally'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2195,6 +2253,41 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
           </div>
         </div>
       )}
+
+      {/* Stage 4: Full Printable Commercial Lease Agreement Preview Modal */}
+      <CommercialLeaseAgreementPreviewModal
+        isOpen={showAgreementPreviewModal}
+        onClose={() => setShowAgreementPreviewModal(false)}
+        isSigned={isAgreementSigned}
+        onSignAgreement={() => {
+          setIsAgreementSigned(true);
+          showToast('✓ Agreement digitally signed by customer.');
+        }}
+        agreementData={{
+          customerName,
+          customerPhone,
+          drivingLicence,
+          aadhaar,
+          address,
+          selectedVehicleReg,
+          selectedVehicleObj,
+          dealType,
+          rateAmount,
+          billingFrequency,
+          securityDeposit,
+          depositReceiptRef,
+          tenureMonths: 12
+        }}
+      />
+
+      {/* AI Document OCR Scanner Modal (Upload & Camera Live Capture) */}
+      <DocumentOcrScannerModal
+        isOpen={showOcrScannerModal}
+        onClose={() => setShowOcrScannerModal(false)}
+        targetDocType={ocrTargetType}
+        title="Driver Document OCR Scanner (Upload & Camera)"
+        onDataExtracted={handleOcrExtracted}
+      />
     </div>
   );
 }

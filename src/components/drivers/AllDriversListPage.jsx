@@ -9,9 +9,12 @@ import {
   Plus,
   CheckCircle2,
   Grid,
-  List
+  List,
+  Shield,
+  FileText
 } from '../common/Icons';
 import { fetchDriversApi } from '../../services/api';
+import DriverDocumentsModal from './DriverDocumentsModal';
 
 export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver }) {
   const [loading, setLoading] = useState(true);
@@ -26,6 +29,7 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
   const [sortBy, setSortBy] = useState('default'); // 'default' | 'name' | 'gross' | 'trips' | 'wallet'
   const [sortOrder, setSortOrder] = useState('desc');
   const [toastMessage, setToastMessage] = useState(null);
+  const [docsModalDriver, setDocsModalDriver] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -443,8 +447,32 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                       <td>
                         <div className="table-dl-cell">
                           <span className="dl-expiry-date">{drv.kyc?.dlExpiry || 'Valid 2029'}</span>
-                          <div className="table-sub-row">
+                          <div className="table-sub-row" style={{ marginTop: '3px' }}>
                             <span className="dl-verified-tag">✓ RTO</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDocsModalDriver(drv);
+                              }}
+                              style={{
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                background: '#0284c7',
+                                border: '1px solid #38bdf8',
+                                color: '#ffffff',
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="View and manage attached KYC documents"
+                            >
+                              <FileText size={10} />
+                              <span>Docs ({drv.documents ? drv.documents.length : (drv.kyc?.panCard ? 3 : 2)})</span>
+                            </button>
                             {drv.kyc?.panCard && (
                               <span className="dl-verified-tag" style={{ background: '#f1f5f9', color: '#475569', borderColor: '#cbd5e1' }} title={`PAN: ${drv.kyc.panCard}`}>
                                 PAN: {drv.kyc.panCard}
@@ -461,18 +489,45 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
 
                       {/* Action Chevron */}
                       <td style={{ textAlign: 'right', paddingRight: '20px' }}>
-                        <button
-                          type="button"
-                          className="table-action-open-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectDriver(drv.id);
-                          }}
-                          title="Open Driver Details"
-                        >
-                          <span>View Profile</span>
-                          <ChevronRight size={15} />
-                        </button>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDocsModalDriver(drv);
+                            }}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              background: '#0f172a',
+                              border: '1px solid #0284c7',
+                              color: '#38bdf8',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            title="Manage Driver Documents (Admin)"
+                          >
+                            <FileText size={12} />
+                            <span>Documents</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="table-action-open-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectDriver(drv.id);
+                            }}
+                            title="Open Driver Details"
+                          >
+                            <span>Profile</span>
+                            <ChevronRight size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -572,11 +627,31 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                 </div>
 
                 {/* Card Footer: Rating & Action Button */}
-                <div className="card-footer-action-row">
-                  <div className="card-rating-tag">
-                    <span>★ {drv.rating || '4.8'}</span>
-                    <span className="rating-desc">Rating</span>
-                  </div>
+                <div className="card-footer-action-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDocsModalDriver(drv);
+                    }}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      background: '#0f172a',
+                      border: '1px solid #0284c7',
+                      color: '#38bdf8',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="View & manage driver attached documents"
+                  >
+                    <FileText size={12} />
+                    <span>Docs ({drv.documents ? drv.documents.length : (drv.kyc?.panCard ? 3 : 2)})</span>
+                  </button>
 
                   <button
                     type="button"
@@ -610,6 +685,14 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
           Institutional Fleet Core System • Secured Admin Session
         </span>
       </div>
+
+      {/* Driver Multi-Document Management Modal (Admin Authority) */}
+      <DriverDocumentsModal
+        isOpen={!!docsModalDriver}
+        onClose={() => setDocsModalDriver(null)}
+        driver={docsModalDriver}
+        onDocumentsUpdated={loadAllDrivers}
+      />
     </div>
   );
 }

@@ -22,8 +22,10 @@ import {
   Download,
   Activity,
   Check,
-  Truck
+  Truck,
+  Scan
 } from '../common/Icons';
+import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import {
   fetchEscalationsApi,
   createEscalationApi,
@@ -32,6 +34,7 @@ import {
   updateEscalationApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import EscalationChatSection from './EscalationChatSection';
 
 export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,7 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
   const [newNoteText, setNewNoteText] = useState('');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [showOcrModal, setShowOcrModal] = useState(false);
 
   // Resolution Dialog state inside Detail
   const [isResolving, setIsResolving] = useState(false);
@@ -86,6 +90,30 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleOcrExtracted = (extracted) => {
+    if (!extracted) return;
+    const targetVeh = extracted.registration || extracted.vehicle;
+    if (targetVeh) {
+      handleVehicleChange(targetVeh);
+    }
+    setCreateForm(prev => {
+      const updated = { ...prev };
+      if (extracted.detectedType === 'challan') {
+        updated.category = 'Traffic Challan / Fine';
+        updated.problem = `Traffic Violation: ${extracted.offence || 'Fine Issued'} (Challan #${extracted.challanNumber || 'Notice'}) - Amount: ${extracted.amount || 'Pending'}`;
+        updated.priority = 'P2';
+      } else if (extracted.detectedType === 'maintenance') {
+        updated.category = 'Maintenance';
+        updated.problem = `Workshop repair issue (${extracted.workshopName || 'Hub'}) - Inv #${extracted.invoiceNumber || 'Pending'} - Total: ₹${extracted.totalAmount || '0'}`;
+        updated.priority = 'P2';
+      } else if (extracted.offence) {
+        updated.problem = extracted.offence;
+      }
+      return updated;
+    });
+    showToast(`✓ OCR Scanned: Auto-filled ${extracted.docType || 'Document'} details.`);
   };
 
   const handleVehicleChange = (val) => {
@@ -1432,6 +1460,15 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
               </div>
             </div>
 
+            {/* Real-Time Driver & Admin Chat System with Voice Notes */}
+            <EscalationChatSection
+              ticket={selectedTicket}
+              onTicketUpdated={(updatedTicket) => {
+                setSelectedTicket(updatedTicket);
+                loadData();
+              }}
+            />
+
             {/* Audit Trail & Investigation Timeline */}
             <div className="panel" style={{ marginTop: '14px', padding: '14px', borderRadius: '10px' }}>
               <h3 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 10px' }}>
@@ -1570,11 +1607,23 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
           >
             <button className="close" onClick={() => setIsCreateModalOpen(false)}>×</button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ color: '#ef3340', display: 'flex' }}><AlertTriangle size={20} /></span>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 850 }}>
-                Create Escalation Ticket
-              </h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#ef3340', display: 'flex' }}><AlertTriangle size={20} /></span>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 850 }}>
+                  Create Escalation Ticket
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="btn small secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd', fontWeight: 700 }}
+                onClick={() => setShowOcrModal(true)}
+                title="Scan Traffic Challan or Incident Receipt with AI OCR"
+              >
+                <Scan size={14} color="#0284c7" />
+                <span>📷 Scan Challan / Proof (AI OCR)</span>
+              </button>
             </div>
             <div className="sub" style={{ marginBottom: '14px' }}>
               Log a problem, exception or operational issue with assigned SLA clock and routing.
@@ -1765,6 +1814,15 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
           </div>
         </div>
       )}
+
+      {/* AI Challan & Incident Document OCR Scanner Modal */}
+      <DocumentOcrScannerModal
+        isOpen={showOcrModal}
+        onClose={() => setShowOcrModal(false)}
+        targetDocType="challan"
+        title="Traffic Challan & Incident Slip AI OCR Scanner"
+        onDataExtracted={handleOcrExtracted}
+      />
     </div>
   );
 }

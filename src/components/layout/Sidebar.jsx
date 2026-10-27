@@ -20,7 +20,7 @@ import {
   AlertTriangle
 } from '../common/Icons';
 
-// Grouped Menu Sections matching User Screenshot & Wireframe v8
+// Grouped Menu Sections matching User Flow
 const MENU_SECTIONS = [
   {
     title: 'OPERATIONS',
@@ -38,20 +38,15 @@ const MENU_SECTIONS = [
           { id: 'vehicle-assignments', label: 'Vehicle Assignment', icon: ArrowLeftRight }
         ]
       },
+      { id: 'bookings', label: 'Bookings / Leases', icon: FileText, hasSubmenu: false },
+      { id: 'invoices', label: 'Rental Invoices', icon: Receipt, hasSubmenu: false },
+      { id: 'generate-invoice', label: 'Generate Invoice', icon: Plus, hasSubmenu: false },
+      { id: 'wallet', label: 'Wallet Health', icon: Wallet, hasSubmenu: false },
       { id: 'escalation-master', label: 'Escalation Master', icon: AlertTriangle, hasSubmenu: false },
       { id: 'trips', label: 'Trips', icon: Activity, hasSubmenu: false },
       { id: 'maintenance', label: 'Maintenance', icon: Wrench, hasSubmenu: false },
       { id: 'fuel', label: 'Fuel', icon: Fuel, hasSubmenu: false },
       { id: 'compliance', label: 'RTO & Compliance', icon: Shield, hasSubmenu: false }
-    ]
-  },
-  {
-    title: 'RENTALS & COLLECTIONS',
-    items: [
-      { id: 'bookings', label: 'Bookings / Leases', icon: FileText, hasSubmenu: false },
-      { id: 'invoices', label: 'Rental Invoices', icon: Receipt, hasSubmenu: false },
-      { id: 'generate-invoice', label: 'Generate Invoice', icon: Plus, hasSubmenu: false },
-      { id: 'wallet', label: 'Wallet Health', icon: Wallet, hasSubmenu: false }
     ]
   },
   {

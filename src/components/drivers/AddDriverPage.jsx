@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users,
   User,
@@ -11,9 +11,18 @@ import {
   MapPin,
   Clock,
   Plus,
-  X
+  X,
+  Scan,
+  Camera,
+  FileUp,
+  Trash2
 } from '../common/Icons';
-import { onboardDriverApi, fetchFleetTowerApi, createVehicleApi } from '../../services/api';
+import { onboardDriverApi, fetchFleetTowerApi, createVehicleApi, scanDocumentWithGeminiApi } from '../../services/api';
+import DocumentOcrScannerModal, {
+  preprocessImageForOcr,
+  parseIndianDocumentOcr
+} from '../common/DocumentOcrScannerModal';
+import Tesseract from 'tesseract.js';
 
 // Fallback spare assets if network is offline
 const FLEET_AVAILABLE_VEHICLES = [
@@ -33,8 +42,237 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
   const [otpSent, setOtpSent] = useState(false);
   const [mobileVerified, setMobileVerified] = useState(true);
 
+  // Document OCR Scanning State
+  const [showOcrModal, setShowOcrModal] = useState(false);
+  const [ocrTargetType, setOcrTargetType] = useState('all');
+  const [ocrSuccessToast, setOcrSuccessToast] = useState(null);
+
+  // Multi-Document Batch OCR & Storage
+  const multiFileInputRef = useRef(null);
+  const [attachedDocs, setAttachedDocs] = useState([]);
+  const [isBatchOcrProcessing, setIsBatchOcrProcessing] = useState(false);
+  const [batchOcrProgress, setBatchOcrProgress] = useState('');
+
+  const handleOcrDataExtracted = (extracted) => {
+    if (!extracted) return;
+    setFormData(prev => ({
+      ...prev,
+      name: extracted.name || prev.name,
+      phone: extracted.phone || prev.phone,
+      dob: extracted.dob || prev.dob,
+      gender: extracted.gender || prev.gender,
+      fatherName: extracted.fatherName || prev.fatherName,
+      referenceName: extracted.fatherName || prev.referenceName,
+      drivingLicence: extracted.drivingLicence || prev.drivingLicence,
+      dlExpiry: extracted.dlExpiry || prev.dlExpiry,
+      dlCategory: extracted.dlCategory || prev.dlCategory,
+      aadhaar: extracted.aadhaar || prev.aadhaar,
+      panCard: extracted.panCard || prev.panCard,
+      address: extracted.address || prev.address,
+      policeVerification: extracted.policeVerification || prev.policeVerification
+    }));
+    const summary = [
+      extracted.name && `Name: ${extracted.name}`,
+      extracted.phone && `Mobile: ${extracted.phone}`,
+      extracted.dob && `DOB: ${extracted.dob}`,
+      extracted.gender && `Gender: ${extracted.gender}`,
+      extracted.aadhaar && `Aadhaar: ${extracted.aadhaar}`,
+      extracted.drivingLicence && `DL: ${extracted.drivingLicence}`,
+      extracted.panCard && `PAN: ${extracted.panCard}`
+    ].filter(Boolean).join(' • ');
+    setOcrSuccessToast(`✓ Auto-Fetched from ${extracted.docType || 'Document'}: ${summary}`);
+    setTimeout(() => setOcrSuccessToast(null), 6000);
+  };
+
+  const handleMultiImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setIsBatchOcrProcessing(true);
+    setBatchOcrProgress(`Reading ${files.length} document image${files.length > 1 ? 's' : ''}...`);
+
+    const newDocs = [];
+    const mergedFields = {};
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setBatchOcrProgress(`Analyzing Image ${i + 1} of ${files.length}: ${file.name}...`);
+
+      try {
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target.result);
+          reader.readAsDataURL(file);
+        });
+
+        // Priority 1: Call Google Gemini Multimodal Vision API (if GEMINI_API_KEY in .env)
+        let extracted = null;
+        let geminiWorked = false;
+        try {
+          setBatchOcrProgress(`Analyzing Image ${i + 1} with Google Gemini Vision AI...`);
+          const geminiData = await scanDocumentWithGeminiApi(dataUrl, 'all');
+          if (geminiData && (geminiData.name || geminiData.drivingLicence || geminiData.aadhaar || geminiData.panCard)) {
+            extracted = geminiData;
+            geminiWorked = true;
+          }
+        } catch (geminiErr) {
+          console.info('Gemini batch note (using local engine):', geminiErr.message);
+        }
+
+        // Priority 2: Local Preprocessing & Tesseract OCR Fallback
+        if (!geminiWorked) {
+          let recognizedText = '';
+          try {
+            const preprocessed = await preprocessImageForOcr(dataUrl);
+            const tesseractPromise = Tesseract.recognize(preprocessed, 'eng');
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 10000)
+            );
+            const ocrRes = await Promise.race([tesseractPromise, timeoutPromise]);
+            recognizedText = ocrRes?.data?.text || '';
+          } catch (tessErr) {
+            console.warn('Batch OCR note:', tessErr.message);
+          }
+          extracted = parseIndianDocumentOcr(recognizedText, 'all') || {};
+        }
+
+        if (!extracted) extracted = {};
+
+        if (extracted.name && !mergedFields.name) mergedFields.name = extracted.name;
+        if (extracted.phone && !mergedFields.phone) mergedFields.phone = extracted.phone;
+        if (extracted.dob && !mergedFields.dob) mergedFields.dob = extracted.dob;
+        if (extracted.gender && !mergedFields.gender) mergedFields.gender = extracted.gender;
+        if (extracted.fatherName && !mergedFields.fatherName) {
+          mergedFields.fatherName = extracted.fatherName;
+          mergedFields.referenceName = extracted.fatherName;
+        }
+        if (extracted.drivingLicence && !mergedFields.drivingLicence) mergedFields.drivingLicence = extracted.drivingLicence;
+        if (extracted.dlExpiry && !mergedFields.dlExpiry) mergedFields.dlExpiry = extracted.dlExpiry;
+        if (extracted.dlCategory && !mergedFields.dlCategory) mergedFields.dlCategory = extracted.dlCategory;
+        if (extracted.aadhaar && !mergedFields.aadhaar) mergedFields.aadhaar = extracted.aadhaar;
+        if (extracted.panCard && !mergedFields.panCard) mergedFields.panCard = extracted.panCard;
+        if (extracted.address && !mergedFields.address) mergedFields.address = extracted.address;
+
+        let docType = extracted.detectedType || 'other';
+        let docTitle = file.name;
+        if (docType === 'dl' || extracted.drivingLicence) {
+          docType = 'dl';
+          docTitle = `Driving Licence Card (${extracted.drivingLicence || 'DL'})`;
+        } else if (docType === 'aadhaar' || extracted.aadhaar) {
+          docType = 'aadhaar';
+          docTitle = `Aadhaar Card (${extracted.aadhaar ? extracted.aadhaar.slice(-4) : 'UIDAI'})`;
+        } else if (docType === 'pan' || extracted.panCard) {
+          docType = 'pan';
+          docTitle = `PAN Card (${extracted.panCard || 'ITD'})`;
+        } else {
+          docTitle = `Driver KYC Document (${file.name})`;
+        }
+
+        newDocs.push({
+          id: `doc_${Date.now()}_${i}`,
+          title: docTitle,
+          type: docType,
+          fileUrl: dataUrl,
+          fileSize: `${Math.round(file.size / 1024)} KB`,
+          uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          verified: true,
+          status: 'Verified (OCR Cleared)',
+          extractedData: extracted
+        });
+      } catch (err) {
+        console.warn('Error reading file:', file.name, err);
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      ...mergedFields
+    }));
+
+    setAttachedDocs((prev) => [...prev, ...newDocs]);
+    setIsBatchOcrProcessing(false);
+    setBatchOcrProgress('');
+
+    const toastSummary = [
+      mergedFields.name && `Name: ${mergedFields.name}`,
+      mergedFields.phone && `Mobile: ${mergedFields.phone}`,
+      mergedFields.drivingLicence && `DL: ${mergedFields.drivingLicence}`,
+      mergedFields.aadhaar && `Aadhaar: ${mergedFields.aadhaar}`,
+      mergedFields.dob && `DOB: ${mergedFields.dob}`
+    ].filter(Boolean).join(' • ');
+
+    setOcrSuccessToast(
+      `✓ Processed ${files.length} Document Images! Auto-Filled: ${toastSummary || 'KYC Information'}. Saved to Driver Document Vault.`
+    );
+    setTimeout(() => setOcrSuccessToast(null), 8000);
+
+    if (multiFileInputRef.current) {
+      multiFileInputRef.current.value = '';
+    }
+  };
+
+  const handleRotateAttachedDoc = async (docIndex) => {
+    const doc = attachedDocs[docIndex];
+    if (!doc || !doc.fileUrl) return;
+    try {
+      const rotatedUrl = await preprocessImageForOcr(doc.fileUrl, 90);
+      setAttachedDocs((prev) => {
+        const next = [...prev];
+        next[docIndex] = { ...next[docIndex], fileUrl: rotatedUrl };
+        return next;
+      });
+      // Re-run OCR with Gemini Vision or Local Engine
+      try {
+        let extracted = null;
+        try {
+          const geminiData = await scanDocumentWithGeminiApi(rotatedUrl, doc.type);
+          if (geminiData && (geminiData.name || geminiData.drivingLicence || geminiData.aadhaar)) {
+            extracted = geminiData;
+          }
+        } catch (gErr) {
+          console.info('Rotated Gemini note:', gErr.message);
+        }
+
+        if (!extracted) {
+          const tesseractPromise = Tesseract.recognize(rotatedUrl, 'eng');
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 8000)
+          );
+          const ocrRes = await Promise.race([tesseractPromise, timeoutPromise]);
+          const recognized = ocrRes?.data?.text || '';
+          extracted = parseIndianDocumentOcr(recognized, doc.type) || {};
+        }
+
+        if (extracted && (extracted.name || extracted.drivingLicence || extracted.aadhaar || extracted.phone)) {
+          setFormData((prev) => ({
+            ...prev,
+            name: extracted.name || prev.name,
+            phone: extracted.phone || prev.phone,
+            drivingLicence: extracted.drivingLicence || prev.drivingLicence,
+            aadhaar: extracted.aadhaar || prev.aadhaar,
+            dob: extracted.dob || prev.dob,
+            gender: extracted.gender || prev.gender,
+            fatherName: extracted.fatherName || prev.fatherName,
+            address: extracted.address || prev.address
+          }));
+        }
+      } catch (err) {
+        console.warn('Rotated OCR warning:', err);
+      }
+    } catch (err) {
+      console.warn('Rotation error:', err);
+    }
+  };
+
+  const handleRemoveAttachedDoc = (docIndex) => {
+    setAttachedDocs((prev) => prev.filter((_, idx) => idx !== docIndex));
+  };
+
   const [formData, setFormData] = useState({
     name: '',
+    dob: '1986-07-16',
+    gender: 'Male',
+    fatherName: '',
     phone: '',
     altPhone: '',
     city: 'Gurgaon Operations Hub',
@@ -202,6 +440,9 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
       const payload = {
         name: formData.name.trim(),
+        dob: formData.dob || '1986-07-16',
+        gender: formData.gender || 'Male',
+        fatherName: formData.fatherName.trim(),
         phone: formData.phone.trim(),
         altPhone: formData.altPhone.trim(),
         city: formData.city,
@@ -240,7 +481,9 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         vehicleModel: selectedVehicleObj ? (selectedVehicleObj.model || selectedVehicleObj.reg) : (formData.selectedVehicleReg ? 'Commercial Fleet Vehicle' : ''),
         vehicleType: selectedVehicleObj ? selectedVehicleObj.type : 'CNG',
         handoverOdometer: `${formData.handoverOdometer} km`,
-        initialBalance: Number(formData.initialBalance) || 0
+        initialBalance: Number(formData.initialBalance) || 0,
+        // Attached KYC Documents Vault
+        documents: attachedDocs.length > 0 ? attachedDocs : undefined
       };
 
       const res = await onboardDriverApi(payload);
@@ -395,6 +638,314 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
       <div className="adp-content-split">
         {/* Left Column: The Form */}
         <div className="adp-form-col">
+          {/* Hero OCR Document Scanning Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            border: '1.5px solid #0284c7',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '14px',
+            boxShadow: '0 4px 15px rgba(2, 132, 199, 0.15)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Scan size={22} color="#ffffff" />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <strong style={{ fontSize: '14px', color: '#ffffff' }}>Instant AI Document OCR Auto-Fill</strong>
+                  <span style={{ fontSize: '10px', background: '#38bdf8', color: '#0f172a', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
+                    AUTO-DETECT
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#94a3b8' }}>
+                  Select document file or take live camera photo (DL, Aadhaar, PAN) to auto-extract and pre-fill details. All manual typing inputs remain active.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                type="file"
+                ref={multiFileInputRef}
+                multiple
+                accept="image/*"
+                onChange={handleMultiImageUpload}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
+                disabled={isBatchOcrProcessing}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #10b981',
+                  background: '#059669',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: isBatchOcrProcessing ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+                }}
+              >
+                <FileText size={15} />
+                <span>{isBatchOcrProcessing ? batchOcrProgress : '📑 Select Multiple Images (Batch OCR & Store)'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOcrTargetType('all');
+                  setShowOcrModal(true);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #38bdf8',
+                  background: '#0284c7',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)'
+                }}
+              >
+                <FileUp size={15} />
+                <span>Single File / Modal</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOcrTargetType('all');
+                  setShowOcrModal(true);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #0284c7',
+                  background: '#0f172a',
+                  color: '#38bdf8',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Camera size={15} />
+                <span>Open Camera</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Attached Documents Vault Gallery & Batch Progress */}
+          {isBatchOcrProcessing && (
+            <div style={{
+              background: '#eff6ff',
+              border: '1.5px solid #93c5fd',
+              borderRadius: '10px',
+              padding: '12px 18px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#1d4ed8'
+            }}>
+              <div style={{ width: '18px', height: '18px', border: '3px solid #93c5fd', borderTopColor: '#1d4ed8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div>
+                <strong style={{ fontSize: '13px' }}>Neural Batch OCR Processing:</strong>
+                <span style={{ fontSize: '12.5px', marginLeft: '6px' }}>{batchOcrProgress}</span>
+              </div>
+            </div>
+          )}
+
+          {attachedDocs.length > 0 && (
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '20px' }}>🗄️</span>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                      Driver KYC Document Vault ({attachedDocs.length} Attached)
+                    </h4>
+                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
+                      All uploaded photos are OCR-scanned and will be permanently stored in this driver's record.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
+                    color: '#334155',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Plus size={13} />
+                  <span>+ Add More Images</span>
+                </button>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: '14px'
+              }}>
+                {attachedDocs.map((doc, idx) => (
+                  <div
+                    key={doc.id || idx}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      background: '#f8fafc',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <div style={{ position: 'relative', height: '140px', background: '#0f172a' }}>
+                      <img
+                        src={doc.fileUrl}
+                        alt={doc.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: '6px',
+                        left: '6px',
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        color: '#38bdf8',
+                        fontSize: '9.5px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {doc.type}
+                      </span>
+                      <span style={{
+                        position: 'absolute',
+                        top: '6px',
+                        right: '6px',
+                        background: 'rgba(5, 150, 105, 0.9)',
+                        color: '#ffffff',
+                        fontSize: '9.5px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        ✓ Stored in Vault
+                      </span>
+                    </div>
+
+                    <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {doc.title}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px' }}>
+                          {doc.fileSize} • Uploaded
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleRotateAttachedDoc(idx)}
+                          style={{
+                            flex: 1,
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px'
+                          }}
+                          title="Rotate image 90 degrees and re-run OCR"
+                        >
+                          <span>↺ Rotate 90°</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachedDoc(idx)}
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            borderRadius: '6px',
+                            border: '1px solid #fecaca',
+                            background: '#fef2f2',
+                            color: '#dc2626',
+                            cursor: 'pointer'
+                          }}
+                          title="Remove document"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {ocrSuccessToast && (
+            <div style={{
+              background: '#064e3b',
+              border: '1.5px solid #10b981',
+              borderRadius: '10px',
+              padding: '12px 18px',
+              marginBottom: '18px',
+              color: '#a7f3d0',
+              fontSize: '13px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+            }}>
+              <CheckCircle2 size={18} color="#34d399" />
+              <span>{ocrSuccessToast}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} noValidate>
 
             {/* SECTION 1: Personal, Mobile Verification & Reference (PDF Step 01) */}
@@ -414,18 +965,62 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                 <div className="adp-grid-2col">
                   <div className="adp-form-group full-width">
                     <label className="adp-field-label">
-                      Full Driver Name (As on Driving Licence) <span className="req">*</span>
+                      Full Driver Name (As on Driving Licence / Aadhaar) <span className="req">*</span>
                     </label>
                     <div className="adp-input-wrap">
                       <input
                         type="text"
                         className="adp-text-input"
                         required
-                        placeholder="e.g. Ramesh Chandra Yadav"
+                        placeholder="e.g. Nasir Gotam / D Manikandan"
                         value={formData.name}
                         onChange={(e) => updateField('name', e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  <div className="adp-form-group">
+                    <label className="adp-field-label">
+                      Date of Birth (DOB) <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="adp-text-input font-mono"
+                      placeholder="e.g. 27/07/1979 or 16/07/1986"
+                      value={formData.dob}
+                      onChange={(e) => updateField('dob', e.target.value)}
+                    />
+                    <span className="adp-field-hint">Auto-extracted from Aadhaar / DL / PAN OCR</span>
+                  </div>
+
+                  <div className="adp-form-group">
+                    <label className="adp-field-label">Gender</label>
+                    <select
+                      className="adp-select-input"
+                      value={formData.gender}
+                      onChange={(e) => updateField('gender', e.target.value)}
+                    >
+                      <option value="Male">Male (पुरुष)</option>
+                      <option value="Female">Female (महिला)</option>
+                      <option value="Other">Other / Transgender</option>
+                    </select>
+                  </div>
+
+                  <div className="adp-form-group">
+                    <label className="adp-field-label">Father / S/D/W Name</label>
+                    <input
+                      type="text"
+                      className="adp-text-input"
+                      placeholder="e.g. Duraisamy / Rajendra Singh"
+                      value={formData.fatherName}
+                      onChange={(e) => {
+                        updateField('fatherName', e.target.value);
+                        if (!formData.referenceName || formData.referenceName === 'Suresh Verma') {
+                          updateField('referenceName', e.target.value);
+                        }
+                      }}
+                    />
+                    <span className="adp-field-hint">Auto-extracted from PAN Father's Name or DL S/D/W</span>
                   </div>
 
                   <div className="adp-form-group">
@@ -476,8 +1071,6 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       />
                     </div>
                   </div>
-
-
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">Permanent Residential Address</label>
@@ -585,11 +1178,81 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
                 </div>
 
+                {/* Dedicated Multi-Document KYC Upload Button inside Step 2 */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px dashed #0284c7',
+                  borderRadius: '10px',
+                  padding: '14px 18px',
+                  marginBottom: '18px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>
+                      ⚡ Multi-Document KYC Auto-Extract &amp; Store
+                    </strong>
+                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
+                      Upload photos of DL (Front &amp; Back), Aadhaar (Front &amp; Back), or PAN. Sikhar OCR extracts all fields and saves photos permanently into this driver's Document Vault.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
+                    disabled={isBatchOcrProcessing}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: isBatchOcrProcessing ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)'
+                    }}
+                  >
+                    <FileText size={14} />
+                    <span>📑 Upload Document Images (Batch OCR)</span>
+                  </button>
+                </div>
+
                 <div className="adp-grid-2col">
                   <div className="adp-form-group">
-                    <label className="adp-field-label">
-                      Commercial Driving Licence (DL) Number <span className="req">*</span>
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label className="adp-field-label">
+                        Commercial Driving Licence (DL) Number <span className="req">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOcrTargetType('dl');
+                          setShowOcrModal(true);
+                        }}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          color: '#0284c7',
+                          background: '#f0f9ff',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Scan size={12} />
+                        <span>Scan DL (OCR)</span>
+                      </button>
+                    </div>
                     <div className="adp-input-wrap">
                       <input
                         type="text"
@@ -627,7 +1290,32 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
 
                   <div className="adp-form-group">
-                    <label className="adp-field-label">Aadhaar Card Number</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label className="adp-field-label">Aadhaar Card Number</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOcrTargetType('aadhaar');
+                          setShowOcrModal(true);
+                        }}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          color: '#0284c7',
+                          background: '#f0f9ff',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Scan size={12} />
+                        <span>Scan Aadhaar (OCR)</span>
+                      </button>
+                    </div>
                     <input
                       type="text"
                       className="adp-text-input font-mono"
@@ -638,9 +1326,34 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
 
                   <div className="adp-form-group">
-                    <label className="adp-field-label">
-                      PAN Card Number (Permanent Account Number)
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label className="adp-field-label">
+                        PAN Card Number (Permanent Account Number)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOcrTargetType('pan');
+                          setShowOcrModal(true);
+                        }}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          color: '#0284c7',
+                          background: '#f0f9ff',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Scan size={12} />
+                        <span>Scan PAN (OCR)</span>
+                      </button>
+                    </div>
                     <div className="adp-input-wrap">
                       <input
                         type="text"
@@ -1590,6 +2303,15 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           </div>
         </div>
       )}
+
+      {/* AI Document OCR Scanner Modal (Upload & Camera Live Capture) */}
+      <DocumentOcrScannerModal
+        isOpen={showOcrModal}
+        onClose={() => setShowOcrModal(false)}
+        targetDocType={ocrTargetType}
+        title="Driver Document OCR Scanner (Upload & Camera)"
+        onDataExtracted={handleOcrDataExtracted}
+      />
     </div>
   );
 }

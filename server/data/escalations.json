@@ -139,6 +139,31 @@
       },
       "timeline": [
         {
+          "time": "19 Oct, 11:23 AM",
+          "user": "Admin (Mohit)",
+          "text": "testing this chat"
+        },
+        {
+          "time": "19 Oct, 11:22 AM",
+          "user": "Admin (Mohit)",
+          "text": "[Voice Note · 6s]: Voice instruction from dispatch to driver chetan"
+        },
+        {
+          "time": "19 Oct, 11:22 AM",
+          "user": "Admin (Mohit)",
+          "text": "[Voice Note · 4s]: Voice instruction from dispatch to driver chetan"
+        },
+        {
+          "time": "19 Oct, 11:12 AM",
+          "user": "Admin (Mohit)",
+          "text": "[Voice Note · 6s]: Voice note: Mechanic has authorization to swap the high voltage sensor."
+        },
+        {
+          "time": "19 Oct, 11:12 AM",
+          "user": "Driver (chetan)",
+          "text": "Mechanic is here now, inspecting the inverter."
+        },
+        {
           "time": "14 Oct, 03:15 PM",
           "user": "Admin",
           "text": "Ticket marked as Resolved: \"Issue addressed, operational verify completed.\". Driver confirmed: Yes."
@@ -158,7 +183,113 @@
         "note": "Issue addressed, operational verify completed.",
         "resolvedAt": "14 Oct, 03:15 PM",
         "driverConfirmed": true
-      }
+      },
+      "messages": [
+        {
+          "id": "msg-seed-1-ESC-1026",
+          "sender": "driver",
+          "senderName": "Driver: chetan",
+          "type": "text",
+          "text": "Sudden deceleration and high voltage isolation fault while driving near Cyber City ramp. Instrument cluster showing error code DTC-B204. Vehicle halted safely in parking bay.",
+          "timestamp": "10:14 AM",
+          "fullTime": "Today, 10:14 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-seed-2-ESC-1026",
+          "sender": "driver",
+          "senderName": "Driver: chetan",
+          "type": "voice",
+          "text": "Voice note: Explaining breakdown sound and location landmark near cyber hub.",
+          "audioUrl": null,
+          "duration": 5.5,
+          "timestamp": "10:16 AM",
+          "fullTime": "Today, 10:16 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-seed-3-ESC-1026",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "text",
+          "text": "Understood chetan. I have received your voice note and logged high-priority ticket ESC-1026. Roadside assistance dispatch has been notified.",
+          "timestamp": "10:19 AM",
+          "fullTime": "Today, 10:19 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-seed-4-ESC-1026",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "voice",
+          "text": "Voice note: Please stay inside safety perimeter, mechanic is 8 minutes away.",
+          "audioUrl": null,
+          "duration": 4.2,
+          "timestamp": "10:21 AM",
+          "fullTime": "Today, 10:21 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-1792388547967-dasm",
+          "sender": "driver",
+          "senderName": "Driver (chetan)",
+          "type": "text",
+          "text": "Mechanic is here now, inspecting the inverter.",
+          "audioUrl": null,
+          "duration": 0,
+          "timestamp": "11:12 AM",
+          "fullTime": "19 Oct, 11:12 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-1792388553033-kb8u",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "voice",
+          "text": "Voice note: Mechanic has authorization to swap the high voltage sensor.",
+          "audioUrl": null,
+          "duration": 6.2,
+          "timestamp": "11:12 AM",
+          "fullTime": "19 Oct, 11:12 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-1792389128060-lc9c",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "voice",
+          "text": "Voice instruction from dispatch to driver chetan",
+          "audioUrl": null,
+          "duration": 4,
+          "timestamp": "11:22 AM",
+          "fullTime": "19 Oct, 11:22 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-1792389153026-hu8e",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "voice",
+          "text": "Voice instruction from dispatch to driver chetan",
+          "audioUrl": null,
+          "duration": 6,
+          "timestamp": "11:22 AM",
+          "fullTime": "19 Oct, 11:22 AM",
+          "status": "delivered"
+        },
+        {
+          "id": "msg-1792389198420-my2e",
+          "sender": "admin",
+          "senderName": "Admin (Mohit)",
+          "type": "text",
+          "text": "testing this chat",
+          "audioUrl": null,
+          "duration": 0,
+          "timestamp": "11:23 AM",
+          "fullTime": "19 Oct, 11:23 AM",
+          "status": "delivered"
+        }
+      ]
     },
     {
       "id": "ESC-1024",

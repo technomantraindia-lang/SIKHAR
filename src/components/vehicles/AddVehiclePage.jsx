@@ -5,13 +5,17 @@ import {
   Shield,
   IndianRupee,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  Scan
 } from '../common/Icons';
+import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import { createVehicleApi } from '../../services/api';
 
 export default function AddVehiclePage({ onBack, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showOcrModal, setShowOcrModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Form State matching PDF Page 3 & 8 requirements
   const [formData, setFormData] = useState({
@@ -53,6 +57,32 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
     });
   };
 
+  const handleOcrExtracted = (extracted) => {
+    if (!extracted) return;
+    setFormData(prev => {
+      const updated = { ...prev };
+      if (extracted.registration) updated.registration = extracted.registration.toUpperCase().replace(/\s+/g, '');
+      if (extracted.model) updated.model = extracted.model;
+      if (extracted.type) {
+        updated.type = extracted.type;
+        if (extracted.type === 'EV') {
+          updated.connectorType = 'CCS2 (Combined Charging System)';
+          updated.battery = '100%';
+        } else {
+          updated.connectorType = 'Standard Dual-Stage CNG Valve';
+          updated.battery = '100% (CNG Full)';
+        }
+      }
+      if (extracted.chassis) updated.chassis = extracted.chassis.toUpperCase();
+      if (extracted.fitnessExpiry) updated.fitnessExpiry = extracted.fitnessExpiry;
+      if (extracted.insuranceExpiry) updated.insuranceExpiry = extracted.insuranceExpiry;
+      if (extracted.pucExpiry) updated.pucExpiry = extracted.pucExpiry;
+      return updated;
+    });
+    setToastMessage(`✓ RC Scanned: Auto-filled ${extracted.registration || 'Vehicle'} details.`);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -91,6 +121,26 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
 
   return (
     <div className="terminal-content add-vehicle-stage">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '24px',
+          background: '#0d2140',
+          color: '#ffffff',
+          padding: '12px 18px',
+          borderRadius: '8px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+          zIndex: 99999,
+          fontWeight: 700,
+          fontSize: '13px',
+          borderLeft: '4px solid #10b981'
+        }}>
+          {toastMessage}
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="command-header">
         <div>
@@ -108,6 +158,16 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
         </div>
 
         <div className="command-actions-row">
+          <button
+            type="button"
+            className="btn secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd', fontWeight: 700 }}
+            onClick={() => setShowOcrModal(true)}
+            title="Scan Vehicle Registration Certificate (RC) with AI OCR"
+          >
+            <Scan size={15} color="#0284c7" />
+            <span>📷 Scan Vehicle RC (AI OCR)</span>
+          </button>
           <button className="btn secondary" onClick={onBack} disabled={loading}>
             Cancel
           </button>
@@ -419,6 +479,15 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
           </button>
         </div>
       </form>
+
+      {/* AI Vehicle Registration (RC) Scanner Modal */}
+      <DocumentOcrScannerModal
+        isOpen={showOcrModal}
+        onClose={() => setShowOcrModal(false)}
+        targetDocType="rc"
+        title="Vehicle RC (Registration Certificate) AI OCR Scanner"
+        onDataExtracted={handleOcrExtracted}
+      />
     </div>
   );
 }

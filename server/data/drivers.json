@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalDrivers": 14,
+    "totalDrivers": 15,
     "activeContracts": 57,
     "onDuty": 9,
     "onLeave": 1,
@@ -54,6 +54,107 @@
     }
   ],
   "drivers": [
+    {
+      "id": "drv-15",
+      "name": "Dhruv Parekh",
+      "phone": "9428424115",
+      "altPhone": "",
+      "city": "Gurgaon Operations Hub",
+      "photo": "",
+      "mobileVerified": true,
+      "status": "Ready",
+      "rating": 5,
+      "shift": "07:00 AM - 07:00 PM (Active)",
+      "shiftType": "24-Hour Primary Dedication",
+      "coDriver": null,
+      "location": "Gurgaon Operations Hub",
+      "vehicle": null,
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 0,
+        "activeHolds": 0,
+        "spendableBalance": 0,
+        "outstandingDues": 0,
+        "status": "Zero Balance",
+        "autoTopup": false,
+        "lastTopup": "Awaiting First Recharge",
+        "recentTransactions": [
+          {
+            "id": "WTX-9833",
+            "date": "27 Oct 2026, 10:00 AM",
+            "type": "Account Created",
+            "amount": "₹0.00",
+            "method": "System Onboarding",
+            "status": "Ready for Recharge"
+          }
+        ]
+      },
+      "kyc": {
+        "dob": "09-04-2007",
+        "gender": "Male",
+        "fatherName": "RAKESHBHAI PAREKH",
+        "aadhaar": "3639 7365 6509",
+        "aadhaarVerified": true,
+        "panCard": "ABCDE1234F",
+        "panVerified": true,
+        "drivingLicence": "GJ06 20250013670",
+        "dlExpiry": "14 Nov 2030",
+        "dlCategory": "Commercial LMV",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "+91 98112 34567 (Family)",
+        "reference": {
+          "name": "Suresh Verma",
+          "phone": "+91 98101 88990",
+          "relation": "Fleet Guarantor",
+          "address": "Sector 14, Gurgaon"
+        },
+        "address": "A/12, manish appartment, new sama road, Vadodara, Gujarat - 390008"
+      },
+      "documents": [
+        {
+          "id": "doc-dhruv-dl",
+          "title": "Gujarat Driving Licence Card (GJ06 20250013670)",
+          "type": "dl",
+          "fileUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+          "fileSize": "145 KB",
+          "uploadedAt": "27 Oct 2026",
+          "verified": true,
+          "status": "Verified (OCR Cleared)"
+        },
+        {
+          "id": "doc-dhruv-adh",
+          "title": "Aadhaar Biometric Card (6509)",
+          "type": "aadhaar",
+          "fileUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+          "fileSize": "138 KB",
+          "uploadedAt": "27 Oct 2026",
+          "verified": true,
+          "status": "Verified (OCR Cleared)"
+        }
+      ],
+      "deal": {
+        "type": "Fixed Daily Rental",
+        "rate": "₹1,000 / day",
+        "deposit": "₹75,000 (Secured in Escrow)",
+        "frequency": "Daily Debit",
+        "taxRule": "GST 5% (Commercial Passenger Transport)",
+        "startDate": "27 Oct 2026",
+        "contractMonths": 12,
+        "agreementVersion": "v1.0 (Executed)",
+        "agreementSigned": true,
+        "depositReceipt": "UTR-98218731",
+        "depositStatus": "Held in Escrow",
+        "handoverOdometer": "45,210 km",
+        "handoverStatus": "Completed & QC Inspected"
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      }
+    },
     {
       "id": "drv-14",
       "name": "vivek",
@@ -136,7 +237,51 @@
         "presentDays": 1,
         "leaveDays": 0,
         "punctuality": "100%"
-      }
+      },
+      "documents": [
+        {
+          "id": "doc-adh-drv-14",
+          "type": "Aadhaar Card",
+          "category": "aadhaar",
+          "title": "Aadhaar Biometric Identity Card",
+          "docNumber": "XXXX-XXXX-9821",
+          "verified": true,
+          "issueDate": "2018-05-12",
+          "expiryDate": "Lifetime / Valid",
+          "uploadedAt": "2026-08-15T10:30:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        },
+        {
+          "id": "doc-dl-drv-14",
+          "type": "Driving Licence",
+          "category": "dl",
+          "title": "Commercial Motor Vehicle Driving Licence (LMV-TR)",
+          "docNumber": "DFGH76214+675",
+          "verified": true,
+          "issueDate": "2019-11-15",
+          "expiryDate": "2030-11-14",
+          "uploadedAt": "2026-08-15T10:32:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        },
+        {
+          "id": "doc-pan-drv-14",
+          "type": "PAN Card",
+          "category": "pan",
+          "title": "Income Tax Permanent Account Number (PAN)",
+          "docNumber": "ABCV1234R",
+          "verified": true,
+          "issueDate": "2016-07-16",
+          "expiryDate": "Lifetime / Valid",
+          "uploadedAt": "2026-08-15T10:35:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        }
+      ]
     },
     {
       "id": "drv-13",
@@ -495,7 +640,51 @@
         "presentDays": 26,
         "leaveDays": 1,
         "punctuality": "98%"
-      }
+      },
+      "documents": [
+        {
+          "id": "doc-adh-drv-01",
+          "type": "Aadhaar Card",
+          "category": "aadhaar",
+          "title": "Aadhaar Biometric Identity Card",
+          "docNumber": "XXXX-XXXX-8921",
+          "verified": true,
+          "issueDate": "2018-05-12",
+          "expiryDate": "Lifetime / Valid",
+          "uploadedAt": "2026-08-15T10:30:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        },
+        {
+          "id": "doc-dl-drv-01",
+          "type": "Driving Licence",
+          "category": "dl",
+          "title": "Commercial Motor Vehicle Driving Licence (LMV-TR)",
+          "docNumber": "DL-0420190012345",
+          "verified": true,
+          "issueDate": "2019-11-15",
+          "expiryDate": "14 Nov 2029",
+          "uploadedAt": "2026-08-15T10:32:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        },
+        {
+          "id": "doc-pan-drv-01",
+          "type": "PAN Card",
+          "category": "pan",
+          "title": "Income Tax Permanent Account Number (PAN)",
+          "docNumber": "AZYPD8821M",
+          "verified": true,
+          "issueDate": "2016-07-16",
+          "expiryDate": "Lifetime / Valid",
+          "uploadedAt": "2026-08-15T10:35:00.000Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "status": "Verified"
+        }
+      ]
     },
     {
       "id": "drv-02",

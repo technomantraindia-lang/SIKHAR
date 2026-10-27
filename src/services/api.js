@@ -292,6 +292,58 @@ export async function amendDriverDealApi(driverId, dealData) {
 }
 
 // ========================================================
+// DRIVER MULTI-DOCUMENT MANAGEMENT APIS (Admin Authority)
+// ========================================================
+
+export async function fetchDriverDocumentsApi(driverId) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve driver documents.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Fetch driver documents error:', err);
+    throw err;
+  }
+}
+
+export async function addDriverDocumentApi(driverId, docPayload) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(docPayload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to add driver document.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Add driver document error:', err);
+    throw err;
+  }
+}
+
+export async function deleteDriverDocumentApi(driverId, docId) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents/${encodeURIComponent(docId)}`, {
+      method: 'DELETE'
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete driver document.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Delete driver document error:', err);
+    throw err;
+  }
+}
+
+// ========================================================
 // DRIVER-VEHICLE ASSIGNMENT & SWAP APIS
 // ========================================================
 
@@ -693,6 +745,38 @@ export async function resolveEscalationApi(id, resolutionNote = '', driverConfir
   }
 }
 
+export async function fetchEscalationMessagesApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}/messages`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve messages.');
+    }
+    return data.messages || [];
+  } catch (err) {
+    console.error('Fetch escalation messages error:', err);
+    throw err;
+  }
+}
+
+export async function sendEscalationMessageApi(id, payload = {}) {
+  try {
+    const response = await fetch(`${API_BASE}/escalations/${encodeURIComponent(id)}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to deliver message.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Send escalation message error:', err);
+    throw err;
+  }
+}
+
 // ========================================================
 // TRIPS & REVENUE SHARE API SUITE
 // ========================================================
@@ -968,5 +1052,256 @@ export async function releaseVehicleApi(id, releaseData) {
   }
 }
 
+// ========================================================
+// FUEL & EV CHARGING API CLIENT METHODS
+// ========================================================
+export async function fetchFuelDataApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/fuel`);
+    if (filters.status && filters.status !== 'all') url.searchParams.append('status', filters.status);
+    if (filters.search) url.searchParams.append('search', filters.search);
+    if (filters.vehicle && filters.vehicle !== 'all') url.searchParams.append('vehicle', filters.vehicle);
 
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve fuel and charging data.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Fetch fuel data error:', err);
+    throw err;
+  }
+}
 
+export async function startChargingSessionApi(sessionData) {
+  try {
+    const response = await fetch(`${API_BASE}/fuel/session/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sessionData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to start EV charging session.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Start charging session error:', err);
+    throw err;
+  }
+}
+
+export async function stopChargingSessionApi(sessionId) {
+  try {
+    const response = await fetch(`${API_BASE}/fuel/session/${encodeURIComponent(sessionId)}/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to stop EV charging session.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Stop charging session error:', err);
+    throw err;
+  }
+}
+
+export async function settleChargingSessionApi(sessionId) {
+  try {
+    const response = await fetch(`${API_BASE}/fuel/session/${encodeURIComponent(sessionId)}/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to settle EV charging CDR.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Settle charging session error:', err);
+    throw err;
+  }
+}
+
+export async function logFuelRecordApi(fuelData) {
+  try {
+    const response = await fetch(`${API_BASE}/fuel/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fuelData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to log fuel record.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Log fuel record error:', err);
+    throw err;
+  }
+}
+
+export async function verifyFuelRecordApi(logId, verifyData) {
+  try {
+    const response = await fetch(`${API_BASE}/fuel/log/${encodeURIComponent(logId)}/verify`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(verifyData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to verify fuel log.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Verify fuel record error:', err);
+    throw err;
+  }
+}
+
+// ========================================================
+// RTO & COMPLIANCE API CLIENT METHODS
+// ========================================================
+export async function fetchComplianceDataApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/compliance`);
+    if (filters.docType && filters.docType !== 'all') url.searchParams.append('docType', filters.docType);
+    if (filters.status && filters.status !== 'all') url.searchParams.append('status', filters.status);
+    if (filters.search) url.searchParams.append('search', filters.search);
+    if (filters.vehicle && filters.vehicle !== 'all') url.searchParams.append('vehicle', filters.vehicle);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retrieve compliance records.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Fetch compliance data error:', err);
+    throw err;
+  }
+}
+
+export async function createComplianceDocumentApi(docData) {
+  try {
+    const response = await fetch(`${API_BASE}/compliance/document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(docData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create compliance document.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Create compliance document error:', err);
+    throw err;
+  }
+}
+
+export async function renewComplianceDocumentApi(docId, renewData) {
+  try {
+    const response = await fetch(`${API_BASE}/compliance/document/${encodeURIComponent(docId)}/renew`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(renewData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to renew compliance document.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Renew compliance document error:', err);
+    throw err;
+  }
+}
+
+export async function logChallanApi(challanData) {
+  try {
+    const response = await fetch(`${API_BASE}/compliance/challan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(challanData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to log traffic challan.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Log challan error:', err);
+    throw err;
+  }
+}
+
+export async function payChallanApi(challanId, paymentData) {
+  try {
+    const response = await fetch(`${API_BASE}/compliance/challan/${encodeURIComponent(challanId)}/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to pay challan.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Pay challan error:', err);
+    throw err;
+  }
+}
+
+export async function deductChallanWalletApi(challanId) {
+  try {
+    const response = await fetch(`${API_BASE}/compliance/challan/${encodeURIComponent(challanId)}/deduct-wallet`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to post challan wallet deduction.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Deduct challan wallet error:', err);
+    throw err;
+  }
+}
+
+// ========================================================
+// GEMINI MULTIMODAL VISION OCR APIS
+// ========================================================
+
+export async function checkGeminiOcrStatusApi() {
+  try {
+    const res = await fetch(`${API_BASE}/ocr/status`);
+    return await res.json();
+  } catch (err) {
+    console.warn('Gemini status check warning:', err);
+    return { configured: false };
+  }
+}
+
+export async function scanDocumentWithGeminiApi(imageBase64, docType = 'all') {
+  try {
+    const res = await fetch(`${API_BASE}/ocr/gemini`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageBase64, docType })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Gemini Vision OCR extraction failed.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Gemini OCR API error:', err);
+    throw err;
+  }
+}

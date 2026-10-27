@@ -486,7 +486,84 @@ export const Wallet = createIcon(
   </>
 );
 
+export const Mic = createIcon(
+  <>
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+  </>
+);
 
+export const Square = createIcon(
+  <rect x="3" y="3" width="18" height="18" rx="2" />
+);
 
+export const Play = createIcon(
+  <polygon points="6 3 20 12 6 21 6 3" />
+);
 
+export const Pause = createIcon(
+  <>
+    <rect x="6" y="4" width="4" height="16" />
+    <rect x="14" y="4" width="4" height="16" />
+  </>
+);
+
+export const Volume2 = createIcon(
+  <>
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+  </>
+);
+
+export const Send = createIcon(
+  <>
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </>
+);
+
+export const Camera = createIcon(
+  <>
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+    <circle cx="12" cy="13" r="3" />
+  </>
+);
+
+export const FileUp = createIcon(
+  <>
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+    <polyline points="14 2 14 8 20 8" />
+    <path d="M12 12v6" />
+    <path d="m9 15 3-3 3 3" />
+  </>
+);
+
+export const Scan = createIcon(
+  <>
+    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+  </>
+);
+
+export const BatteryCharging = createIcon(
+  <>
+    <path d="M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
+    <path d="M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1" />
+    <line x1="22" x2="22" y1="11" y2="13" />
+    <path d="m11 7-3 5h4l-3 5" />
+  </>
+);
+
+export const Trash2 = createIcon(
+  <>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <line x1="10" y1="11" x2="10" y2="17" />
+    <line x1="14" y1="11" x2="14" y2="17" />
+  </>
+);
 

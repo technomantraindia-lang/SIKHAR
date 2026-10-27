@@ -14,6 +14,8 @@ import rentalRoutes from './server/routes/rentalRoutes.js';
 import escalationRoutes from './server/routes/escalationRoutes.js';
 import tripRoutes from './server/routes/tripRoutes.js';
 import maintenanceRoutes from './server/routes/maintenanceRoutes.js';
+import fuelRoutes from './server/routes/fuelRoutes.js';
+import complianceRoutes from './server/routes/complianceRoutes.js';
 import { testDbConnection, getDbStatus } from './server/config/db.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
@@ -70,6 +72,8 @@ app.use('/api/rentals', rentalRoutes);
 app.use('/api/escalations', escalationRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/fuel', fuelRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 // Serve Frontend Vite Static Build (dist)
 const distPath = path.join(__dirname, 'dist');

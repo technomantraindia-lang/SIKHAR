@@ -13,6 +13,8 @@ import WalletHealthPage from './components/wallet/WalletHealthPage';
 import EscalationMasterPage from './components/escalations/EscalationMasterPage';
 import TripsMasterPage from './components/trips/TripsMasterPage';
 import MaintenanceMasterPage from './components/maintenance/MaintenanceMasterPage';
+import FuelMasterPage from './components/fuel/FuelMasterPage';
+import ComplianceMasterPage from './components/compliance/ComplianceMasterPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
 import { getCachedAdminUser, logoutAdminApi } from './services/api';
@@ -167,6 +169,16 @@ export default function App() {
             />
           ) : activeRoute === 'maintenance' ? (
             <MaintenanceMasterPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'fuel' ? (
+            <FuelMasterPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'compliance' ? (
+            <ComplianceMasterPage
               onNavigate={(target) => navigateTo(target)}
               onBackToDashboard={() => navigateTo('dashboard')}
             />

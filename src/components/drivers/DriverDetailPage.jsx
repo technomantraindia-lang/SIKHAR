@@ -11,7 +11,8 @@ import {
   Clock,
   Activity,
   RefreshCw,
-  User
+  User,
+  Scan
 } from '../common/Icons';
 import {
   fetchDriverByIdApi,
@@ -20,6 +21,8 @@ import {
   assignDriverVehicleApi,
   requestDriverLeaveApi
 } from '../../services/api';
+import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
+import DriverDocumentsModal from './DriverDocumentsModal';
 
 const AVAILABLE_CARS = [
   { reg: 'DL52GD6605', model: 'WagonR H3 CNG', type: 'CNG' },
@@ -38,6 +41,7 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
   const [topupAmount, setTopupAmount] = useState('');
   const [isTopupLoading, setIsTopupLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
 
   // Leave Approval Modal State (PDF Page 3 & 8)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -52,6 +56,28 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
   const [isAssigningVehicle, setIsAssigningVehicle] = useState(false);
   const [selectedVehicleToAssign, setSelectedVehicleToAssign] = useState('');
   const [isVehicleAssignLoading, setIsVehicleAssignLoading] = useState(false);
+
+  // Document OCR Modal State
+  const [showOcrModal, setShowOcrModal] = useState(false);
+  const [ocrTargetType, setOcrTargetType] = useState('all');
+
+  const handleOcrExtracted = (extracted) => {
+    if (!extracted) return;
+    setDriver((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        kyc: {
+          ...(prev.kyc || {}),
+          drivingLicence: extracted.drivingLicence || prev.kyc?.drivingLicence,
+          dlExpiry: extracted.dlExpiry || prev.kyc?.dlExpiry,
+          aadhaar: extracted.aadhaar || prev.kyc?.aadhaar,
+          panCard: extracted.panCard || prev.kyc?.panCard
+        }
+      };
+    });
+    showToast(`✓ Document OCR updated ${extracted.docType || 'KYC document'} successfully.`);
+  };
 
   const handleApproveLeave = async () => {
     if (!driver) return;
@@ -804,14 +830,26 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                 <h3 className="section-block-title">Commercial Lease Deal Terms & Legal Records</h3>
                 <p className="text-muted text-xs">Agreement contracts, billing frequencies, escrow deposits and statutory KYC checklist.</p>
               </div>
-              <button
-                type="button"
-                className="btn-driver-secondary"
-                onClick={() => setIsAgreementModalOpen(true)}
-              >
-                <FileText size={14} />
-                <span>View Executed Agreement (v1.0)</span>
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-driver-secondary"
+                  style={{ background: '#0284c7', borderColor: '#38bdf8', color: '#ffffff', fontWeight: 700 }}
+                  onClick={() => setIsDocsModalOpen(true)}
+                  title="View and attach multiple driver KYC documents"
+                >
+                  <Shield size={14} />
+                  <span>📄 Manage All Documents (Admin)</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-driver-secondary"
+                  onClick={() => setIsAgreementModalOpen(true)}
+                >
+                  <FileText size={14} />
+                  <span>View Executed Agreement (v1.0)</span>
+                </button>
+              </div>
             </div>
 
             <div className="deal-terms-grid-lg">
@@ -848,6 +886,31 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Commercial Driving Licence (MoRTH Verified)</strong>
+                    <button
+                      type="button"
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0284c7',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      onClick={() => {
+                        setOcrTargetType('dl');
+                        setShowOcrModal(true);
+                      }}
+                      title="Scan or Re-scan Driving Licence with OCR"
+                    >
+                      <Scan size={12} />
+                      <span>OCR Scan</span>
+                    </button>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text">{driver.kyc?.drivingLicence}</p>
@@ -861,6 +924,31 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Aadhaar Biometric Card</strong>
+                    <button
+                      type="button"
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0284c7',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      onClick={() => {
+                        setOcrTargetType('aadhaar');
+                        setShowOcrModal(true);
+                      }}
+                      title="Scan or Re-scan Aadhaar with OCR"
+                    >
+                      <Scan size={12} />
+                      <span>OCR Scan</span>
+                    </button>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text">{driver.kyc?.aadhaar}</p>
@@ -874,6 +962,31 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Permanent Account Number (PAN Card)</strong>
+                    <button
+                      type="button"
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0284c7',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      onClick={() => {
+                        setOcrTargetType('pan');
+                        setShowOcrModal(true);
+                      }}
+                      title="Scan or Re-scan PAN Card with OCR"
+                    >
+                      <Scan size={12} />
+                      <span>OCR Scan</span>
+                    </button>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text font-mono">{driver.kyc?.panCard || 'ABCDE1234F'}</p>
@@ -1018,6 +1131,23 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
           </div>
         </div>
       )}
+
+      {/* Driver KYC Document OCR Scanner Modal */}
+      <DocumentOcrScannerModal
+        isOpen={showOcrModal}
+        onClose={() => setShowOcrModal(false)}
+        targetDocType={ocrTargetType}
+        title="Driver KYC Document OCR Scanner"
+        onDataExtracted={handleOcrExtracted}
+      />
+
+      {/* Driver Documents Management Modal (Admin Authority) */}
+      <DriverDocumentsModal
+        isOpen={isDocsModalOpen}
+        onClose={() => setIsDocsModalOpen(false)}
+        driver={driver}
+        onDocumentsUpdated={loadDriverData}
+      />
     </div>
   );
 }

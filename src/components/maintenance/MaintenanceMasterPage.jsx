@@ -29,8 +29,10 @@ import {
   Grid,
   List,
   Award,
-  CreditCard
+  CreditCard,
+  Scan
 } from '../common/Icons';
+import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import {
   fetchMaintenanceApi,
   createJobCardApi,
@@ -102,6 +104,27 @@ export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard })
     billedAmount: 6254,
     invoiceDate: '16 Oct 2026'
   });
+
+  const [showMaintenanceOcrModal, setShowMaintenanceOcrModal] = useState(false);
+
+  const handleMaintenanceOcrExtracted = (extracted) => {
+    if (!extracted) return;
+    if (isBillModalOpen) {
+      setBillForm(prev => ({
+        ...prev,
+        invoiceNo: extracted.invoiceNumber || prev.invoiceNo,
+        billedAmount: Number(extracted.totalAmount) || prev.billedAmount
+      }));
+    } else if (isCreateModalOpen) {
+      setCreateForm(prev => ({
+        ...prev,
+        vehicle: extracted.registration || prev.vehicle,
+        workshop: extracted.workshopName || prev.workshop,
+        driver: extracted.name || prev.driver
+      }));
+    }
+    showToast(`✓ Workshop Document Scanned: Extracted ${extracted.docType || 'Invoice'} details.`);
+  };
 
   const [paymentForm, setPaymentForm] = useState({
     method: 'Bank Transfer / NEFT',
@@ -1528,11 +1551,23 @@ export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard })
           >
             <button className="close" onClick={() => setIsBillModalOpen(false)}>×</button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ color: '#1769ff', display: 'flex' }}><Receipt size={20} /></span>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 850 }}>
-                Final Bill Verification (3-Way Match)
-              </h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#1769ff', display: 'flex' }}><Receipt size={20} /></span>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 850 }}>
+                  Final Bill Verification (3-Way Match)
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="btn small secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe', fontWeight: 700 }}
+                onClick={() => setShowMaintenanceOcrModal(true)}
+                title="Scan Workshop Invoice or Bill with AI OCR"
+              >
+                <Scan size={14} color="#1d4ed8" />
+                <span>📷 Scan Vendor Invoice (AI OCR)</span>
+              </button>
             </div>
             <div className="sub" style={{ marginBottom: '16px' }}>
               Job Card <strong>{activeActionTarget.id}</strong> · Workshop: {activeActionTarget.workshop}
@@ -1749,6 +1784,15 @@ export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard })
           </div>
         </div>
       )}
+
+      {/* AI Workshop Invoice & Maintenance OCR Scanner Modal */}
+      <DocumentOcrScannerModal
+        isOpen={showMaintenanceOcrModal}
+        onClose={() => setShowMaintenanceOcrModal(false)}
+        targetDocType="maintenance"
+        title="Workshop Maintenance Invoice AI OCR Scanner"
+        onDataExtracted={handleMaintenanceOcrExtracted}
+      />
     </div>
   );
 }

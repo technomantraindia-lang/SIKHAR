@@ -424,7 +424,11 @@ router.post('/', (req, res) => {
     vehicleModel = 'WagonR H3 CNG',
     vehicleType = 'CNG',
     initialBalance = 0,
-    photoUrl = ''
+    photoUrl = '',
+    dob = '',
+    gender = 'Male',
+    fatherName = '',
+    documents = []
   } = req.body;
 
   if (!name || !phone || !drivingLicence) {
@@ -517,6 +521,9 @@ router.post('/', (req, res) => {
       };
     })(),
     kyc: {
+      dob: dob.trim(),
+      gender: gender.trim(),
+      fatherName: fatherName.trim(),
       aadhaar: aadhaar.trim(),
       aadhaarVerified: true,
       panCard: panCard ? panCard.trim().toUpperCase() : 'ABCDE1234F',
@@ -540,6 +547,34 @@ router.post('/', (req, res) => {
       },
       address: address.trim()
     },
+    documents: Array.isArray(documents) && documents.length > 0 ? documents : [
+      {
+        id: `doc-adh-${newId}`,
+        type: 'Aadhaar Card',
+        category: 'aadhaar',
+        title: 'UIDAI Aadhaar Biometric Card',
+        docNumber: aadhaar.trim(),
+        verified: true,
+        issueDate: '2020-01-01',
+        expiryDate: 'Lifetime / Valid',
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: 'Admin Authority',
+        status: 'Verified'
+      },
+      {
+        id: `doc-dl-${newId}`,
+        type: 'Driving Licence',
+        category: 'dl',
+        title: 'Commercial Motor Vehicle Driving Licence (LMV-TR)',
+        docNumber: drivingLicence.trim().toUpperCase(),
+        verified: true,
+        issueDate: '2025-07-08',
+        expiryDate: dlExpiry.trim() || '2047-04-08',
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: 'Admin Authority',
+        status: 'Verified'
+      }
+    ],
     deal: {
       type: rentalModel,
       rate: agreedRate.startsWith('₹') ? agreedRate : `₹${agreedRate} / day`,
@@ -684,6 +719,171 @@ router.put('/:id/deal', (req, res) => {
     success: true,
     message: `Commercial agreement terms updated for ${driver.name}.`,
     data: driver
+  });
+});
+
+// =========================================================================
+// DRIVER DOCUMENTS MANAGEMENT (Admin-Only Multi-Document Architecture)
+// =========================================================================
+
+// GET /api/drivers/:id/documents - List all documents for a driver
+router.get('/:id/documents', (req, res) => {
+  const { id } = req.params;
+  const data = readDriversData();
+  const driver = (data.drivers || []).find(d => d.id === id);
+
+  if (!driver) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  // Ensure documents array exists, seed from existing KYC if empty
+  if (!driver.documents || driver.documents.length === 0) {
+    const kyc = driver.kyc || {};
+    driver.documents = [
+      {
+        id: `doc-adh-${driver.id}`,
+        type: 'Aadhaar Card',
+        category: 'aadhaar',
+        title: 'Aadhaar Biometric Identity Card',
+        docNumber: kyc.aadhaar || '5682 8596 2134',
+        verified: kyc.aadhaarVerified !== false,
+        issueDate: '2018-05-12',
+        expiryDate: 'Lifetime / Valid',
+        uploadedAt: '2026-08-15T10:30:00.000Z',
+        uploadedBy: 'Admin Authority',
+        fileUrl: '',
+        status: 'Verified'
+      },
+      {
+        id: `doc-dl-${driver.id}`,
+        type: 'Driving Licence',
+        category: 'dl',
+        title: 'Commercial Motor Vehicle Driving Licence (LMV-TR)',
+        docNumber: kyc.drivingLicence || 'MH14 20190088123',
+        verified: kyc.dlStatus === 'Valid',
+        issueDate: '2019-11-15',
+        expiryDate: kyc.dlExpiry || '2032-11-14',
+        uploadedAt: '2026-08-15T10:32:00.000Z',
+        uploadedBy: 'Admin Authority',
+        fileUrl: '',
+        status: 'Verified'
+      }
+    ];
+
+    if (kyc.panCard) {
+      driver.documents.push({
+        id: `doc-pan-${driver.id}`,
+        type: 'PAN Card',
+        category: 'pan',
+        title: 'Income Tax Permanent Account Number (PAN)',
+        docNumber: kyc.panCard,
+        verified: kyc.panVerified !== false,
+        issueDate: '2016-07-16',
+        expiryDate: 'Lifetime / Valid',
+        uploadedAt: '2026-08-15T10:35:00.000Z',
+        uploadedBy: 'Admin Authority',
+        fileUrl: '',
+        status: 'Verified'
+      });
+    }
+
+    writeDriversData(data);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      driverId: driver.id,
+      driverName: driver.name,
+      phone: driver.phone,
+      documents: driver.documents || []
+    }
+  });
+});
+
+// POST /api/drivers/:id/documents - Admin adds a new document to a driver
+router.post('/:id/documents', (req, res) => {
+  const { id } = req.params;
+  const { type, title, docNumber, issueDate, expiryDate, fileUrl, notes, verified = true } = req.body;
+
+  if (!type || !docNumber) {
+    return res.status(400).json({ success: false, message: 'Document type and document number are required.' });
+  }
+
+  const data = readDriversData();
+  const driver = (data.drivers || []).find(d => d.id === id);
+
+  if (!driver) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  if (!driver.documents) {
+    driver.documents = [];
+  }
+
+  const newDoc = {
+    id: `doc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    type,
+    category: type.toLowerCase().includes('aadhaar') ? 'aadhaar' :
+              type.toLowerCase().includes('licence') || type.toLowerCase().includes('dl') ? 'dl' :
+              type.toLowerCase().includes('pan') ? 'pan' :
+              type.toLowerCase().includes('police') ? 'police' :
+              type.toLowerCase().includes('agreement') ? 'agreement' : 'other',
+    title: title || `${type} Document`,
+    docNumber: String(docNumber).trim(),
+    issueDate: issueDate || new Date().toISOString().split('T')[0],
+    expiryDate: expiryDate || '2032-12-31',
+    verified: Boolean(verified),
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: 'Admin Authority',
+    fileUrl: fileUrl || '',
+    notes: notes || '',
+    status: verified ? 'Verified' : 'Pending Review'
+  };
+
+  driver.documents.unshift(newDoc);
+
+  // Sync to driver.kyc if standard document
+  if (!driver.kyc) driver.kyc = {};
+  if (newDoc.category === 'aadhaar') {
+    driver.kyc.aadhaar = newDoc.docNumber;
+    driver.kyc.aadhaarVerified = true;
+  } else if (newDoc.category === 'dl') {
+    driver.kyc.drivingLicence = newDoc.docNumber;
+    driver.kyc.dlExpiry = newDoc.expiryDate;
+    driver.kyc.dlStatus = 'Valid';
+  } else if (newDoc.category === 'pan') {
+    driver.kyc.panCard = newDoc.docNumber;
+    driver.kyc.panVerified = true;
+  }
+
+  writeDriversData(data);
+
+  res.json({
+    success: true,
+    message: `Document "${newDoc.title}" successfully added for ${driver.name}.`,
+    data: newDoc,
+    allDocuments: driver.documents
+  });
+});
+
+// DELETE /api/drivers/:id/documents/:docId - Admin removes a document
+router.delete('/:id/documents/:docId', (req, res) => {
+  const { id, docId } = req.params;
+  const data = readDriversData();
+  const driver = (data.drivers || []).find(d => d.id === id);
+
+  if (!driver) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  driver.documents = (driver.documents || []).filter(d => d.id !== docId);
+  writeDriversData(data);
+
+  res.json({
+    success: true,
+    message: 'Document deleted successfully.',
+    documents: driver.documents
   });
 });
 

@@ -41,6 +41,63 @@ function updateKpiCounts(data) {
   };
 }
 
+// Helper to ensure each ticket has conversation messages
+function ensureTicketMessages(ticket) {
+  if (Array.isArray(ticket.messages) && ticket.messages.length > 0) {
+    return ticket.messages;
+  }
+  const driverName = ticket.driver || 'Driver';
+  const ownerName = ticket.owner || 'Mohit (Fleet Ops)';
+  
+  ticket.messages = [
+    {
+      id: `msg-seed-1-${ticket.id}`,
+      sender: 'driver',
+      senderName: `Driver: ${driverName}`,
+      type: 'text',
+      text: ticket.problem || 'Hello Sir, facing an operational issue with the vehicle.',
+      timestamp: '10:14 AM',
+      fullTime: 'Today, 10:14 AM',
+      status: 'delivered'
+    },
+    {
+      id: `msg-seed-2-${ticket.id}`,
+      sender: 'driver',
+      senderName: `Driver: ${driverName}`,
+      type: 'voice',
+      text: 'Voice note: Explaining breakdown sound and location landmark near cyber hub.',
+      audioUrl: null,
+      duration: 5.5,
+      timestamp: '10:16 AM',
+      fullTime: 'Today, 10:16 AM',
+      status: 'delivered'
+    },
+    {
+      id: `msg-seed-3-${ticket.id}`,
+      sender: 'admin',
+      senderName: `Admin (${ownerName})`,
+      type: 'text',
+      text: `Understood ${driverName}. I have received your voice note and logged high-priority ticket ${ticket.id}. Roadside assistance dispatch has been notified.`,
+      timestamp: '10:19 AM',
+      fullTime: 'Today, 10:19 AM',
+      status: 'delivered'
+    },
+    {
+      id: `msg-seed-4-${ticket.id}`,
+      sender: 'admin',
+      senderName: `Admin (${ownerName})`,
+      type: 'voice',
+      text: 'Voice note: Please stay inside safety perimeter, mechanic is 8 minutes away.',
+      audioUrl: null,
+      duration: 4.2,
+      timestamp: '10:21 AM',
+      fullTime: 'Today, 10:21 AM',
+      status: 'delivered'
+    }
+  ];
+  return ticket.messages;
+}
+
 // GET /api/escalations - Retrieve list of escalations + KPIs + categories
 router.get('/', (req, res) => {
   try {
@@ -75,6 +132,8 @@ router.get('/', (req, res) => {
       );
     }
 
+    filtered.forEach(t => ensureTicketMessages(t));
+
     return res.json({
       success: true,
       kpis: data.kpis,
@@ -97,6 +156,8 @@ router.get('/:id', (req, res) => {
     if (!ticket) {
       return res.status(404).json({ success: false, message: `Escalation ${req.params.id} not found.` });
     }
+
+    ensureTicketMessages(ticket);
 
     return res.json({
       success: true,
@@ -257,6 +318,97 @@ router.post('/:id/notes', (req, res) => {
   } catch (error) {
     console.error('Error adding note:', error);
     res.status(500).json({ success: false, message: 'Failed to add note' });
+  }
+});
+
+// GET /api/escalations/:id/messages - Retrieve chat messages between driver and admin
+router.get('/:id/messages', (req, res) => {
+  try {
+    const data = getEscalationsData();
+    const ticket = data.tickets.find(t => t.id.toUpperCase() === req.params.id.toUpperCase());
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+
+    ensureTicketMessages(ticket);
+    saveEscalationsData(data);
+
+    return res.json({
+      success: true,
+      messages: ticket.messages || []
+    });
+  } catch (error) {
+    console.error('Error fetching escalation messages:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve messages' });
+  }
+});
+
+// POST /api/escalations/:id/messages - Send chat message (text or voice)
+router.post('/:id/messages', (req, res) => {
+  try {
+    const data = getEscalationsData();
+    const ticket = data.tickets.find(t => t.id.toUpperCase() === req.params.id.toUpperCase());
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+
+    const {
+      sender = 'admin', // 'admin' | 'driver'
+      senderName,
+      text = '',
+      type = 'text', // 'text' | 'voice'
+      audioUrl = null,
+      duration = 0
+    } = req.body;
+
+    if (type === 'text' && !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Message text is required.' });
+    }
+
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const fullDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ', ' + timeStr;
+
+    const finalSenderName = senderName || (sender === 'admin' ? `Admin (${ticket.owner || 'Operations'})` : `Driver (${ticket.driver})`);
+
+    if (!Array.isArray(ticket.messages)) {
+      ticket.messages = [];
+    }
+
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      sender,
+      senderName: finalSenderName,
+      type,
+      text: text.trim() || (type === 'voice' ? '🎙️ Voice note' : ''),
+      audioUrl,
+      duration: duration || (type === 'voice' ? 4 : 0),
+      timestamp: timeStr,
+      fullTime: fullDateStr,
+      status: 'delivered'
+    };
+
+    ticket.messages.push(newMsg);
+
+    // Also record in timeline for complete audit trail
+    ticket.timeline.unshift({
+      time: fullDateStr,
+      user: finalSenderName,
+      text: type === 'voice' ? `[Voice Note · ${Math.round(duration || 4)}s]: ${text || 'Audio message'}` : text.trim()
+    });
+
+    saveEscalationsData(data);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Message delivered',
+      chatMessage: newMsg,
+      messages: ticket.messages
+    });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ success: false, message: 'Failed to send message' });
   }
 });
 

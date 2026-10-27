@@ -12,6 +12,7 @@ import {
   Phone
 } from '../common/Icons';
 import { fetchVehicleDetailApi, executeVehicleActionApi } from '../../services/api';
+import SpeedometerTelemetryCard from './SpeedometerTelemetryCard';
 
 export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver, onNavigateToAssignment }) {
   const [loading, setLoading] = useState(true);
@@ -307,7 +308,8 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
       <div className="vd-tab-content-area">
         {/* ================= TAB 1: OVERVIEW & TELEMETRY ================= */}
         {activeTab === 'overview' && (
-          <div className="vd-tab-grid">
+          <>
+            <div className="vd-tab-grid">
             {/* Live Telematics Card */}
             <div className="terminal-panel vd-panel">
               <div className="panel-title-row">
@@ -444,6 +446,10 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
               </div>
             </div>
           </div>
+
+          {/* Real-Time Speedometer & Velocity Telemetry Intelligence (Day-Wise & Month-Wise) */}
+          <SpeedometerTelemetryCard vehicle={vehicle} />
+        </>
         )}
 
         {/* ================= TAB 2: ASSIGNMENT & HANDOVER HISTORY ================= */}
