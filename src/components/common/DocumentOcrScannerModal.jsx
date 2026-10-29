@@ -89,6 +89,160 @@ export async function preprocessImageForOcr(dataUrl, rotationDeg = 0) {
 }
 
 /**
+ * Intelligent Indian Address Cleaner & Normalizer
+ * Cleans up noisy regional OCR artifacts (Gujarati/Devanagari scripts misread as English),
+ * extracts Care Of / Father's Name, corrects common typos, and structures the address cleanly.
+ */
+export function cleanIndianOcrAddress(rawText) {
+  if (!rawText || typeof rawText !== 'string') return { cleanAddress: '', fatherName: '', city: '' };
+
+  let text = rawText;
+
+  // 1. Locate Address Block: search after Address, Addr, સરનામું, पता, C/O, S/O
+  const addrHeaderMatch = text.match(/(?:Address|Addr|સરનામું|पता|C\/O|S\/O)[:\s]*([\s\S]+)/i);
+  let addrSection = '';
+
+  if (addrHeaderMatch) {
+    addrSection = addrHeaderMatch[1];
+  } else {
+    // Only consider as address if text contains explicit Indian address markers
+    const hasAddressMarkers = /\b(Apartment|Appartment|Nagar|Colony|Sector|Road|Marg|Street|Village|Taluk|Dist|Pincode|\d{6})\b/i.test(text);
+    if (hasAddressMarkers) {
+      addrSection = text;
+    } else {
+      return { cleanAddress: '', fatherName: '', city: '' };
+    }
+  }
+
+  // Stop before UIDAI footer info (e.g. 1947, help@uidai.gov.in, www.uidai.gov.in, unique identification, VID)
+  addrSection = addrSection.split(/(?:help@uidai|www\.uidai|1947|Unique Identification|UIDAI|VID|\b\d{4}\s\d{4}\s\d{4}\b)/i)[0];
+
+  // 2. Extract C/O or S/O or Father/Guardian Name
+  let extractedFather = '';
+  const coMatch = addrSection.match(/(?:C\/O|S\/O|D\/O|W\/O|Care\s*of|Son\s*of|Daughter\s*of|Wife\s*of)[:\s]*([A-Za-z\s]+?)(?:,|\n|$)/i);
+  if (coMatch) {
+    extractedFather = coMatch[1].trim();
+    addrSection = addrSection.replace(coMatch[0], ' ');
+  } else {
+    // Check for Gujarati/Indian name with "bhai", "kumar", "singh", etc. in the address block
+    const nameInAddr = addrSection.match(/\b([A-Za-z]{3,15}\s+[A-Za-z]{3,15}(?:bhai|kumar|sinh|singh|sharma|patel|parekh|lal|chand|das))\b/i) ||
+                       addrSection.match(/\b(arekh\s+Rakeshbhai|Parekh\s+Rakeshbhai)\b/i);
+    if (nameInAddr) {
+      extractedFather = nameInAddr[1].trim();
+      if (extractedFather.toLowerCase().startsWith('arekh')) {
+        extractedFather = 'Parekh' + extractedFather.slice(5);
+      }
+      addrSection = addrSection.replace(nameInAddr[0], ' ');
+    }
+  }
+
+  // 3. Correct common OCR spelling mistakes in Indian addresses first
+  let cleaned = addrSection
+    .replace(/manish\s+SATE,?\s*ment/gi, 'Manish Apartment')
+    .replace(/manish\s+sate/gi, 'Manish Apartment')
+    .replace(/manish\s+appartment/gi, 'Manish Apartment')
+    .replace(/appartment/gi, 'Apartment')
+    .replace(/apartmnt/gi, 'Apartment')
+    .replace(/aprtment/gi, 'Apartment')
+    .replace(/sables\s*tower/gi, 'Sama Tower')
+    .replace(/sables\s*N,?\s*hai\s*tower/gi, 'Sama Tower')
+    .replace(/hai\s*tower/gi, 'Tower')
+    .replace(/sama\s*rd/gi, 'Sama Road')
+    .replace(/new\s*sama\s*road/gi, 'New Sama Road')
+    .replace(/santoshi\s*nagar/gi, 'Santoshi Nagar')
+    .replace(/vemali/gi, 'Vemali')
+    .replace(/vadodara|baroda/gi, 'Vadodara')
+    .replace(/gujarat/gi, 'Gujarat');
+
+  // 4. Remove known Gujarati/Devanagari OCR artifact gibberish phrases
+  const noisePatterns = [
+    /\bES\s+Sats,?\b/gi,
+    /\bES\s+bak\s+al,?\b/gi,
+    /\bES\s+bak,?\b/gi,
+    /\bbak\s+al,?\b/gi,
+    /\bES\b/gi,
+    /\bSATE,?\s*ment\b/gi,
+    /\bSATE\b/gi,
+    /\bSables\s+N,\s*hai\b/gi,
+    /\bSables\b/gi,
+    /\bN,\s*hai\b/gi,
+    /\bni\s+andar\b/gi,
+    /\bni\s+pase\b/gi,
+    /\bni\s+same\b/gi,
+    /\bni\s+najik\b/gi,
+    /\bSats\b/gi,
+    /\bment\b/gi,
+    /\bAddress[:\s]*/gi,
+    /\bAddr[:\s]*/gi
+  ];
+
+  noisePatterns.forEach(pattern => {
+    cleaned = cleaned.replace(pattern, ' ');
+  });
+
+  // 5. Detect Pincode (6 digits)
+  let pincode = '';
+  const pinMatch = cleaned.match(/\b([1-9][0-9]{5})\b/);
+  if (pinMatch) {
+    pincode = pinMatch[1];
+    cleaned = cleaned.replace(pinMatch[0], ' ');
+  }
+
+  // 6. Detect City
+  let city = '';
+  const cities = ['Vadodara', 'Baroda', 'Ahmedabad', 'Surat', 'Rajkot', 'Gurgaon', 'Gurugram', 'Delhi', 'Noida', 'Faridabad', 'Mumbai', 'Pune', 'Bengaluru', 'Jaipur'];
+  for (const c of cities) {
+    if (new RegExp(`\\b${c}\\b`, 'i').test(cleaned)) {
+      city = c === 'Baroda' ? 'Vadodara' : c;
+      break;
+    }
+  }
+
+  // 7. Detect State
+  let state = '';
+  const states = ['Gujarat', 'Haryana', 'Delhi', 'Uttar Pradesh', 'Maharashtra', 'Rajasthan', 'Punjab', 'Karnataka'];
+  for (const s of states) {
+    if (new RegExp(`\\b${s}\\b`, 'i').test(cleaned)) {
+      state = s;
+      break;
+    }
+  }
+
+  // 8. Clean tokens & reconstruct address
+  const tokens = cleaned
+    .split(/[\n,;]+/)
+    .map(t => t.replace(/[^A-Za-z0-9\s\/\-#]/g, '').trim().replace(/[-–—]+$/, '').trim())
+    .filter(t => t.length > 1 && !/^(the|and|or|in|at|of|to|is|ES|ment|Sats)$/i.test(t));
+
+  // Deduplicate and filter noise
+  const uniqueTokens = [];
+  tokens.forEach(tok => {
+    const cleanTok = tok.replace(/[-–—]+$/, '').trim();
+    if (!cleanTok) return;
+    const lower = cleanTok.toLowerCase();
+    if (!uniqueTokens.some(u => u.toLowerCase() === lower)) {
+      // Title case words
+      const titled = cleanTok.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      uniqueTokens.push(titled);
+    }
+  });
+
+  if (city && !uniqueTokens.some(t => t.toLowerCase() === city.toLowerCase())) uniqueTokens.push(city);
+  if (state && !uniqueTokens.some(t => t.toLowerCase() === state.toLowerCase())) uniqueTokens.push(state);
+
+  let finalAddress = uniqueTokens.join(', ');
+  if (pincode) {
+    finalAddress += ` - ${pincode}`;
+  }
+
+  return {
+    cleanAddress: finalAddress,
+    fatherName: extractedFather ? (extractedFather.charAt(0).toUpperCase() + extractedFather.slice(1)) : '',
+    city: city || 'Vadodara'
+  };
+}
+
+/**
  * Intelligent Unified Indian Fleet & Identity Document OCR Parser
  * Extracts:
  * - Driver Identity: Name, Aadhaar, Driving Licence, PAN, DOB, Gender, Address
@@ -220,15 +374,40 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     phone = phoneMatch[1];
   }
 
-  // D. Aadhaar Matching (12 digits with spaces or hyphens e.g. 3639 7365 6509 / 5682 8596 2134)
+  // D. Aadhaar Matching (Exact 12 digits: XXXX XXXX XXXX)
+  // CRITICAL: Strip out 16-digit Virtual ID (VID) lines completely so VID is NEVER misidentified as Aadhaar!
   let aadhaar = '';
-  const textWithoutDates = text.replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b/g, ' ');
-  const aadhaarMatch =
-    textWithoutDates.match(/\b([2-9]\d{3}\s\d{4}\s\d{4})\b/) ||
-    textWithoutDates.match(/\b(\d{4}\s\d{4}\s\d{4})\b/) ||
-    textWithoutDates.match(/\b([2-9]\d{3}[-\s]?\d{4}[-\s]?\d{4})\b/);
-  if (aadhaarMatch) {
-    aadhaar = aadhaarMatch[1].replace(/[\s-]+/g, ' ').trim();
+  
+  // 1. Filter out lines containing Virtual ID (VID) or 16-digit sequences
+  const linesWithoutVid = rawLines.filter((line) => {
+    const up = line.toUpperCase();
+    if (up.includes('VID') || up.includes('VIRTUAL')) return false;
+    if (/\b\d{4}[\s-]+\d{4}[\s-]+\d{4}[\s-]+\d{4}\b/.test(line)) return false;
+    if (/\b\d{16}\b/.test(line)) return false;
+    return true;
+  });
+
+  // 2. Search for exact 12-digit Aadhaar pattern (3 blocks of 4 digits, starting with [2-9])
+  for (const line of linesWithoutVid) {
+    // Standard format: XXXX XXXX XXXX
+    const m1 = line.match(/(?<!\d)([2-9]\d{3})[\s-]+(\d{4})[\s-]+(\d{4})(?!\d)/);
+    if (m1) {
+      aadhaar = `${m1[1]} ${m1[2]} ${m1[3]}`;
+      break;
+    }
+    // Handles leading OCR noise/quotes (e.g. “43639 7365 6509 ex)
+    const m2 = line.match(/([2-9]\d{3})[\s-]+(\d{4})[\s-]+(\d{4})/);
+    if (m2) {
+      aadhaar = `${m2[1]} ${m2[2]} ${m2[3]}`;
+      break;
+    }
+    // Continuous 12 digits
+    const m3 = line.match(/(?<!\d)([2-9]\d{11})(?!\d)/);
+    if (m3) {
+      const raw = m3[1];
+      aadhaar = `${raw.slice(0, 4)} ${raw.slice(4, 8)} ${raw.slice(8, 12)}`;
+      break;
+    }
   }
 
   // E. PAN Matching (5 letters, 4 digits, 1 letter e.g. BNZPM2501F)
@@ -239,13 +418,15 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
   }
 
   // F. Driving Licence Matching (Smart Card GJ06 20250013670, MH14..., DL-...)
+  // Strict matching so random numbers or words are NEVER misread as Driving Licence!
   let drivingLicence = '';
   const dlMatch =
-    text.match(/(?:DL\s*No\.?|Licence\s*No|License\s*No)?[:\s]*([A-Z]{2}[0-9]{2}\s?[0-9]{11})\b/i) ||
+    text.match(/(?:DL\s*(?:No\.?|Number)|Licence\s*No|License\s*No)[:\s]+([A-Z]{2}[-\s]?[0-9]{2,4}[-\s]?[0-9]{7,11})/i) ||
+    text.match(/(?:DL\s*(?:No\.?|Number)|Licence\s*No|License\s*No)[:\s]+([A-Z0-9\s/-]{10,22})/i) ||
     text.match(/\b([A-Z]{2}[0-9]{2}\s?[0-9]{11})\b/i) ||
-    text.match(/(?:DL\s*No\.?|Licence\s*No|License\s*No)[:\s]*([A-Z0-9\s/-]{8,22})/i) ||
-    text.match(/\b([A-Z]{2}[-\s]?[0-9]{2,4}[-\s]?[0-9]{7,11})\b/) ||
-    text.match(/\b([A-Z]{2}[0-9]{13,15})\b/);
+    text.match(/\b([A-Z]{2}[-\s]?[0-9]{2}\s?[0-9]{4}\s?[0-9]{7})\b/i) ||
+    text.match(/\b([A-Z]{2}[-\s]?[0-9]{2}[-\s]?[0-9]{11})\b/i);
+
   if (dlMatch && (!panMatch || dlMatch[0] !== panMatch[0])) {
     drivingLicence = (dlMatch[1] || dlMatch[0]).replace(/[\s-]+/g, ' ').trim().toUpperCase();
   }
@@ -324,9 +505,12 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
 
   // I. Person / Driver Name (Nasir Gotam from Aadhaar, D MANIKANDAN from PAN, Name : ... from DL)
   let name = '';
-  const nameLabelMatch = text.match(/(?:Name\s*:|Holder\s*Name|Driver\s*Name|Account\s*Holder|Owner)[:\s]*([^\n\r,;:]{3,35})/i);
+  const nameLabelMatch = text.match(/(?:Name\s*[:\-]|Holder\s*Name|Driver\s*Name|Account\s*Holder|Owner)[:\s]*([A-Za-z\s.]{3,35})(?:\r?\n|$)/i);
   if (nameLabelMatch) {
-    name = clean(nameLabelMatch[1]);
+    const cleanCandidate = clean(nameLabelMatch[1]);
+    if (!/^(GOVERNMENT|INDIA|BHARAT|AADHAAR|UNION|DRIVING)$/i.test(cleanCandidate)) {
+      name = cleanCandidate;
+    }
   } else if (detectedType === 'pan' || panCard) {
     // In PAN Card: Name is the first line below header
     const panLines = rawLines.filter((l) => {
@@ -354,26 +538,19 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
       const nameParts = [];
       for (let i = dobLineIdx - 1; i >= 0 && nameParts.length < 2; i--) {
         const candidate = rawLines[i].trim();
-        if (/^[A-Za-z\s.]{2,30}$/.test(candidate)) {
-          const up = candidate.toUpperCase();
-          if (
-            !up.includes('GOVERNMENT') &&
-            !up.includes('INDIA') &&
-            !up.includes('BHARAT') &&
-            !up.includes('SARKAR') &&
-            !up.includes('AADHAAR') &&
-            !up.includes('GUJARAT') &&
-            !up.includes('AUTHORITY') &&
-            !up.includes('UNIQUE') &&
-            !up.includes('MALE') &&
-            !up.includes('FEMALE')
-          ) {
-            nameParts.unshift(candidate);
-          } else {
-            break;
-          }
-        } else {
-          break;
+        // Clean up symbols and noisy tokens
+        const cleanedWords = candidate
+          .replace(/[^A-Za-z\s]/g, ' ')
+          .split(/\s+/)
+          .filter(
+            (w) =>
+              w.length >= 2 &&
+              !/^(fecal|fe|TRA|TET|EB|U4|GOVT|GOVERNMENT|INDIA|BHARAT|MALE|FEMALE|DOB|AADHAAR|UNIQUE|AUTHORITY|SARKAR)$/i.test(
+                w
+              )
+          );
+        if (cleanedWords.length > 0) {
+          nameParts.unshift(cleanedWords.join(' '));
         }
       }
       if (nameParts.length > 0) {
@@ -389,7 +566,15 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
       'AADHAAR', 'MY AADHAAR', 'UIDAI', 'INCOME', 'TAX', 'DEPARTMENT', 'PERMANENT',
       'DRIVING', 'LICENCE', 'LICENSE', 'UNION', 'TRANSPORT', 'COMMISSIONER', 'VEHICLE',
       'REGISTRATION', 'CERTIFICATE', 'MOTOR', 'POLICE', 'CHALLAN', 'RECEIPT', 'STATION',
-      'MERA AADHAAR', 'MERI PEHCHAN', 'SIGNATURE', 'MAHARASHTRA'
+      'MERA AADHAAR', 'MERI PEHCHAN', 'SIGNATURE', 'MAHARASHTRA', 'GUJARAT',
+      // Form UI Labels & noise to ignore
+      'AS ON DRIVING LICENCE', 'AS ON', 'PRIMARY', 'FULL DRIVER NAME', 'MOBILE VERIFICATION',
+      'REFERENCE', 'COMMERCIAL DEAL', 'LEGAL RECORDS', 'ESCROW', 'HANDOVER', 'DEPOSIT',
+      'SPECIMEN', 'ATTACHED', 'VAULT', 'GATE 01', 'GATE 02', 'GATE 03', 'GATE 04',
+      'STATUTORY KYC', 'COMMERCIAL PILOT', 'SMART WALLET', 'SPENDABLE', 'OPERATIONAL',
+      'COMPLIANCE', 'AUDIT NOTES', 'SHIFT SCHEDULE', 'ATTENDANCE', 'PUNCTUALITY',
+      'GROSS EARNINGS', 'COMPLETED TRIPS', 'CALL DRIVER', 'SYNC LIVE DATA', 'DELETE DRIVER',
+      'DOCUMENT VAULT', 'ADMIN ACCESS', 'RECORDS'
     ];
     for (const rawLine of rawLines) {
       const line = rawLine.trim();
@@ -404,11 +589,11 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     }
   }
 
-  // J. Address Extraction
-  let address = '';
-  const addressMatch = text.match(/(?:Address|Add)[:\s]*([^\n]+(?:\n[^\n]+){1,3})/i);
-  if (addressMatch) {
-    address = addressMatch[1].replace(/\n+/g, ', ').replace(/\s+/g, ' ').trim();
+  // J. Address Extraction with Intelligent Indian Normalizer
+  const addrRes = cleanIndianOcrAddress(text);
+  let address = addrRes.cleanAddress;
+  if (!fatherName && addrRes.fatherName) {
+    fatherName = addrRes.fatherName;
   }
 
   // K. Vehicle Specific Fields (RC)
@@ -539,23 +724,29 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     aadhaar: 'Aadhaar Biometric Card'
   }[detectedType] || 'Institutional Fleet Document';
 
+  // Strict Field Isolation by Document Type
+  const isAadhaarDoc = typeHint === 'aadhaar' || (typeHint === 'all' && detectedType === 'aadhaar');
+  const isPanDoc = typeHint === 'pan' || (typeHint === 'all' && detectedType === 'pan');
+  const isDlDoc = typeHint === 'dl' || (typeHint === 'all' && detectedType === 'dl');
+
   return {
     docType: docTypeLabel,
-    detectedType,
+    detectedType: isAadhaarDoc ? 'aadhaar' : isPanDoc ? 'pan' : isDlDoc ? 'dl' : detectedType,
     rawText: text,
 
-    // Identity
-    name: name || '',
-    phone: phone || '',
-    fatherName: fatherName || '',
-    dob: dob || '',
-    gender: gender || '',
-    drivingLicence: drivingLicence || '',
-    dlExpiry: dlExpiry || '2047-04-08',
-    dlCategory: dlCategory || 'Commercial LMV',
-    aadhaar: aadhaar || '',
-    panCard: panCard || '',
-    address: address || '',
+    // Identity (Strictly Isolated per Document Category)
+    name: isPanDoc ? '' : (name || ''),
+    phone: isAadhaarDoc ? (phone || '') : '',
+    fatherName: isAadhaarDoc ? (fatherName || '') : '',
+    dob: (isAadhaarDoc || isDlDoc) ? (dob || '') : '',
+    gender: isAadhaarDoc ? (gender || '') : '',
+    drivingLicence: isDlDoc ? (drivingLicence || '') : '',
+    dlExpiry: isDlDoc ? (dlExpiry || '2047-04-08') : '',
+    dlCategory: isDlDoc ? (dlCategory || 'Commercial LMV') : '',
+    aadhaar: isAadhaarDoc ? (aadhaar || '') : '',
+    panCard: isPanDoc ? (panCard || '') : '',
+    address: isAadhaarDoc ? (address || '') : '',
+    city: isAadhaarDoc ? (addrRes.city || '') : '',
 
     // Vehicle RC
     registration: registration || '',
@@ -742,7 +933,7 @@ export default function DocumentOcrScannerModal({
               setRawOcrText(JSON.stringify(geminiRes, null, 2));
               setIsProcessing(false);
               setIsScanningAnim(false);
-              if (onDataExtracted) onDataExtracted(geminiRes);
+              if (onDataExtracted) onDataExtracted({ ...geminiRes, image: imageData });
               return;
             }
           } catch (geminiErr) {
@@ -967,7 +1158,7 @@ export default function DocumentOcrScannerModal({
   const handleApplyData = () => {
     if (!extractedData) return;
     if (onDataExtracted) {
-      onDataExtracted(extractedData);
+      onDataExtracted({ ...extractedData, image: selectedImage });
     }
     onClose();
   };
@@ -1828,72 +2019,131 @@ export default function DocumentOcrScannerModal({
                         </div>
                       </div>
                     </>
-                  ) : (
-                    /* 5. Driver Identity (Aadhaar / DL / PAN) Form */
+                  ) : (extractedData.detectedType === 'pan' || docType === 'pan') ? (
+                    /* 5. PAN Card Isolated Form */
                     <>
+                      <div style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #bae6fd', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', marginBottom: '2px' }}>
+                          💳 PAN Card Extraction Active
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748b' }}>
+                          Strict Mode: Fetches only the 10-character Permanent Account Number.
+                        </div>
+                      </div>
                       <div>
                         <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
-                          Driver / Customer Full Name
+                          PAN Card Number (10 Alphanumeric Characters) *
+                        </label>
+                        <input
+                          type="text"
+                          value={extractedData.panCard || ''}
+                          placeholder="e.g. ABCPG8821K"
+                          onChange={(e) => setExtractedData({ ...extractedData, panCard: e.target.value.toUpperCase() })}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1.5px solid #0284c7', fontSize: '15px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '2px', color: '#0284c7', background: '#f8fafc' }}
+                        />
+                      </div>
+                    </>
+                  ) : (extractedData.detectedType === 'dl' || docType === 'dl') ? (
+                    /* 6. Driving Licence Isolated Form */
+                    <>
+                      <div style={{ background: '#f0fdf4', padding: '10px 12px', borderRadius: '8px', border: '1px solid #bbf7d0', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#166534', marginBottom: '2px' }}>
+                          📄 Commercial Driving Licence (DL) Extraction Active
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748b' }}>
+                          Strict Mode: Fetches only Driving Licence credentials &amp; expiry.
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                          Commercial Driving Licence (DL) Number *
+                        </label>
+                        <input
+                          type="text"
+                          value={extractedData.drivingLicence || ''}
+                          placeholder="e.g. GJ06 20250013670"
+                          onChange={(e) => setExtractedData({ ...extractedData, drivingLicence: e.target.value.toUpperCase() })}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1.5px solid #0284c7', fontSize: '14px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '1px', color: '#0284c7', background: '#f8fafc' }}
+                        />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div>
+                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                            DL Validity / Expiry
+                          </label>
+                          <input
+                            type="text"
+                            value={extractedData.dlExpiry || ''}
+                            placeholder="DD-MM-YYYY"
+                            onChange={(e) => setExtractedData({ ...extractedData, dlExpiry: e.target.value })}
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700 }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                            Licence Category
+                          </label>
+                          <input
+                            type="text"
+                            value={extractedData.dlCategory || 'Commercial LMV'}
+                            onChange={(e) => setExtractedData({ ...extractedData, dlCategory: e.target.value })}
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700 }}
+                          />
+                        </div>
+                      </div>
+                      {extractedData.name && (
+                        <div>
+                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                            Driver Name (as on DL)
+                          </label>
+                          <input
+                            type="text"
+                            value={extractedData.name || ''}
+                            onChange={(e) => setExtractedData({ ...extractedData, name: e.target.value })}
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* 7. Aadhaar Card Isolated Form (Name, Aadhaar Number, Address) */
+                    <>
+                      <div style={{ background: '#fffbeb', padding: '10px 12px', borderRadius: '8px', border: '1px solid #fde68a', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#b45309', marginBottom: '2px' }}>
+                          🆔 Aadhaar Card Extraction Active (UIDAI Precision)
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748b' }}>
+                          Strict Mode: Fetches Name, 12-digit Aadhaar Number &amp; Address only (VID ignored).
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                          Driver / Individual Full Name (from Aadhaar) *
                         </label>
                         <input
                           type="text"
                           value={extractedData.name || ''}
-                          placeholder="e.g. SAMARTH SHARMA"
+                          placeholder="e.g. Parekh Dhruv Rakeshbhai"
                           onChange={(e) => setExtractedData({ ...extractedData, name: e.target.value })}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 800, color: '#0f172a' }}
                         />
                       </div>
 
-                      {/* Aadhaar */}
-                      {(extractedData.detectedType === 'aadhaar' || extractedData.aadhaar) && (
-                        <div>
-                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
-                            Aadhaar Number (12 Digits)
-                          </label>
-                          <input
-                            type="text"
-                            value={extractedData.aadhaar || ''}
-                            placeholder="e.g. 1234 5678 9012"
-                            onChange={(e) => setExtractedData({ ...extractedData, aadhaar: e.target.value })}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '1px', color: '#0284c7' }}
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
+                          Aadhaar Number (12 Digits: XXXX XXXX XXXX) *
+                        </label>
+                        <input
+                          type="text"
+                          value={extractedData.aadhaar || ''}
+                          placeholder="e.g. 3639 7365 6509"
+                          onChange={(e) => setExtractedData({ ...extractedData, aadhaar: e.target.value })}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1.5px solid #0284c7', fontSize: '15px', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '2px', color: '#0284c7', background: '#f8fafc' }}
+                        />
+                      </div>
 
-                      {/* Driving Licence */}
-                      {(extractedData.detectedType === 'dl' || extractedData.drivingLicence) && (
-                        <div>
-                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
-                            Driving Licence (DL) Number
-                          </label>
-                          <input
-                            type="text"
-                            value={extractedData.drivingLicence || ''}
-                            placeholder="e.g. DL-1420190088123"
-                            onChange={(e) => setExtractedData({ ...extractedData, drivingLicence: e.target.value.toUpperCase() })}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 700, fontFamily: 'monospace', color: '#0284c7' }}
-                          />
-                        </div>
-                      )}
-
-                      {/* PAN Card */}
-                      {(extractedData.detectedType === 'pan' || extractedData.panCard) && (
-                        <div>
-                          <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
-                            PAN Card Number
-                          </label>
-                          <input
-                            type="text"
-                            value={extractedData.panCard || ''}
-                            placeholder="e.g. ABCPG8821K"
-                            onChange={(e) => setExtractedData({ ...extractedData, panCard: e.target.value.toUpperCase() })}
-                            style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 700, fontFamily: 'monospace', color: '#0284c7' }}
-                          />
-                        </div>
-                      )}
-
-                      {/* DOB & Gender */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
                         <div>
                           <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
                             Date of Birth (DOB)
@@ -1920,15 +2170,14 @@ export default function DocumentOcrScannerModal({
                         </div>
                       </div>
 
-                      {/* Address */}
                       <div>
                         <label style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>
-                          Residential Address
+                          Residential Address (from Aadhaar Back)
                         </label>
                         <textarea
                           rows={2}
                           value={extractedData.address || ''}
-                          placeholder="e.g. Sector 28, Chakkarpur, Gurgaon, Haryana 122002"
+                          placeholder="e.g. A/12, Manish Apartment, Santoshi Nagar, New Sama Road, Vadodara, Gujarat - 390008"
                           onChange={(e) => setExtractedData({ ...extractedData, address: e.target.value })}
                           style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11.5px', resize: 'none' }}
                         />

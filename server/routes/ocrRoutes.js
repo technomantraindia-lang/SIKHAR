@@ -151,6 +151,34 @@ Return ONLY a valid JSON object matching this exact structure:
       parsedResult = JSON.parse(cleaned);
     }
 
+    // Enforce strict field isolation by document category
+    const isAadhaar = docType === 'aadhaar' || (docType === 'all' && parsedResult.detectedType === 'aadhaar');
+    const isPan = docType === 'pan' || (docType === 'all' && parsedResult.detectedType === 'pan');
+    const isDl = docType === 'dl' || (docType === 'all' && parsedResult.detectedType === 'dl');
+
+    if (isAadhaar) {
+      parsedResult.panCard = '';
+      parsedResult.drivingLicence = '';
+      parsedResult.dlExpiry = '';
+      parsedResult.dlCategory = '';
+      parsedResult.detectedType = 'aadhaar';
+    } else if (isPan) {
+      parsedResult.aadhaar = '';
+      parsedResult.drivingLicence = '';
+      parsedResult.dlExpiry = '';
+      parsedResult.dlCategory = '';
+      parsedResult.address = '';
+      parsedResult.name = '';
+      parsedResult.phone = '';
+      parsedResult.detectedType = 'pan';
+    } else if (isDl) {
+      parsedResult.aadhaar = '';
+      parsedResult.panCard = '';
+      parsedResult.address = '';
+      parsedResult.phone = '';
+      parsedResult.detectedType = 'dl';
+    }
+
     return res.json({
       success: true,
       engine: 'Google Gemini 1.5 Flash Vision',

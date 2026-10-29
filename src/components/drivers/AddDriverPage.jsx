@@ -53,24 +53,259 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
   const [isBatchOcrProcessing, setIsBatchOcrProcessing] = useState(false);
   const [batchOcrProgress, setBatchOcrProgress] = useState('');
 
+  // Dedicated Statutory KYC Document Images & Save States (DL, Aadhaar, PAN)
+  const dlFileInputRef = useRef(null);
+  const aadhaarFileInputRef = useRef(null);
+  const panFileInputRef = useRef(null);
+
+  const [dlDocImage, setDlDocImage] = useState(null); // { fileUrl, fileName, fileSize, saved: boolean }
+  const [aadhaarDocImage, setAadhaarDocImage] = useState(null);
+  const [panDocImage, setPanDocImage] = useState(null);
+
+  const handleSingleDocFileSelect = async (category, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.readAsDataURL(file);
+      });
+
+      const docInfo = {
+        fileUrl: dataUrl,
+        fileName: file.name,
+        fileSize: `${Math.round(file.size / 1024)} KB`,
+        saved: false,
+        category
+      };
+
+      if (category === 'dl') setDlDocImage(docInfo);
+      else if (category === 'aadhaar') setAadhaarDocImage(docInfo);
+      else if (category === 'pan') setPanDocImage(docInfo);
+
+      // Auto-extract text in background if field is empty
+      try {
+        let extracted = null;
+        try {
+          const geminiData = await scanDocumentWithGeminiApi(dataUrl, category);
+          if (geminiData && (geminiData.name || geminiData.drivingLicence || geminiData.aadhaar || geminiData.panCard)) {
+            extracted = geminiData;
+          }
+        } catch {}
+
+        if (!extracted) {
+          const preprocessed = await preprocessImageForOcr(dataUrl);
+          const tesseractPromise = Tesseract.recognize(preprocessed, 'eng');
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+          const ocrRes = await Promise.race([tesseractPromise, timeoutPromise]);
+          extracted = parseIndianDocumentOcr(ocrRes?.data?.text || '', category) || {};
+        }
+
+        if (extracted) {
+          if (category === 'aadhaar') {
+            setFormData(prev => ({
+              ...prev,
+              aadhaar: extracted.aadhaar || prev.aadhaar,
+              name: extracted.name || prev.name,
+              address: extracted.address || prev.address,
+              dob: extracted.dob || prev.dob,
+              gender: extracted.gender || prev.gender,
+              phone: extracted.phone || prev.phone,
+              fatherName: extracted.fatherName || prev.fatherName,
+              referenceName: extracted.fatherName || prev.referenceName,
+              city: extracted.city || prev.city
+            }));
+          } else if (category === 'pan') {
+            setFormData(prev => ({
+              ...prev,
+              panCard: extracted.panCard || prev.panCard
+            }));
+          } else if (category === 'dl') {
+            setFormData(prev => ({
+              ...prev,
+              drivingLicence: extracted.drivingLicence || prev.drivingLicence,
+              dlExpiry: extracted.dlExpiry || prev.dlExpiry,
+              dlCategory: extracted.dlCategory || prev.dlCategory,
+              name: prev.name ? prev.name : (extracted.name || '')
+            }));
+          }
+
+          const summaryParts = [
+            category === 'aadhaar' && extracted.aadhaar && `Aadhaar: ${extracted.aadhaar}`,
+            category === 'aadhaar' && extracted.name && `Name: ${extracted.name}`,
+            category === 'aadhaar' && extracted.address && `Address: ${extracted.address.slice(0, 45)}...`,
+            category === 'pan' && extracted.panCard && `PAN: ${extracted.panCard}`,
+            category === 'dl' && extracted.drivingLicence && `DL: ${extracted.drivingLicence}`
+          ].filter(Boolean).join(' • ');
+
+          if (summaryParts) {
+            setOcrSuccessToast(`✓ Auto-Extracted from photo: ${summaryParts}`);
+            setTimeout(() => setOcrSuccessToast(null), 6000);
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('Silent OCR note:', ocrErr);
+      }
+    } catch (err) {
+      alert('Could not read image: ' + err.message);
+    }
+    e.target.value = '';
+  };
+
+  const handleSaveSingleDocImage = (category) => {
+    let targetDoc = null;
+    let label = '';
+    let docNumber = '';
+    let typeName = '';
+
+    if (category === 'dl' && dlDocImage) {
+      setDlDocImage(prev => ({ ...prev, saved: true }));
+      targetDoc = dlDocImage;
+      label = 'Commercial Driving Licence (DL)';
+      typeName = 'Driving Licence';
+      docNumber = formData.drivingLicence || 'DL Recorded';
+    } else if (category === 'aadhaar' && aadhaarDocImage) {
+      setAadhaarDocImage(prev => ({ ...prev, saved: true }));
+      targetDoc = aadhaarDocImage;
+      label = 'Aadhaar Biometric Card';
+      typeName = 'Aadhaar Card';
+      docNumber = formData.aadhaar || 'UIDAI Recorded';
+    } else if (category === 'pan' && panDocImage) {
+      setPanDocImage(prev => ({ ...prev, saved: true }));
+      targetDoc = panDocImage;
+      label = 'PAN Card';
+      typeName = 'PAN Card';
+      docNumber = formData.panCard || 'PAN Recorded';
+    }
+
+    if (!targetDoc) return;
+
+    // Add or update in attachedDocs
+    setAttachedDocs(prev => {
+      const filtered = prev.filter(d => d.category !== category && d.type !== category);
+      return [
+        ...filtered,
+        {
+          id: `doc-${category}-${Date.now()}`,
+          title: `${label} Specimen`,
+          type: typeName,
+          category: category,
+          docNumber: docNumber,
+          fileUrl: targetDoc.fileUrl,
+          fileSize: targetDoc.fileSize,
+          uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          verified: true,
+          status: 'Verified (Admin Saved)'
+        }
+      ];
+    });
+
+    setOcrSuccessToast(`✓ ${label} image successfully saved & attached to Driver KYC Vault!`);
+    setTimeout(() => setOcrSuccessToast(null), 5000);
+  };
+
+  const handleRemoveSingleDocImage = (category) => {
+    if (category === 'dl') setDlDocImage(null);
+    else if (category === 'aadhaar') setAadhaarDocImage(null);
+    else if (category === 'pan') setPanDocImage(null);
+
+    setAttachedDocs(prev => prev.filter(d => d.category !== category && d.type !== category));
+  };
+
   const handleOcrDataExtracted = (extracted) => {
     if (!extracted) return;
-    setFormData(prev => ({
-      ...prev,
-      name: extracted.name || prev.name,
-      phone: extracted.phone || prev.phone,
-      dob: extracted.dob || prev.dob,
-      gender: extracted.gender || prev.gender,
-      fatherName: extracted.fatherName || prev.fatherName,
-      referenceName: extracted.fatherName || prev.referenceName,
-      drivingLicence: extracted.drivingLicence || prev.drivingLicence,
-      dlExpiry: extracted.dlExpiry || prev.dlExpiry,
-      dlCategory: extracted.dlCategory || prev.dlCategory,
-      aadhaar: extracted.aadhaar || prev.aadhaar,
-      panCard: extracted.panCard || prev.panCard,
-      address: extracted.address || prev.address,
-      policeVerification: extracted.policeVerification || prev.policeVerification
-    }));
+    const docKind = ocrTargetType !== 'all' ? ocrTargetType : (extracted.detectedType || 'all');
+
+    if (docKind === 'aadhaar') {
+      // Strict Aadhaar Mode: Only update Name, Aadhaar number, Address (and DOB/Gender/Phone)
+      setFormData(prev => ({
+        ...prev,
+        aadhaar: extracted.aadhaar || prev.aadhaar,
+        name: extracted.name || prev.name,
+        address: extracted.address || prev.address,
+        dob: extracted.dob || prev.dob,
+        gender: extracted.gender || prev.gender,
+        phone: extracted.phone || prev.phone,
+        fatherName: extracted.fatherName || prev.fatherName,
+        referenceName: extracted.fatherName || prev.referenceName,
+        city: extracted.city || prev.city
+      }));
+    } else if (docKind === 'pan') {
+      // Strict PAN Mode: Only update PAN Card Number
+      setFormData(prev => ({
+        ...prev,
+        panCard: extracted.panCard || prev.panCard
+      }));
+    } else if (docKind === 'dl') {
+      // Strict Driving Licence Mode: Only update DL Number, Expiry, Category
+      setFormData(prev => ({
+        ...prev,
+        drivingLicence: extracted.drivingLicence || prev.drivingLicence,
+        dlExpiry: extracted.dlExpiry || prev.dlExpiry,
+        dlCategory: extracted.dlCategory || prev.dlCategory,
+        name: prev.name ? prev.name : (extracted.name || '')
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        name: extracted.name || prev.name,
+        phone: extracted.phone || prev.phone,
+        dob: extracted.dob || prev.dob,
+        gender: extracted.gender || prev.gender,
+        fatherName: extracted.fatherName || prev.fatherName,
+        referenceName: extracted.fatherName || prev.referenceName,
+        drivingLicence: extracted.drivingLicence || prev.drivingLicence,
+        dlExpiry: extracted.dlExpiry || prev.dlExpiry,
+        dlCategory: extracted.dlCategory || prev.dlCategory,
+        aadhaar: extracted.aadhaar || prev.aadhaar,
+        panCard: extracted.panCard || prev.panCard,
+        address: extracted.address || prev.address,
+        policeVerification: extracted.policeVerification || prev.policeVerification
+      }));
+    }
+
+    // If an image was returned from the OCR modal, assign it to the respective document
+    if (extracted.image) {
+      const targetCat = ocrTargetType === 'all'
+        ? (extracted.detectedType === 'dl' || extracted.drivingLicence ? 'dl' : extracted.detectedType === 'aadhaar' || extracted.aadhaar ? 'aadhaar' : extracted.detectedType === 'pan' || extracted.panCard ? 'pan' : 'dl')
+        : ocrTargetType;
+
+      const docObj = {
+        fileUrl: extracted.image,
+        fileName: `${targetCat.toUpperCase()}_Scanned.jpg`,
+        fileSize: 'OCR Image',
+        saved: true,
+        category: targetCat
+      };
+
+      if (targetCat === 'dl') setDlDocImage(docObj);
+      else if (targetCat === 'aadhaar') setAadhaarDocImage(docObj);
+      else if (targetCat === 'pan') setPanDocImage(docObj);
+
+      const typeLabel = targetCat === 'dl' ? 'Driving Licence' : targetCat === 'aadhaar' ? 'Aadhaar Card' : 'PAN Card';
+      const docNum = targetCat === 'dl' ? (extracted.drivingLicence || formData.drivingLicence) : targetCat === 'aadhaar' ? (extracted.aadhaar || formData.aadhaar) : (extracted.panCard || formData.panCard);
+
+      setAttachedDocs(prev => {
+        const filtered = prev.filter(d => d.category !== targetCat && d.type !== targetCat);
+        return [
+          ...filtered,
+          {
+            id: `doc-${targetCat}-${Date.now()}`,
+            title: `${typeLabel} Photo`,
+            type: typeLabel,
+            category: targetCat,
+            docNumber: docNum || 'Verified Document',
+            fileUrl: extracted.image,
+            fileSize: 'OCR Scanned',
+            uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            verified: true,
+            status: 'Verified (OCR Cleared)'
+          }
+        ];
+      });
+    }
     const summary = [
       extracted.name && `Name: ${extracted.name}`,
       extracted.phone && `Mobile: ${extracted.phone}`,
@@ -483,7 +718,52 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         handoverOdometer: `${formData.handoverOdometer} km`,
         initialBalance: Number(formData.initialBalance) || 0,
         // Attached KYC Documents Vault
-        documents: attachedDocs.length > 0 ? attachedDocs : undefined
+        documents: (() => {
+          let docs = [...attachedDocs];
+          if (dlDocImage?.fileUrl && !docs.some(d => d.category === 'dl' || d.type === 'Driving Licence')) {
+            docs.push({
+              id: `doc-dl-${Date.now()}`,
+              title: 'Commercial Driving Licence (DL) Photo',
+              type: 'Driving Licence',
+              category: 'dl',
+              docNumber: formData.drivingLicence.trim().toUpperCase(),
+              fileUrl: dlDocImage.fileUrl,
+              fileSize: dlDocImage.fileSize || 'Attached',
+              uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+              verified: true,
+              status: 'Verified (Admin Saved)'
+            });
+          }
+          if (aadhaarDocImage?.fileUrl && !docs.some(d => d.category === 'aadhaar' || d.type === 'Aadhaar Card')) {
+            docs.push({
+              id: `doc-aadhaar-${Date.now()}`,
+              title: 'Aadhaar Biometric Card Photo',
+              type: 'Aadhaar Card',
+              category: 'aadhaar',
+              docNumber: formData.aadhaar.trim(),
+              fileUrl: aadhaarDocImage.fileUrl,
+              fileSize: aadhaarDocImage.fileSize || 'Attached',
+              uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+              verified: true,
+              status: 'Verified (Admin Saved)'
+            });
+          }
+          if (panDocImage?.fileUrl && !docs.some(d => d.category === 'pan' || d.type === 'PAN Card')) {
+            docs.push({
+              id: `doc-pan-${Date.now()}`,
+              title: 'PAN Card Photo',
+              type: 'PAN Card',
+              category: 'pan',
+              docNumber: formData.panCard.trim().toUpperCase(),
+              fileUrl: panDocImage.fileUrl,
+              fileSize: panDocImage.fileSize || 'Attached',
+              uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+              verified: true,
+              status: 'Verified (Admin Saved)'
+            });
+          }
+          return docs.length > 0 ? docs : undefined;
+        })()
       };
 
       const res = await onboardDriverApi(payload);
@@ -1264,6 +1544,119 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       />
                     </div>
                     <span className="adp-field-hint">Verified in real-time via MoRTH Sarathi API</span>
+
+                    {/* Dedicated DL Photo Upload & Save Attachment Block */}
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '10px 12px',
+                      background: dlDocImage?.saved ? '#f0fdf4' : (dlDocImage ? '#fffbeb' : '#f8fafc'),
+                      border: dlDocImage?.saved ? '1.5px solid #22c55e' : (dlDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
+                      borderRadius: '8px'
+                    }}>
+                      <input
+                        type="file"
+                        ref={dlFileInputRef}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleSingleDocFileSelect('dl', e)}
+                      />
+                      {!dlDocImage ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach DL Photo (Front / Back):</span>
+                          <button
+                            type="button"
+                            onClick={() => dlFileInputRef.current?.click()}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#0284c7',
+                              background: '#ffffff',
+                              border: '1px solid #bae6fd',
+                              borderRadius: '5px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <FileUp size={12} />
+                            <span>Upload DL Image</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={dlDocImage.fileUrl}
+                              alt="DL Preview"
+                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {dlDocImage.fileName}
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#64748b' }}>({dlDocImage.fileSize})</span>
+                              </div>
+                              <span style={{
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                color: dlDocImage.saved ? '#15803d' : '#b45309'
+                              }}>
+                                {dlDocImage.saved ? '✓ DL Document Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSingleDocImage('dl')}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                              title="Remove DL Photo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => dlFileInputRef.current?.click()}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '11px',
+                                color: '#475569',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Change Photo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveSingleDocImage('dl')}
+                              style={{
+                                padding: '5px 14px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                background: dlDocImage.saved ? '#16a34a' : '#0284c7',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                              }}
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>{dlDocImage.saved ? '✓ Saved DL Document' : '💾 Save DL Document'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="adp-form-group">
@@ -1323,6 +1716,119 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       value={formData.aadhaar}
                       onChange={(e) => updateField('aadhaar', e.target.value)}
                     />
+
+                    {/* Dedicated Aadhaar Photo Upload & Save Attachment Block */}
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '10px 12px',
+                      background: aadhaarDocImage?.saved ? '#f0fdf4' : (aadhaarDocImage ? '#fffbeb' : '#f8fafc'),
+                      border: aadhaarDocImage?.saved ? '1.5px solid #22c55e' : (aadhaarDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
+                      borderRadius: '8px'
+                    }}>
+                      <input
+                        type="file"
+                        ref={aadhaarFileInputRef}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleSingleDocFileSelect('aadhaar', e)}
+                      />
+                      {!aadhaarDocImage ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach Aadhaar Photo (Front / Back):</span>
+                          <button
+                            type="button"
+                            onClick={() => aadhaarFileInputRef.current?.click()}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#0284c7',
+                              background: '#ffffff',
+                              border: '1px solid #bae6fd',
+                              borderRadius: '5px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <FileUp size={12} />
+                            <span>Upload Aadhaar Image</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={aadhaarDocImage.fileUrl}
+                              alt="Aadhaar Preview"
+                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {aadhaarDocImage.fileName}
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#64748b' }}>({aadhaarDocImage.fileSize})</span>
+                              </div>
+                              <span style={{
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                color: aadhaarDocImage.saved ? '#15803d' : '#b45309'
+                              }}>
+                                {aadhaarDocImage.saved ? '✓ Aadhaar Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSingleDocImage('aadhaar')}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                              title="Remove Aadhaar Photo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => aadhaarFileInputRef.current?.click()}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '11px',
+                                color: '#475569',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Change Photo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveSingleDocImage('aadhaar')}
+                              style={{
+                                padding: '5px 14px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                background: aadhaarDocImage.saved ? '#16a34a' : '#0284c7',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                              }}
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>{aadhaarDocImage.saved ? '✓ Saved Aadhaar Document' : '💾 Save Aadhaar Document'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="adp-form-group">
@@ -1365,6 +1871,119 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       />
                     </div>
                     <span className="adp-field-hint">Income Tax Dept / NSDL validation for TDS & banking compliance</span>
+
+                    {/* Dedicated PAN Photo Upload & Save Attachment Block */}
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '10px 12px',
+                      background: panDocImage?.saved ? '#f0fdf4' : (panDocImage ? '#fffbeb' : '#f8fafc'),
+                      border: panDocImage?.saved ? '1.5px solid #22c55e' : (panDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
+                      borderRadius: '8px'
+                    }}>
+                      <input
+                        type="file"
+                        ref={panFileInputRef}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleSingleDocFileSelect('pan', e)}
+                      />
+                      {!panDocImage ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach PAN Card Photo:</span>
+                          <button
+                            type="button"
+                            onClick={() => panFileInputRef.current?.click()}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#0284c7',
+                              background: '#ffffff',
+                              border: '1px solid #bae6fd',
+                              borderRadius: '5px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <FileUp size={12} />
+                            <span>Upload PAN Image</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img
+                              src={panDocImage.fileUrl}
+                              alt="PAN Preview"
+                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {panDocImage.fileName}
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#64748b' }}>({panDocImage.fileSize})</span>
+                              </div>
+                              <span style={{
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                color: panDocImage.saved ? '#15803d' : '#b45309'
+                              }}>
+                                {panDocImage.saved ? '✓ PAN Card Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSingleDocImage('pan')}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                              title="Remove PAN Photo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => panFileInputRef.current?.click()}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '11px',
+                                color: '#475569',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Change Photo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveSingleDocImage('pan')}
+                              style={{
+                                padding: '5px 14px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                background: panDocImage.saved ? '#16a34a' : '#0284c7',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                              }}
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>{panDocImage.saved ? '✓ Saved PAN Document' : '💾 Save PAN Document'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="adp-form-group">
