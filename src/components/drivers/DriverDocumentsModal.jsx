@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
   Shield,
@@ -15,7 +15,8 @@ import {
   ExternalLink,
   RefreshCw,
   Clock,
-  Eye
+  Eye,
+  Download
 } from '../common/Icons';
 import {
   fetchDriverDocumentsApi,
@@ -39,17 +40,19 @@ export default function DriverDocumentsModal({
   isOpen,
   onClose,
   driver,
+  initialCategory = 'all',
   onDocumentsUpdated
 }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState(initialCategory || 'all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [ocrTargetType, setOcrTargetType] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const fileUploadInputRef = useRef(null);
 
   // New Document Form State
   const [newDocType, setNewDocType] = useState('dl');
@@ -136,8 +139,11 @@ export default function DriverDocumentsModal({
       loadDocuments();
       setShowAddForm(false);
       setPreviewDoc(null);
+      if (initialCategory) {
+        setActiveCategoryFilter(initialCategory);
+      }
     }
-  }, [isOpen, driver, loadDocuments]);
+  }, [isOpen, driver, initialCategory, loadDocuments]);
 
   // Handle OCR auto-fill for the Add Document form
   const handleOcrExtracted = (extracted) => {
@@ -157,6 +163,9 @@ export default function DriverDocumentsModal({
       setNewDocTitle('Commercial Smart Driving Licence (LMV-TR)');
       setNewDocNumber(extracted.drivingLicence || '');
       setNewExpiryDate(extracted.dlExpiry || '2032-11-14');
+    }
+    if (extracted.image) {
+      setNewFileUrl(extracted.image);
     }
     if (extracted.rawText) {
       setNewNotes(`OCR Auto-Extracted: ${extracted.name ? 'Name: ' + extracted.name : ''} ${extracted.dob ? '• DOB: ' + extracted.dob : ''}`);
@@ -835,6 +844,67 @@ export default function DriverDocumentsModal({
                         </p>
                       )}
 
+                      {/* Document Image Thumbnail / Visual Specimen */}
+                      {doc.fileUrl ? (
+                        <div
+                          onClick={() => setPreviewDoc(doc)}
+                          style={{
+                            height: '120px',
+                            background: '#090d16',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            border: '1.5px solid #334155',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Click to view high-resolution document photo"
+                        >
+                          <img
+                            src={doc.fileUrl}
+                            alt={doc.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '6px',
+                            right: '6px',
+                            background: 'rgba(15, 23, 42, 0.9)',
+                            color: '#38bdf8',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            border: '1px solid #0284c7'
+                          }}>
+                            <Eye size={12} />
+                            <span>View Document Photo</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{
+                          padding: '10px 14px',
+                          background: '#0f172a',
+                          borderRadius: '8px',
+                          border: '1px dashed #334155',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                            Institutional KYC Record Active
+                          </span>
+                          <span style={{ fontSize: '10.5px', color: '#38bdf8', fontWeight: 700 }}>
+                            ✓ Digital Certificate
+                          </span>
+                        </div>
+                      )}
+
                       <div style={{
                         marginTop: 'auto',
                         paddingTop: '8px',
@@ -943,10 +1013,14 @@ export default function DriverDocumentsModal({
             border: '2px solid #38bdf8',
             borderRadius: '16px',
             width: '100%',
-            maxWidth: '560px',
+            maxWidth: '640px',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
             padding: '24px',
             color: '#ffffff',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.8)'
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+            overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
@@ -973,50 +1047,115 @@ export default function DriverDocumentsModal({
               </button>
             </div>
 
-            {/* Visual Replica Card Preview */}
-            <div style={{
-              background: '#1e293b',
-              border: '1.5px solid #475569',
-              borderRadius: '12px',
-              padding: '24px',
-              marginBottom: '16px',
-              textAlign: 'center'
-            }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '2px', fontWeight: 800 }}>
-                {previewDoc.type.toUpperCase()} SPECIMEN
-              </span>
+            {/* If actual document image exists, render high-res view */}
+            {previewDoc.fileUrl ? (
               <div style={{
-                margin: '16px 0',
+                background: '#090d16',
+                border: '1.5px solid #334155',
+                borderRadius: '12px',
                 padding: '16px',
-                background: '#0f172a',
-                borderRadius: '8px',
-                border: '1px solid #334155'
+                marginBottom: '16px',
+                textAlign: 'center'
               }}>
-                <strong style={{
-                  fontSize: '22px',
-                  color: '#38bdf8',
-                  fontFamily: 'monospace',
-                  letterSpacing: '2px'
+                <img
+                  src={previewDoc.fileUrl}
+                  alt={previewDoc.title}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '420px',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                  }}
+                />
+                <div style={{
+                  marginTop: '14px',
+                  padding: '10px 14px',
+                  background: '#1e293b',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '10px'
                 }}>
-                  {previewDoc.docNumber}
-                </strong>
-                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#cbd5e1' }}>
-                  Holder: <strong>{driver.name}</strong>
-                </p>
+                  <div style={{ textAlign: 'left' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block' }}>DOCUMENT IDENTIFICATION:</span>
+                    <strong style={{ fontSize: '15px', color: '#38bdf8', fontFamily: 'monospace' }}>
+                      {previewDoc.docNumber}
+                    </strong>
+                  </div>
+                  <a
+                    href={previewDoc.fileUrl}
+                    download={`${previewDoc.type || 'KYC_Doc'}_${driver.id}.jpg`}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: '#0284c7',
+                      border: 'none',
+                      color: '#ffffff',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <Download size={13} />
+                    <span>Download Image</span>
+                  </a>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#94a3b8' }}>
-                <span>Valid: <strong style={{ color: '#ffffff' }}>{previewDoc.expiryDate}</strong></span>
-                <span>Issue: <strong style={{ color: '#ffffff' }}>{previewDoc.issueDate}</strong></span>
-                <span style={{ color: '#34d399', fontWeight: 700 }}>✓ Live RTO/UIDAI Verified</span>
+            ) : (
+              /* Visual Replica Card Preview */
+              <div style={{
+                background: '#1e293b',
+                border: '1.5px solid #475569',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '16px',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '2px', fontWeight: 800 }}>
+                  {previewDoc.type.toUpperCase()} SPECIMEN
+                </span>
+                <div style={{
+                  margin: '16px 0',
+                  padding: '16px',
+                  background: '#0f172a',
+                  borderRadius: '8px',
+                  border: '1px solid #334155'
+                }}>
+                  <strong style={{
+                    fontSize: '22px',
+                    color: '#38bdf8',
+                    fontFamily: 'monospace',
+                    letterSpacing: '2px'
+                  }}>
+                    {previewDoc.docNumber}
+                  </strong>
+                  <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#cbd5e1' }}>
+                    Holder: <strong>{driver.name}</strong>
+                  </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#94a3b8' }}>
+                  <span>Valid: <strong style={{ color: '#ffffff' }}>{previewDoc.expiryDate}</strong></span>
+                  <span>Issue: <strong style={{ color: '#ffffff' }}>{previewDoc.issueDate}</strong></span>
+                  <span style={{ color: '#34d399', fontWeight: 700 }}>✓ Live RTO/UIDAI Verified</span>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                Status: <strong style={{ color: '#34d399' }}>✓ Verified Statutory Record</strong>
+              </span>
               <button
                 type="button"
                 onClick={() => setPreviewDoc(null)}
                 style={{
-                  padding: '8px 18px',
+                  padding: '8px 20px',
                   background: '#0284c7',
                   border: 'none',
                   borderRadius: '6px',
@@ -1026,7 +1165,7 @@ export default function DriverDocumentsModal({
                   cursor: 'pointer'
                 }}
               >
-                Done
+                Close Preview
               </button>
             </div>
           </div>

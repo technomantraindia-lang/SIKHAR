@@ -11,10 +11,10 @@ import {
   Grid,
   List,
   Shield,
-  FileText
+  FileText,
+  Trash2
 } from '../common/Icons';
-import { fetchDriversApi } from '../../services/api';
-import DriverDocumentsModal from './DriverDocumentsModal';
+import { fetchDriversApi, deleteDriverApi } from '../../services/api';
 
 export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver }) {
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,6 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
   const [sortBy, setSortBy] = useState('default'); // 'default' | 'name' | 'gross' | 'trips' | 'wallet'
   const [sortOrder, setSortOrder] = useState('desc');
   const [toastMessage, setToastMessage] = useState(null);
-  const [docsModalDriver, setDocsModalDriver] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -51,6 +50,20 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
   useEffect(() => {
     loadAllDrivers();
   }, [loadAllDrivers]);
+
+  const handleDeleteDriver = async (drv, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})? This will release their assigned vehicle and delete all associated records.`)) {
+      return;
+    }
+    try {
+      await deleteDriverApi(drv.id);
+      showToast(`Driver ${drv.name} deleted successfully.`);
+      loadAllDrivers();
+    } catch (err) {
+      alert('Failed to delete driver: ' + (err.message || 'Unknown error'));
+    }
+  };
 
   const { summary = {}, drivers = [] } = data;
 
@@ -453,7 +466,7 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDocsModalDriver(drv);
+                                onSelectDriver(drv.id, 'kyc');
                               }}
                               style={{
                                 padding: '2px 7px',
@@ -494,14 +507,14 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDocsModalDriver(drv);
+                              onSelectDriver(drv.id, 'kyc');
                             }}
                             style={{
                               padding: '5px 10px',
                               borderRadius: '6px',
-                              background: '#0f172a',
-                              border: '1px solid #0284c7',
-                              color: '#38bdf8',
+                              background: '#0284c7',
+                              border: '1px solid #38bdf8',
+                              color: '#ffffff',
                               fontSize: '11px',
                               fontWeight: 700,
                               cursor: 'pointer',
@@ -526,6 +539,28 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                           >
                             <span>Profile</span>
                             <ChevronRight size={15} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteDriver(drv, e)}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              background: '#fee2e2',
+                              border: '1px solid #fca5a5',
+                              color: '#dc2626',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                            title={`Delete driver ${drv.name}`}
+                          >
+                            <Trash2 size={12} />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </td>
@@ -632,14 +667,14 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDocsModalDriver(drv);
+                      onSelectDriver(drv.id, 'kyc');
                     }}
                     style={{
                       padding: '5px 10px',
                       borderRadius: '6px',
-                      background: '#0f172a',
-                      border: '1px solid #0284c7',
-                      color: '#38bdf8',
+                      background: '#0284c7',
+                      border: '1px solid #38bdf8',
+                      color: '#ffffff',
                       fontSize: '11px',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -653,17 +688,38 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                     <span>Docs ({drv.documents ? drv.documents.length : (drv.kyc?.panCard ? 3 : 2)})</span>
                   </button>
 
-                  <button
-                    type="button"
-                    className="btn-card-open-profile"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectDriver(drv.id);
-                    }}
-                  >
-                    <span>View Profile</span>
-                    <ChevronRight size={14} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className="btn-card-open-profile"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectDriver(drv.id);
+                      }}
+                    >
+                      <span>View Profile</span>
+                      <ChevronRight size={14} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteDriver(drv, e)}
+                      style={{
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        background: '#fee2e2',
+                        border: '1px solid #fca5a5',
+                        color: '#dc2626',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center'
+                      }}
+                      title={`Delete driver ${drv.name}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -685,14 +741,6 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
           Institutional Fleet Core System • Secured Admin Session
         </span>
       </div>
-
-      {/* Driver Multi-Document Management Modal (Admin Authority) */}
-      <DriverDocumentsModal
-        isOpen={!!docsModalDriver}
-        onClose={() => setDocsModalDriver(null)}
-        driver={docsModalDriver}
-        onDocumentsUpdated={loadAllDrivers}
-      />
     </div>
   );
 }

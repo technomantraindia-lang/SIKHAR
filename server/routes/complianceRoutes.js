@@ -30,7 +30,7 @@ function updateComplianceKpis(data) {
   const challans = data.challans || [];
 
   const totalMonitored = docs.length;
-  const compliantDocs = docs.filter(d => d.status === 'Valid').length;
+  const _compliantDocs = docs.filter(d => d.status === 'Valid').length;
   const expiringSoon = docs.filter(d => d.status === 'Expiring Soon' || (d.daysRemaining > 0 && d.daysRemaining <= 30)).length;
   const breachedExpired = docs.filter(d => d.status === 'Breached' || d.daysRemaining <= 0).length;
 

@@ -6,18 +6,9 @@ import {
   Scan,
   X,
   CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
-  Shield,
-  FileText,
-  User,
-  CreditCard,
-  Car,
-  Fuel,
-  Wrench,
-  Receipt
+  AlertTriangle
 } from './Icons';
-import { scanDocumentWithGeminiApi, checkGeminiOcrStatusApi } from '../../services/api';
+import { scanDocumentWithGeminiApi } from '../../services/api';
 
 /**
  * High-Speed Canvas Image Pre-Processor
@@ -211,7 +202,7 @@ export function cleanIndianOcrAddress(rawText) {
   // 8. Clean tokens & reconstruct address
   const tokens = cleaned
     .split(/[\n,;]+/)
-    .map(t => t.replace(/[^A-Za-z0-9\s\/\-#]/g, '').trim().replace(/[-–—]+$/, '').trim())
+    .map(t => t.replace(/[^A-Za-z0-9\s/#-]/g, '').trim().replace(/[-–—]+$/, '').trim())
     .filter(t => t.length > 1 && !/^(the|and|or|in|at|of|to|is|ES|ment|Sats)$/i.test(t));
 
   // Deduplicate and filter noise
@@ -259,7 +250,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const clean = (s) => (s || '').replace(/[^A-Za-z0-9\s\-\/\.]/g, '').trim();
+  const clean = (s) => (s || '').replace(/[^A-Za-z0-9\s/.-]/g, '').trim();
   const upperText = text.toUpperCase();
 
   // 1. Auto-detect Document Type if not explicitly forced
@@ -355,7 +346,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     text.match(/(?:DOB)[:\s]*([0-3]?[0-9][-/.\\][0-1]?[0-9][-/.\\]\d{2,4})/i) ||
     text.match(/\b([0-3]?[0-9][-/.\\][0-1]?[0-9][-/.\\][12][90]\d{2})\b/);
   if (dobMatch) {
-    let rawDate = dobMatch[1].replace(/[\/\\]/g, '-');
+    let rawDate = dobMatch[1].replace(/[/\\]/g, '-');
     const parts = rawDate.split('-');
     if (parts.length === 3 && parts[2].length === 2) {
       const yr = parseInt(parts[2], 10);
@@ -462,7 +453,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     /(?:Validity\s*\(\s*NT\s*\)|Valid\s*Till|Validity|Valid\s*Upto|Expiry|Upto|Expires)[:\s]*([0-9]{1,2}[-/.\\][0-9]{1,2}[-/.\\][0-9]{2,4})/i
   );
   if (expiryMatch) {
-    let rawExp = expiryMatch[1].replace(/[\/\\]/g, '-');
+    let rawExp = expiryMatch[1].replace(/[/\\]/g, '-');
     const parts = rawExp.split('-');
     if (parts.length === 3 && parts[2].length === 2) {
       const yr = parseInt(parts[2], 10);
@@ -494,7 +485,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
         !up.includes('PERMANENT') &&
         !up.includes('ACCOUNT') &&
         !up.includes('SIGNATURE') &&
-        !/^[0-9\s\/-]+$/.test(l) &&
+        !/^[0-9\s/-]+$/.test(l) &&
         !/[A-Z]{5}[0-9]{4}[A-Z]/.test(l)
       );
     });
@@ -505,7 +496,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
 
   // I. Person / Driver Name (Nasir Gotam from Aadhaar, D MANIKANDAN from PAN, Name : ... from DL)
   let name = '';
-  const nameLabelMatch = text.match(/(?:Name\s*[:\-]|Holder\s*Name|Driver\s*Name|Account\s*Holder|Owner)[:\s]*([A-Za-z\s.]{3,35})(?:\r?\n|$)/i);
+  const nameLabelMatch = text.match(/(?:Name\s*[:-]|Holder\s*Name|Driver\s*Name|Account\s*Holder|Owner)[:\s]*([A-Za-z\s.]{3,35})(?:\r?\n|$)/i);
   if (nameLabelMatch) {
     const cleanCandidate = clean(nameLabelMatch[1]);
     if (!/^(GOVERNMENT|INDIA|BHARAT|AADHAAR|UNION|DRIVING)$/i.test(cleanCandidate)) {
@@ -522,7 +513,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
         !up.includes('PERMANENT') &&
         !up.includes('ACCOUNT') &&
         !up.includes('SIGNATURE') &&
-        !/^[0-9\s\/-]+$/.test(l) &&
+        !/^[0-9\s/-]+$/.test(l) &&
         !/[A-Z]{5}[0-9]{4}[A-Z]/.test(l)
       );
     });
@@ -579,7 +570,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
     for (const rawLine of rawLines) {
       const line = rawLine.trim();
       if (line.length < 3 || line.length > 35) continue;
-      if (/^[0-9\s\-:.,\/\\]+$/.test(line)) continue;
+      if (/^[0-9\s:.,/\\-]+$/.test(line)) continue;
       const upperLine = line.toUpperCase();
       if (ignoreList.some((k) => upperLine.includes(k))) continue;
       if (/^[A-Za-z\s.]{3,35}$/.test(line)) {
@@ -612,7 +603,7 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
   const engineMatch = text.match(/(?:ENGINE|MOTOR|ENG\.?\s*NO)[:\s]*([A-Z0-9]{6,16})/i);
   if (engineMatch) engine = engineMatch[1].toUpperCase();
 
-  const modelMatch = text.match(/(?:MODEL|MAKER|DESC|CLASS)[:\s]*([A-Za-z0-9\s\-\.]{4,35})/i);
+  const modelMatch = text.match(/(?:MODEL|MAKER|DESC|CLASS)[:\s]*([A-Za-z0-9\s.-]{4,35})/i);
   if (modelMatch) {
     model = modelMatch[1].trim();
   } else if (upperText.includes('TIGOR')) {
@@ -633,13 +624,13 @@ export function parseIndianDocumentOcr(text, typeHint = 'all') {
   }
 
   const fitnessMatch = text.match(/(?:FITNESS|FIT)[:\s]*([0-9]{1,2}[-/.\\][0-9]{1,2}[-/.\\][0-9]{4})/i);
-  if (fitnessMatch) fitnessExpiry = fitnessMatch[1].replace(/[\/\\]/g, '-');
+  if (fitnessMatch) fitnessExpiry = fitnessMatch[1].replace(/[/\\]/g, '-');
 
   const insMatch = text.match(/(?:INSURANCE|INS)[:\s]*([0-9]{1,2}[-/.\\][0-9]{1,2}[-/.\\][0-9]{4})/i);
-  if (insMatch) insuranceExpiry = insMatch[1].replace(/[\/\\]/g, '-');
+  if (insMatch) insuranceExpiry = insMatch[1].replace(/[/\\]/g, '-');
 
   const pucMatch = text.match(/(?:PUC|POLLUTION)[:\s]*([0-9]{1,2}[-/.\\][0-9]{1,2}[-/.\\][0-9]{4})/i);
-  if (pucMatch) pucExpiry = pucMatch[1].replace(/[\/\\]/g, '-');
+  if (pucMatch) pucExpiry = pucMatch[1].replace(/[/\\]/g, '-');
 
   // L. Challan Specific Fields
   let challanNumber = '';

@@ -3,29 +3,12 @@ import {
   Wrench,
   Search,
   Plus,
-  Clock,
   CheckCircle2,
   Users,
-  Car,
-  MapPin,
-  FileText,
-  Phone,
-  Filter,
   X,
-  ArrowLeft,
   ChevronRight,
-  ChevronDown,
-  Shield,
-  Wallet,
   Receipt,
-  Download,
-  Check,
-  Truck,
-  TrendingUp,
   RefreshCw,
-  AlertTriangle,
-  Zap,
-  Gauge,
   Grid,
   List,
   Award,
@@ -36,7 +19,6 @@ import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import {
   fetchMaintenanceApi,
   createJobCardApi,
-  advanceMaintenanceStageApi,
   approveEstimateApi,
   submitQcApi,
   verifyMaintenanceBillApi,
@@ -45,9 +27,9 @@ import {
   fetchFleetTowerApi
 } from '../../services/api';
 
-export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard }) {
+export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [_error, setError] = useState(null);
   const [allJobCards, setAllJobCards] = useState([]);
   const [stages, setStages] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
@@ -374,7 +356,7 @@ export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard })
     }
   };
 
-  const formatInr = (amt) => {
+  const _formatInr = (amt) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -718,7 +700,7 @@ export default function MaintenanceMasterPage({ onNavigate, onBackToDashboard })
           {filteredJobs.map(job => {
             const isReady = job.stageIndex === 10 || job.status === 'Ready to Deploy';
             const isDue = job.stageIndex === 1;
-            const isWip = job.stageIndex >= 3 && job.stageIndex <= 6;
+            const _isWip = job.stageIndex >= 3 && job.stageIndex <= 6;
             const isBilling = job.stageIndex >= 7 && job.stageIndex <= 8;
 
             const statusTheme = isReady ? 'green' : isDue ? 'amber' : isBilling ? 'red' : 'cyan';

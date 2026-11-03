@@ -54,6 +54,8 @@ export default function DriverControlTower({ onNavigate }) {
     }
   });
 
+  const [selectedDriverTab, setSelectedDriverTab] = useState('overview');
+
   const [actionToast, setActionToast] = useState(null);
 
   // Load Driver Data
@@ -79,8 +81,9 @@ export default function DriverControlTower({ onNavigate }) {
     setTimeout(() => setActionToast(null), 3000);
   };
 
-  const handleSelectDriver = (id) => {
+  const handleSelectDriver = (id, tab = 'overview') => {
     setSelectedDriverId(id);
+    setSelectedDriverTab(tab || 'overview');
     try {
       localStorage.setItem('sikhar_driver_selected_id', id);
     } catch {
@@ -90,6 +93,7 @@ export default function DriverControlTower({ onNavigate }) {
 
   const handleBackToTower = () => {
     setSelectedDriverId(null);
+    setSelectedDriverTab('overview');
     setShowAllDriversPage(false);
     setShowAddPage(false);
     try {
@@ -126,6 +130,7 @@ export default function DriverControlTower({ onNavigate }) {
     return (
       <DriverDetailPage
         driverId={selectedDriverId}
+        initialTab={selectedDriverTab}
         onBack={handleBackToTower}
         onStatusUpdated={loadDrivers}
         onNavigate={onNavigate}

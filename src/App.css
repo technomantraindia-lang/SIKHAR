@@ -12489,6 +12489,25 @@
   padding-top: 14px;
 }
 
+.login-back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 15px;
+  border: 0;
+  background: transparent;
+  color: #8cccf0;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color .18s ease, transform .18s ease;
+}
+
+.login-back-home-btn:hover {
+  color: #ffffff;
+  transform: translateX(-2px);
+}
+
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .corp-split-login-container {
@@ -18323,7 +18342,11 @@
     visibility: hidden;
   }
   .formal-tax-invoice-sheet,
-  .formal-tax-invoice-sheet * {
+  .formal-tax-invoice-sheet *,
+  .statutory-cert-dialog,
+  .statutory-cert-dialog *,
+  .printable-certificate-card,
+  .printable-certificate-card * {
     visibility: visible;
   }
   .formal-tax-invoice-sheet {
@@ -18335,8 +18358,23 @@
     border: none;
     padding: 0;
   }
+  .statutory-cert-modal-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .statutory-cert-dialog {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
   .command-header,
-  .invoice-audit-sidebar-column {
+  .invoice-audit-sidebar-column,
+  .btn-modal-close {
     display: none !important;
   }
 }

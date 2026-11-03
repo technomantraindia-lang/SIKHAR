@@ -27,7 +27,7 @@ function saveFuelData(data) {
 // Recalculate KPIs based on current charging and fuel logs
 function updateFuelKpis(data) {
   const activeSessions = (data.chargingSessions || []).filter(s => s.status === 'Active');
-  const settledSessions = (data.chargingSessions || []).filter(s => s.status === 'Settled' || s.status === 'Completed');
+  const _settledSessions = (data.chargingSessions || []).filter(s => s.status === 'Settled' || s.status === 'Completed');
   const fuelLogs = data.fuelLogs || [];
 
   const totalKwh = (data.chargingSessions || []).reduce((sum, s) => sum + (Number(s.energyDeliveredKwh) || 0), 0);
@@ -53,7 +53,7 @@ function updateFuelKpis(data) {
 router.get('/', (req, res) => {
   try {
     const data = getFuelData();
-    const { type, status, search, vehicle } = req.query;
+    const { type: _type, status, search, vehicle } = req.query;
 
     let chargingSessions = [...(data.chargingSessions || [])];
     let fuelLogs = [...(data.fuelLogs || [])];

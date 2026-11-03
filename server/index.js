@@ -15,6 +15,7 @@ import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import fuelRoutes from './routes/fuelRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import ocrRoutes from './routes/ocrRoutes.js';
+import rapidoRoutes from './routes/rapidoRoutes.js';
 import { testDbConnection, getDbStatus } from './config/db.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
@@ -72,6 +73,7 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/fuel', fuelRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/v1/fleet', rapidoRoutes);
 
 // Serve Frontend Vite Static Build (dist) if it exists
 const distPath = path.resolve(__dirname, '../dist');

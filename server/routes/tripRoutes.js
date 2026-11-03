@@ -346,7 +346,7 @@ router.post('/:id/escalate', (req, res) => {
     let escData = { tickets: [] };
     try {
       escData = JSON.parse(fs.readFileSync(escalationsDataPath, 'utf-8'));
-    } catch (e) {
+    } catch {
       // fallback
     }
 

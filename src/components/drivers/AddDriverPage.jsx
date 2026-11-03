@@ -44,7 +44,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
   // Document OCR Scanning State
   const [showOcrModal, setShowOcrModal] = useState(false);
-  const [ocrTargetType, setOcrTargetType] = useState('all');
+  const [ocrTargetType, _setOcrTargetType] = useState('all');
   const [ocrSuccessToast, setOcrSuccessToast] = useState(null);
 
   // Multi-Document Batch OCR & Storage
@@ -54,15 +54,15 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
   const [batchOcrProgress, setBatchOcrProgress] = useState('');
 
   // Dedicated Statutory KYC Document Images & Save States (DL, Aadhaar, PAN)
-  const dlFileInputRef = useRef(null);
-  const aadhaarFileInputRef = useRef(null);
-  const panFileInputRef = useRef(null);
+  const _dlFileInputRef = useRef(null);
+  const _aadhaarFileInputRef = useRef(null);
+  const _panFileInputRef = useRef(null);
 
   const [dlDocImage, setDlDocImage] = useState(null); // { fileUrl, fileName, fileSize, saved: boolean }
   const [aadhaarDocImage, setAadhaarDocImage] = useState(null);
   const [panDocImage, setPanDocImage] = useState(null);
 
-  const handleSingleDocFileSelect = async (category, e) => {
+  const _handleSingleDocFileSelect = async (category, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -154,7 +154,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     e.target.value = '';
   };
 
-  const handleSaveSingleDocImage = (category) => {
+  const _handleSaveSingleDocImage = (category) => {
     let targetDoc = null;
     let label = '';
     let docNumber = '';
@@ -206,7 +206,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     setTimeout(() => setOcrSuccessToast(null), 5000);
   };
 
-  const handleRemoveSingleDocImage = (category) => {
+  const _handleRemoveSingleDocImage = (category) => {
     if (category === 'dl') setDlDocImage(null);
     else if (category === 'aadhaar') setAadhaarDocImage(null);
     else if (category === 'pan') setPanDocImage(null);
@@ -403,17 +403,25 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           docTitle = `Driver KYC Document (${file.name})`;
         }
 
-        newDocs.push({
+        const docItem = {
           id: `doc_${Date.now()}_${i}`,
           title: docTitle,
           type: docType,
+          category: docType,
+          docNumber: docType === 'dl' ? (extracted.drivingLicence || '') : docType === 'aadhaar' ? (extracted.aadhaar || '') : (extracted.panCard || ''),
           fileUrl: dataUrl,
           fileSize: `${Math.round(file.size / 1024)} KB`,
           uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
           verified: true,
           status: 'Verified (OCR Cleared)',
           extractedData: extracted
-        });
+        };
+
+        newDocs.push(docItem);
+
+        if (docType === 'dl') setDlDocImage({ fileUrl: dataUrl, fileName: file.name, fileSize: docItem.fileSize, saved: true, category: 'dl' });
+        if (docType === 'aadhaar') setAadhaarDocImage({ fileUrl: dataUrl, fileName: file.name, fileSize: docItem.fileSize, saved: true, category: 'aadhaar' });
+        if (docType === 'pan') setPanDocImage({ fileUrl: dataUrl, fileName: file.name, fileSize: docItem.fileSize, saved: true, category: 'pan' });
       } catch (err) {
         console.warn('Error reading file:', file.name, err);
       }
@@ -918,118 +926,114 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
       <div className="adp-content-split">
         {/* Left Column: The Form */}
         <div className="adp-form-col">
-          {/* Hero OCR Document Scanning Banner */}
-          <div style={{
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-            border: '1.5px solid #0284c7',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '20px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '14px',
-            boxShadow: '0 4px 15px rgba(2, 132, 199, 0.15)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Scan size={22} color="#ffffff" />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong style={{ fontSize: '14px', color: '#ffffff' }}>Instant AI Document OCR Auto-Fill</strong>
-                  <span style={{ fontSize: '10px', background: '#38bdf8', color: '#0f172a', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
-                    AUTO-DETECT
-                  </span>
+          {/* Main Unified Batch OCR KYC Document Upload Center */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const files = e.dataTransfer?.files;
+              if (files && files.length > 0) {
+                handleMultiImageUpload({ target: { files } });
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #091326 0%, #111d38 100%)',
+              border: '2px dashed #0284c7',
+              borderRadius: '14px',
+              padding: '22px 24px',
+              marginBottom: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              boxShadow: '0 8px 24px rgba(2, 132, 199, 0.18)',
+              position: 'relative'
+            }}
+          >
+            <input
+              type="file"
+              ref={multiFileInputRef}
+              multiple
+              accept="image/*"
+              onChange={handleMultiImageUpload}
+              style={{ display: 'none' }}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1, minWidth: '280px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)'
+                }}>
+                  <Scan size={26} color="#ffffff" />
                 </div>
-                <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#94a3b8' }}>
-                  Select document file or take live camera photo (DL, Aadhaar, PAN) to auto-extract and pre-fill details. All manual typing inputs remain active.
-                </p>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '15px', color: '#ffffff', letterSpacing: '-0.2px' }}>
+                      Commercial Driver KYC Document Auto-Onboarding
+                    </strong>
+                    <span style={{ fontSize: '10px', background: '#38bdf8', color: '#091326', padding: '2px 8px', borderRadius: '10px', fontWeight: 900 }}>
+                      BATCH OCR ENGINE
+                    </span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+                    Upload all driver document photos here at once (DL, Aadhaar Front/Back, PAN). Sikhar OCR auto-extracts official details (Aadhaar Name &amp; No, PAN No, DL No &amp; Expiry) and securely stores photos in the KYC Vault.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
+                  disabled={isBatchOcrProcessing}
+                  style={{
+                    padding: '11px 24px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: isBatchOcrProcessing ? '#047857' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: isBatchOcrProcessing ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.45)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <FileText size={17} />
+                  <span>{isBatchOcrProcessing ? batchOcrProgress : '📑 Select Multiple Images (Batch OCR & Store)'}</span>
+                </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <input
-                type="file"
-                ref={multiFileInputRef}
-                multiple
-                accept="image/*"
-                onChange={handleMultiImageUpload}
-                style={{ display: 'none' }}
-              />
-
-              <button
-                type="button"
-                onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
-                disabled={isBatchOcrProcessing}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  border: '1px solid #10b981',
-                  background: '#059669',
-                  color: '#ffffff',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: isBatchOcrProcessing ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
-                }}
-              >
-                <FileText size={15} />
-                <span>{isBatchOcrProcessing ? batchOcrProgress : '📑 Select Multiple Images (Batch OCR & Store)'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setOcrTargetType('all');
-                  setShowOcrModal(true);
-                }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #38bdf8',
-                  background: '#0284c7',
-                  color: '#ffffff',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)'
-                }}
-              >
-                <FileUp size={15} />
-                <span>Single File / Modal</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setOcrTargetType('all');
-                  setShowOcrModal(true);
-                }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #0284c7',
-                  background: '#0f172a',
-                  color: '#38bdf8',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <Camera size={15} />
-                <span>Open Camera</span>
-              </button>
+            {/* Quick Document Category Badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Accepted Documents:</span>
+              <span style={{ fontSize: '11px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                🆔 Aadhaar Card (Front / Back)
+              </span>
+              <span style={{ fontSize: '11px', color: '#a7f3d0', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                💳 PAN Card (NSDL / ITD)
+              </span>
+              <span style={{ fontSize: '11px', color: '#fde68a', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                📄 Commercial Driving Licence (DL)
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>
+                All manual typing inputs remain active below
+              </span>
             </div>
           </div>
 
@@ -1458,205 +1462,22 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
                 </div>
 
-                {/* Dedicated Multi-Document KYC Upload Button inside Step 2 */}
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1.5px dashed #0284c7',
-                  borderRadius: '10px',
-                  padding: '14px 18px',
-                  marginBottom: '18px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}>
-                  <div>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>
-                      ⚡ Multi-Document KYC Auto-Extract &amp; Store
-                    </strong>
-                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                      Upload photos of DL (Front &amp; Back), Aadhaar (Front &amp; Back), or PAN. Sikhar OCR extracts all fields and saves photos permanently into this driver's Document Vault.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => multiFileInputRef.current && multiFileInputRef.current.click()}
-                    disabled={isBatchOcrProcessing}
-                    style={{
-                      padding: '8px 18px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: '#0284c7',
-                      color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: isBatchOcrProcessing ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)'
-                    }}
-                  >
-                    <FileText size={14} />
-                    <span>📑 Upload Document Images (Batch OCR)</span>
-                  </button>
-                </div>
-
                 <div className="adp-grid-2col">
                   <div className="adp-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label className="adp-field-label">
-                        Commercial Driving Licence (DL) Number <span className="req">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOcrTargetType('dl');
-                          setShowOcrModal(true);
-                        }}
-                        style={{
-                          padding: '2px 8px',
-                          fontSize: '10.5px',
-                          fontWeight: 700,
-                          color: '#0284c7',
-                          background: '#f0f9ff',
-                          border: '1px solid #bae6fd',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Scan size={12} />
-                        <span>Scan DL (OCR)</span>
-                      </button>
-                    </div>
+                    <label className="adp-field-label">
+                      Commercial Driving Licence (DL) Number <span className="req">*</span>
+                    </label>
                     <div className="adp-input-wrap">
                       <input
                         type="text"
                         className="adp-text-input font-mono"
                         required
-                        placeholder="e.g. HR-2620190012345"
+                        placeholder="e.g. GJ06 20250013670"
                         value={formData.drivingLicence}
                         onChange={(e) => updateField('drivingLicence', e.target.value)}
                       />
                     </div>
-                    <span className="adp-field-hint">Verified in real-time via MoRTH Sarathi API</span>
-
-                    {/* Dedicated DL Photo Upload & Save Attachment Block */}
-                    <div style={{
-                      marginTop: '8px',
-                      padding: '10px 12px',
-                      background: dlDocImage?.saved ? '#f0fdf4' : (dlDocImage ? '#fffbeb' : '#f8fafc'),
-                      border: dlDocImage?.saved ? '1.5px solid #22c55e' : (dlDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
-                      borderRadius: '8px'
-                    }}>
-                      <input
-                        type="file"
-                        ref={dlFileInputRef}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => handleSingleDocFileSelect('dl', e)}
-                      />
-                      {!dlDocImage ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach DL Photo (Front / Back):</span>
-                          <button
-                            type="button"
-                            onClick={() => dlFileInputRef.current?.click()}
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#0284c7',
-                              background: '#ffffff',
-                              border: '1px solid #bae6fd',
-                              borderRadius: '5px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <FileUp size={12} />
-                            <span>Upload DL Image</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <img
-                              src={dlDocImage.fileUrl}
-                              alt="DL Preview"
-                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {dlDocImage.fileName}
-                                </span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>({dlDocImage.fileSize})</span>
-                              </div>
-                              <span style={{
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                color: dlDocImage.saved ? '#15803d' : '#b45309'
-                              }}>
-                                {dlDocImage.saved ? '✓ DL Document Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSingleDocImage('dl')}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                              title="Remove DL Photo"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => dlFileInputRef.current?.click()}
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: '11px',
-                                color: '#475569',
-                                background: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Change Photo
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveSingleDocImage('dl')}
-                              style={{
-                                padding: '5px 14px',
-                                fontSize: '11.5px',
-                                fontWeight: 700,
-                                color: '#ffffff',
-                                background: dlDocImage.saved ? '#16a34a' : '#0284c7',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
-                              }}
-                            >
-                              <CheckCircle2 size={13} />
-                              <span>{dlDocImage.saved ? '✓ Saved DL Document' : '💾 Save DL Document'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <span className="adp-field-hint">Auto-filled via top batch upload (MoRTH Sarathi API verified)</span>
                   </div>
 
                   <div className="adp-form-group">
@@ -1683,183 +1504,21 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
 
                   <div className="adp-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label className="adp-field-label">Aadhaar Card Number</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOcrTargetType('aadhaar');
-                          setShowOcrModal(true);
-                        }}
-                        style={{
-                          padding: '2px 8px',
-                          fontSize: '10.5px',
-                          fontWeight: 700,
-                          color: '#0284c7',
-                          background: '#f0f9ff',
-                          border: '1px solid #bae6fd',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Scan size={12} />
-                        <span>Scan Aadhaar (OCR)</span>
-                      </button>
-                    </div>
+                    <label className="adp-field-label">Aadhaar Card Number</label>
                     <input
                       type="text"
                       className="adp-text-input font-mono"
-                      placeholder="e.g. 5421-9876-1234"
+                      placeholder="e.g. 3639 7365 6509"
                       value={formData.aadhaar}
                       onChange={(e) => updateField('aadhaar', e.target.value)}
                     />
-
-                    {/* Dedicated Aadhaar Photo Upload & Save Attachment Block */}
-                    <div style={{
-                      marginTop: '8px',
-                      padding: '10px 12px',
-                      background: aadhaarDocImage?.saved ? '#f0fdf4' : (aadhaarDocImage ? '#fffbeb' : '#f8fafc'),
-                      border: aadhaarDocImage?.saved ? '1.5px solid #22c55e' : (aadhaarDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
-                      borderRadius: '8px'
-                    }}>
-                      <input
-                        type="file"
-                        ref={aadhaarFileInputRef}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => handleSingleDocFileSelect('aadhaar', e)}
-                      />
-                      {!aadhaarDocImage ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach Aadhaar Photo (Front / Back):</span>
-                          <button
-                            type="button"
-                            onClick={() => aadhaarFileInputRef.current?.click()}
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#0284c7',
-                              background: '#ffffff',
-                              border: '1px solid #bae6fd',
-                              borderRadius: '5px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <FileUp size={12} />
-                            <span>Upload Aadhaar Image</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <img
-                              src={aadhaarDocImage.fileUrl}
-                              alt="Aadhaar Preview"
-                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {aadhaarDocImage.fileName}
-                                </span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>({aadhaarDocImage.fileSize})</span>
-                              </div>
-                              <span style={{
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                color: aadhaarDocImage.saved ? '#15803d' : '#b45309'
-                              }}>
-                                {aadhaarDocImage.saved ? '✓ Aadhaar Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSingleDocImage('aadhaar')}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                              title="Remove Aadhaar Photo"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => aadhaarFileInputRef.current?.click()}
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: '11px',
-                                color: '#475569',
-                                background: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Change Photo
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveSingleDocImage('aadhaar')}
-                              style={{
-                                padding: '5px 14px',
-                                fontSize: '11.5px',
-                                fontWeight: 700,
-                                color: '#ffffff',
-                                background: aadhaarDocImage.saved ? '#16a34a' : '#0284c7',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
-                              }}
-                            >
-                              <CheckCircle2 size={13} />
-                              <span>{aadhaarDocImage.saved ? '✓ Saved Aadhaar Document' : '💾 Save Aadhaar Document'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <span className="adp-field-hint">Auto-filled via top batch upload (Name, 12-digit Aadhaar &amp; Address)</span>
                   </div>
 
                   <div className="adp-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label className="adp-field-label">
-                        PAN Card Number (Permanent Account Number)
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOcrTargetType('pan');
-                          setShowOcrModal(true);
-                        }}
-                        style={{
-                          padding: '2px 8px',
-                          fontSize: '10.5px',
-                          fontWeight: 700,
-                          color: '#0284c7',
-                          background: '#f0f9ff',
-                          border: '1px solid #bae6fd',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Scan size={12} />
-                        <span>Scan PAN (OCR)</span>
-                      </button>
-                    </div>
+                    <label className="adp-field-label">
+                      PAN Card Number (Permanent Account Number)
+                    </label>
                     <div className="adp-input-wrap">
                       <input
                         type="text"
@@ -1870,120 +1529,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                         onChange={(e) => updateField('panCard', e.target.value.toUpperCase())}
                       />
                     </div>
-                    <span className="adp-field-hint">Income Tax Dept / NSDL validation for TDS & banking compliance</span>
-
-                    {/* Dedicated PAN Photo Upload & Save Attachment Block */}
-                    <div style={{
-                      marginTop: '8px',
-                      padding: '10px 12px',
-                      background: panDocImage?.saved ? '#f0fdf4' : (panDocImage ? '#fffbeb' : '#f8fafc'),
-                      border: panDocImage?.saved ? '1.5px solid #22c55e' : (panDocImage ? '1.5px dashed #f59e0b' : '1px dashed #cbd5e1'),
-                      borderRadius: '8px'
-                    }}>
-                      <input
-                        type="file"
-                        ref={panFileInputRef}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => handleSingleDocFileSelect('pan', e)}
-                      />
-                      {!panDocImage ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>📷 Attach PAN Card Photo:</span>
-                          <button
-                            type="button"
-                            onClick={() => panFileInputRef.current?.click()}
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#0284c7',
-                              background: '#ffffff',
-                              border: '1px solid #bae6fd',
-                              borderRadius: '5px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <FileUp size={12} />
-                            <span>Upload PAN Image</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <img
-                              src={panDocImage.fileUrl}
-                              alt="PAN Preview"
-                              style={{ width: '56px', height: '40px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #cbd5e1' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {panDocImage.fileName}
-                                </span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>({panDocImage.fileSize})</span>
-                              </div>
-                              <span style={{
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                color: panDocImage.saved ? '#15803d' : '#b45309'
-                              }}>
-                                {panDocImage.saved ? '✓ PAN Card Saved to Driver Vault' : '⚠️ Unsaved Image — Click Save button to store'}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSingleDocImage('pan')}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                              title="Remove PAN Photo"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => panFileInputRef.current?.click()}
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: '11px',
-                                color: '#475569',
-                                background: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Change Photo
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveSingleDocImage('pan')}
-                              style={{
-                                padding: '5px 14px',
-                                fontSize: '11.5px',
-                                fontWeight: 700,
-                                color: '#ffffff',
-                                background: panDocImage.saved ? '#16a34a' : '#0284c7',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
-                              }}
-                            >
-                              <CheckCircle2 size={13} />
-                              <span>{panDocImage.saved ? '✓ Saved PAN Document' : '💾 Save PAN Document'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <span className="adp-field-hint">Auto-filled via top batch upload (NSDL / ITD TDS validation)</span>
                   </div>
 
                   <div className="adp-form-group">

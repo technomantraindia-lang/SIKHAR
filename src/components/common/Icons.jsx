@@ -23,6 +23,13 @@ function createIcon(d, extra = null) {
   };
 }
 
+export const Compass = createIcon(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+  </>
+);
+
 export const Home = createIcon(
   <>
     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

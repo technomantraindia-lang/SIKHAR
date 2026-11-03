@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Car,
   Shield,
@@ -12,17 +12,29 @@ import {
   Activity,
   RefreshCw,
   User,
-  Scan
+  Scan,
+  Trash2,
+  Eye,
+  X,
+  Plus,
+  Download,
+  Camera,
+  FileUp,
+  ArrowRight
 } from '../common/Icons';
 import {
   fetchDriverByIdApi,
   updateDriverStatusApi,
   topupDriverWalletApi,
   assignDriverVehicleApi,
-  requestDriverLeaveApi
+  requestDriverLeaveApi,
+  deleteDriverApi,
+  fetchDriverDocumentsApi,
+  addDriverDocumentApi,
+  deleteDriverDocumentApi
 } from '../../services/api';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
-import DriverDocumentsModal from './DriverDocumentsModal';
+import StatutoryCertificateViewerModal from './StatutoryCertificateViewerModal';
 
 const AVAILABLE_CARS = [
   { reg: 'DL52GD6605', model: 'WagonR H3 CNG', type: 'CNG' },
@@ -34,14 +46,93 @@ const AVAILABLE_CARS = [
   { reg: 'UP16HT7788', model: 'Tigor EV Fleet', type: 'EV' }
 ];
 
-export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, onNavigate }) {
+const DOC_CATEGORIES_CONFIG = [
+  { value: 'dl', label: 'Commercial Driving Licence (LMV-TR)', defaultTitle: 'Commercial Smart Driving Licence (LMV-TR)' },
+  { value: 'aadhaar', label: 'UIDAI Aadhaar Biometric Card', defaultTitle: 'UIDAI Aadhaar Biometric Card' },
+  { value: 'pan', label: 'PAN Card (Income Tax Dept)', defaultTitle: 'Income Tax Permanent Account Number (PAN)' },
+  { value: 'police', label: 'Police Verification Certificate', defaultTitle: 'Commissioner Police Clearance Report' },
+  { value: 'agreement', label: 'Commercial Vehicle Lease Agreement', defaultTitle: 'Master Commercial Vehicle Lease v1.0' },
+  { value: 'medical', label: 'Medical & Eye Fitness (Form 1-A)', defaultTitle: 'Form 1-A Commercial Pilot Medical Certificate' },
+  { value: 'badge', label: 'State Pilot Transport Badge', defaultTitle: 'State Transport Authority Pilot Badge' },
+  { value: 'other', label: 'Other Fleet Statutory Record', defaultTitle: 'Auxiliary Statutory Identification' }
+];
+
+export default function DriverDetailPage({ driverId, initialTab = 'overview', onBack, onStatusUpdated, onNavigate }) {
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   const [topupAmount, setTopupAmount] = useState('');
   const [isTopupLoading, setIsTopupLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
-  const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
+
+  // Sync tab if initialTab changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // On-Page Document Vault State
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [docsCategoryFilter, setDocsCategoryFilter] = useState('all');
+  const [showInlineAddDoc, setShowInlineAddDoc] = useState(false);
+  const [lightboxDoc, setLightboxDoc] = useState(null);
+  const [copiedDocId, setCopiedDocId] = useState(null);
+  const [highlightedDocId, setHighlightedDocId] = useState(null);
+
+  // Statutory KYC Certificate Viewer Modal State
+  const [certViewerState, setCertViewerState] = useState({ isOpen: false, category: 'dl', doc: null });
+
+  const openCertificateViewer = (categoryOrDoc = 'dl') => {
+    if (typeof categoryOrDoc === 'string') {
+      const cat = categoryOrDoc === 'all' ? 'dl' : categoryOrDoc;
+      setCertViewerState({ isOpen: true, category: cat, doc: null });
+    } else if (categoryOrDoc && typeof categoryOrDoc === 'object') {
+      const cat = categoryOrDoc.category || (categoryOrDoc.type && categoryOrDoc.type.toLowerCase().includes('aadhaar') ? 'aadhaar' : categoryOrDoc.type && categoryOrDoc.type.toLowerCase().includes('pan') ? 'pan' : 'dl');
+      setCertViewerState({ isOpen: true, category: cat, doc: categoryOrDoc });
+    } else {
+      setCertViewerState({ isOpen: true, category: 'dl', doc: null });
+    }
+  };
+
+  // Inline Add Document Form State
+  const [newDocCategory, setNewDocCategory] = useState('dl');
+  const [newDocTitle, setNewDocTitle] = useState('Commercial Smart Driving Licence (LMV-TR)');
+  const [newDocNumber, setNewDocNumber] = useState('');
+  const [newIssueDate, setNewIssueDate] = useState('2020-01-15');
+  const [newExpiryDate, setNewExpiryDate] = useState('2032-11-14');
+  const [newIsLifetime, setNewIsLifetime] = useState(false);
+  const [newDocStatus, setNewDocStatus] = useState('Verified');
+  const [newNotes, setNewNotes] = useState('');
+  const [newFileUrl, setNewFileUrl] = useState('');
+  const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+  const [ocrScannerForAdd, setOcrScannerForAdd] = useState(false);
+  const docFileInputRef = useRef(null);
+  const replaceDocInputRef = useRef(null);
+  const [replacingDocId, setReplacingDocId] = useState(null);
+
+  // Delete Driver State
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteDriverConfirm = async () => {
+    if (!driver) return;
+    try {
+      setIsDeleting(true);
+      await deleteDriverApi(driver.id);
+      setShowDeleteConfirmModal(false);
+      showToast(`Driver ${driver.name} permanently deleted from platform registry.`);
+      if (onStatusUpdated) onStatusUpdated();
+      setTimeout(() => {
+        onBack();
+      }, 700);
+    } catch (err) {
+      alert('Failed to delete driver: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Leave Approval Modal State (PDF Page 3 & 8)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -63,6 +154,23 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
 
   const handleOcrExtracted = (extracted) => {
     if (!extracted) return;
+    if (ocrScannerForAdd) {
+      if (extracted.docNumber) setNewDocNumber(extracted.docNumber);
+      if (extracted.drivingLicence) setNewDocNumber(extracted.drivingLicence);
+      if (extracted.aadhaar) setNewDocNumber(extracted.aadhaar);
+      if (extracted.panCard) setNewDocNumber(extracted.panCard);
+      if (extracted.expiryDate) {
+        setNewExpiryDate(extracted.expiryDate);
+        setNewIsLifetime(false);
+      }
+      if (extracted.issueDate) setNewIssueDate(extracted.issueDate);
+      if (extracted.docType) {
+        setNewDocTitle(`${extracted.docType.toUpperCase()} Specimen`);
+      }
+      setOcrScannerForAdd(false);
+      showToast(`✓ Document OCR extracted data into form.`);
+      return;
+    }
     setDriver((prev) => {
       if (!prev) return prev;
       return {
@@ -100,22 +208,158 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
     setTimeout(() => setToastMessage(null), 3200);
   };
 
+  const loadDriverDocuments = useCallback(async () => {
+    if (!driverId) return;
+    try {
+      setLoadingDocs(true);
+      const res = await fetchDriverDocumentsApi(driverId);
+      if (res && res.data && res.data.documents) {
+        setDocuments(res.data.documents);
+      }
+    } catch (err) {
+      console.warn('Could not fetch driver documents from API:', err.message);
+    } finally {
+      setLoadingDocs(false);
+    }
+  }, [driverId]);
+
   const loadDriverData = useCallback(async () => {
     if (!driverId) return;
     try {
       setLoading(true);
       const res = await fetchDriverByIdApi(driverId);
       setDriver(res);
+      loadDriverDocuments();
     } catch (err) {
       console.error('Failed to load driver details:', err);
     } finally {
       setLoading(false);
     }
-  }, [driverId]);
+  }, [driverId, loadDriverDocuments]);
 
   useEffect(() => {
     loadDriverData();
   }, [loadDriverData]);
+
+  const scrollToDocVault = (category = 'all', highlightId = null) => {
+    setActiveTab('kyc');
+    setDocsCategoryFilter(category);
+    if (highlightId) setHighlightedDocId(highlightId);
+    setTimeout(() => {
+      const el = document.getElementById('onpage-document-vault');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (highlightId) {
+        setTimeout(() => setHighlightedDocId(null), 3000);
+      }
+    }, 120);
+  };
+
+  const handleCopyDocNumber = (id, num) => {
+    if (!num) return;
+    try {
+      navigator.clipboard.writeText(num);
+      setCopiedDocId(id);
+      showToast(`Copied ${num} to clipboard`);
+      setTimeout(() => setCopiedDocId(null), 2000);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const handleAddDocumentSubmit = async (e) => {
+    e.preventDefault();
+    if (!driver || !driver.id) return;
+    if (!newDocNumber.trim()) {
+      alert('Please enter a valid official document number.');
+      return;
+    }
+
+    try {
+      setIsSubmittingDoc(true);
+      const payload = {
+        type: newDocCategory,
+        category: newDocCategory,
+        title: newDocTitle || `${newDocCategory.toUpperCase()} Document`,
+        docNumber: newDocNumber.trim().toUpperCase(),
+        issueDate: newIssueDate || '2020-01-01',
+        expiryDate: newIsLifetime ? 'Lifetime / Valid' : (newExpiryDate || 'Lifetime / Valid'),
+        status: newDocStatus || 'Verified',
+        fileUrl: newFileUrl || '',
+        notes: newNotes.trim(),
+        verified: newDocStatus === 'Verified'
+      };
+
+      const res = await addDriverDocumentApi(driver.id, payload);
+      if (res && res.data) {
+        setDocuments(prev => [res.data, ...prev.filter(d => d.id !== res.data.id)]);
+      }
+      showToast(`✓ Document "${newDocTitle}" successfully saved to driver vault.`);
+      setShowInlineAddDoc(false);
+      setNewDocNumber('');
+      setNewFileUrl('');
+      setNewNotes('');
+      loadDriverData();
+      loadDriverDocuments();
+    } catch (err) {
+      alert('Failed to save document: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSubmittingDoc(false);
+    }
+  };
+
+  const handleDeleteDocument = async (doc) => {
+    if (!driver || !driver.id) return;
+    if (!window.confirm(`Are you sure you want to delete "${doc.title || doc.docNumber}" from the document vault?`)) {
+      return;
+    }
+    try {
+      await deleteDriverDocumentApi(driver.id, doc.id);
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      showToast(`Document "${doc.title}" removed from vault.`);
+      loadDriverData();
+    } catch (err) {
+      alert('Failed to delete document: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleInlineFileSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setNewFileUrl(evt.target.result);
+      showToast(`Image loaded (${file.name}). Click Save to attach.`);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleReplaceDocFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !replacingDocId || !driver) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const dataUrl = evt.target.result;
+      const targetDoc = documents.find(d => d.id === replacingDocId);
+      if (!targetDoc) return;
+      try {
+        const payload = {
+          ...targetDoc,
+          fileUrl: dataUrl,
+          uploadedAt: new Date().toISOString()
+        };
+        await addDriverDocumentApi(driver.id, payload);
+        setDocuments(prev => prev.map(d => d.id === replacingDocId ? { ...d, fileUrl: dataUrl } : d));
+        showToast(`Document photo updated for "${targetDoc.title}".`);
+      } catch (err) {
+        alert('Failed to update photo: ' + err.message);
+      } finally {
+        setReplacingDocId(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleStatusSwitch = async (newStatus) => {
     if (!driver) return;
@@ -554,7 +798,7 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <CreditCard size={15} />
                   <span>View Full Wallet Ledger</span>
                 </button>
-                <button className="btn-driver-secondary" onClick={() => setActiveTab('kyc')}>
+                <button className="btn-driver-secondary" onClick={() => openCertificateViewer('dl')} title="View official driver KYC statutory certificates">
                   <Shield size={15} />
                   <span>View KYC Certificates</span>
                 </button>
@@ -835,11 +1079,11 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   type="button"
                   className="btn-driver-secondary"
                   style={{ background: '#0284c7', borderColor: '#38bdf8', color: '#ffffff', fontWeight: 700 }}
-                  onClick={() => setIsDocsModalOpen(true)}
-                  title="View and attach multiple driver KYC documents"
+                  onClick={() => openCertificateViewer('dl')}
+                  title="View official statutory KYC certificates (DL, Aadhaar, PAN)"
                 >
                   <Shield size={14} />
-                  <span>📄 Manage All Documents (Admin)</span>
+                  <span>👁 View All KYC Certificates</span>
                 </button>
                 <button
                   type="button"
@@ -886,31 +1130,54 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Commercial Driving Licence (MoRTH Verified)</strong>
-                    <button
-                      type="button"
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #bae6fd',
-                        background: '#f0f9ff',
-                        color: '#0284c7',
-                        fontSize: '10.5px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      onClick={() => {
-                        setOcrTargetType('dl');
-                        setShowOcrModal(true);
-                      }}
-                      title="Scan or Re-scan Driving Licence with OCR"
-                    >
-                      <Scan size={12} />
-                      <span>OCR Scan</span>
-                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #0284c7',
+                          background: '#0284c7',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 1px 3px rgba(2, 132, 199, 0.2)'
+                        }}
+                        onClick={() => openCertificateViewer('dl')}
+                        title="View Driving Licence Certificate Specimen & Photo"
+                      >
+                        <Eye size={12} />
+                        <span>View Certificate</span>
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #bae6fd',
+                          background: '#f0f9ff',
+                          color: '#0284c7',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        onClick={() => {
+                          setOcrTargetType('dl');
+                          setShowOcrModal(true);
+                        }}
+                        title="Scan or Re-scan Driving Licence with OCR"
+                      >
+                        <Scan size={12} />
+                        <span>OCR Scan</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text">{driver.kyc?.drivingLicence}</p>
@@ -924,31 +1191,54 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Aadhaar Biometric Card</strong>
-                    <button
-                      type="button"
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #bae6fd',
-                        background: '#f0f9ff',
-                        color: '#0284c7',
-                        fontSize: '10.5px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      onClick={() => {
-                        setOcrTargetType('aadhaar');
-                        setShowOcrModal(true);
-                      }}
-                      title="Scan or Re-scan Aadhaar with OCR"
-                    >
-                      <Scan size={12} />
-                      <span>OCR Scan</span>
-                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #ea580c',
+                          background: '#ea580c',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 1px 3px rgba(234, 88, 12, 0.2)'
+                        }}
+                        onClick={() => openCertificateViewer('aadhaar')}
+                        title="View UIDAI Aadhaar Certificate Specimen & Photo"
+                      >
+                        <Eye size={12} />
+                        <span>View Certificate</span>
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #fed7aa',
+                          background: '#fffaf5',
+                          color: '#c2410c',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        onClick={() => {
+                          setOcrTargetType('aadhaar');
+                          setShowOcrModal(true);
+                        }}
+                        title="Scan or Re-scan Aadhaar with OCR"
+                      >
+                        <Scan size={12} />
+                        <span>OCR Scan</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text">{driver.kyc?.aadhaar}</p>
@@ -962,31 +1252,54 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Permanent Account Number (PAN Card)</strong>
-                    <button
-                      type="button"
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #bae6fd',
-                        background: '#f0f9ff',
-                        color: '#0284c7',
-                        fontSize: '10.5px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      onClick={() => {
-                        setOcrTargetType('pan');
-                        setShowOcrModal(true);
-                      }}
-                      title="Scan or Re-scan PAN Card with OCR"
-                    >
-                      <Scan size={12} />
-                      <span>OCR Scan</span>
-                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #2563eb',
+                          background: '#2563eb',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 1px 3px rgba(37, 99, 235, 0.2)'
+                        }}
+                        onClick={() => openCertificateViewer('pan')}
+                        title="View Income Tax PAN Certificate Specimen & Photo"
+                      >
+                        <Eye size={12} />
+                        <span>View Certificate</span>
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #bae6fd',
+                          background: '#f0f9ff',
+                          color: '#0284c7',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        onClick={() => {
+                          setOcrTargetType('pan');
+                          setShowOcrModal(true);
+                        }}
+                        title="Scan or Re-scan PAN Card with OCR"
+                      >
+                        <Scan size={12} />
+                        <span>OCR Scan</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text font-mono">{driver.kyc?.panCard || 'ABCDE1234F'}</p>
@@ -1000,6 +1313,29 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   <div className="kyc-item-header">
                     <CheckCircle2 size={18} className="text-green" />
                     <strong>Police Background Verification</strong>
+                    <button
+                      type="button"
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #16a34a',
+                        background: '#16a34a',
+                        color: '#ffffff',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 1px 3px rgba(22, 163, 74, 0.2)'
+                      }}
+                      onClick={() => openCertificateViewer('police')}
+                      title="View Police Clearance Certificate Report"
+                    >
+                      <Eye size={12} />
+                      <span>View Certificate</span>
+                    </button>
                   </div>
                   <div className="kyc-item-body">
                     <p className="kyc-val-text">{driver.kyc?.policeVerification || 'Verified (Clear)'}</p>
@@ -1023,6 +1359,872 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* ON-PAGE STATUTORY KYC & OFFICIAL DOCUMENT VAULT (Clean Institutional Light Theme) */}
+            {/* ========================================================================= */}
+            <div id="onpage-document-vault" style={{ marginTop: '36px', paddingTop: '28px', borderTop: '2px dashed #cbd5e1' }}>
+              {/* Vault Section Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: '#e0f2fe',
+                    color: '#0284c7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)'
+                  }}>
+                    <Shield size={20} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                        Statutory KYC Document Vault & Official Certificates
+                      </h3>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: '#f1f5f9',
+                        color: '#0284c7',
+                        border: '1px solid #bae6fd',
+                        fontSize: '11px',
+                        fontWeight: 700
+                      }}>
+                        {documents.length} Records Verified
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      Archived statutory licenses, identity cards, biometric credentials, and agreements with UIDAI / MoRTH verification.
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loadDriverDocuments();
+                      showToast('Live documents synced from encrypted vault.');
+                    }}
+                    disabled={loadingDocs}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#475569',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    }}
+                    title="Reload live documents from server"
+                  >
+                    <RefreshCw size={13} className={loadingDocs ? 'animate-spin' : ''} />
+                    <span>Sync Live Vault</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowInlineAddDoc((prev) => !prev)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: showInlineAddDoc ? '#475569' : '#0284c7',
+                      color: '#ffffff',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: showInlineAddDoc ? 'none' : '0 2px 8px rgba(2, 132, 199, 0.35)'
+                    }}
+                  >
+                    <Plus size={15} />
+                    <span>{showInlineAddDoc ? 'Close Add Form' : '+ Add Document (Admin)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Category Filter Pills Row */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                marginBottom: '20px',
+                padding: '4px',
+                background: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                width: 'fit-content'
+              }}>
+                {[
+                  { id: 'all', label: `All Documents (${documents.length})` },
+                  { id: 'identity', label: '🪪 Identity (Aadhaar & PAN)' },
+                  { id: 'dl', label: '🚗 Commercial DL' },
+                  { id: 'agreements', label: '📜 Police & Agreements' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setDocsCategoryFilter(tab.id)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '7px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: docsCategoryFilter === tab.id ? '#0284c7' : 'transparent',
+                      color: docsCategoryFilter === tab.id ? '#ffffff' : '#64748b',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Expandable Inline Add Document Card */}
+              {showInlineAddDoc && (
+                <div
+                  id="onpage-inline-add-card"
+                  style={{
+                    background: '#f0f9ff',
+                    border: '1.5px solid #7dd3fc',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    marginBottom: '24px',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.08)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileUp size={18} color="#0284c7" />
+                      <strong style={{ fontSize: '14px', color: '#0369a1', fontWeight: 800 }}>
+                        Register & Save New Official Document
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowInlineAddDoc(false)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '13px' }}
+                    >
+                      ✕ Close Form
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAddDocumentSubmit}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px' }}>
+                      {/* Document Type / Category */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                          Document Category *
+                        </label>
+                        <select
+                          value={newDocCategory}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewDocCategory(val);
+                            const cfg = DOC_CATEGORIES_CONFIG.find(c => c.value === val);
+                            if (cfg) setNewDocTitle(cfg.defaultTitle);
+                            if (val === 'aadhaar' || val === 'pan') {
+                              setNewIsLifetime(true);
+                              setNewExpiryDate('Lifetime / Valid');
+                            } else {
+                              setNewIsLifetime(false);
+                              if (val === 'dl') setNewExpiryDate('2032-11-14');
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '12.5px',
+                            fontWeight: 600
+                          }}
+                        >
+                          {DOC_CATEGORIES_CONFIG.map(cfg => (
+                            <option key={cfg.value} value={cfg.value}>{cfg.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Document Title */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                          Document Title / Description
+                        </label>
+                        <input
+                          type="text"
+                          value={newDocTitle}
+                          onChange={(e) => setNewDocTitle(e.target.value)}
+                          placeholder="e.g. Commercial Smart DL (LMV-TR)"
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '12.5px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Official Number */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                          Official Document Number *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newDocNumber}
+                          onChange={(e) => setNewDocNumber(e.target.value.toUpperCase())}
+                          placeholder={newDocCategory === 'dl' ? 'e.g. GJ06 20250013670' : newDocCategory === 'aadhaar' ? 'e.g. 3639 7365 6509' : 'e.g. ABCDE1234F'}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1.5px solid #0284c7',
+                            background: '#ffffff',
+                            color: '#0284c7',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            letterSpacing: '0.8px',
+                            fontFamily: 'monospace'
+                          }}
+                        />
+                      </div>
+
+                      {/* Issue Date */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                          Date of Issue
+                        </label>
+                        <input
+                          type="date"
+                          value={newIssueDate}
+                          onChange={(e) => setNewIssueDate(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '12.5px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Expiry Date */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', textTransform: 'uppercase' }}>
+                            Expiry Date
+                          </label>
+                          <label style={{ fontSize: '11px', color: '#0284c7', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={newIsLifetime}
+                              onChange={(e) => {
+                                setNewIsLifetime(e.target.checked);
+                                if (e.target.checked) setNewExpiryDate('Lifetime / Valid');
+                              }}
+                            />
+                            <span>Lifetime / Valid</span>
+                          </label>
+                        </div>
+                        <input
+                          type={newIsLifetime ? 'text' : 'date'}
+                          disabled={newIsLifetime}
+                          value={newIsLifetime ? 'Lifetime / Valid' : newExpiryDate}
+                          onChange={(e) => setNewExpiryDate(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            background: newIsLifetime ? '#f1f5f9' : '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '12.5px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Verification Status */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                          Audit Verification Status
+                        </label>
+                        <select
+                          value={newDocStatus}
+                          onChange={(e) => setNewDocStatus(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #cbd5e1',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontSize: '12.5px',
+                            fontWeight: 600
+                          }}
+                        >
+                          <option value="Verified">✓ Verified (MoRTH / UIDAI / ITD)</option>
+                          <option value="Pending Verification">⏳ Pending Verification</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Image / Certificate Upload Row */}
+                    <div style={{
+                      marginTop: '14px',
+                      padding: '14px',
+                      background: '#ffffff',
+                      borderRadius: '9px',
+                      border: '1px dashed #93c5fd'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <strong style={{ fontSize: '12.5px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Camera size={14} color="#0284c7" />
+                            <span>Attach Document Photo / Certificate Specimen</span>
+                          </strong>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>
+                            PNG, JPG, or PDF (Front/Back specimen scan). Stored securely with driver record.
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input
+                            type="file"
+                            ref={docFileInputRef}
+                            accept="image/*,.pdf"
+                            onChange={handleInlineFileSelect}
+                            style={{ display: 'none' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => docFileInputRef.current && docFileInputRef.current.click()}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '6px',
+                              background: '#f0f9ff',
+                              border: '1px solid #0284c7',
+                              color: '#0284c7',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                          >
+                            <FileUp size={13} />
+                            <span>{newFileUrl ? 'Change Photo' : 'Upload Image'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOcrTargetType(newDocCategory);
+                              setOcrScannerForAdd(true);
+                              setShowOcrModal(true);
+                            }}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '6px',
+                              background: '#e0f2fe',
+                              border: '1px solid #38bdf8',
+                              color: '#0369a1',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                          >
+                            <Scan size={13} />
+                            <span>Scan with OCR</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {newFileUrl && (
+                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img
+                            src={newFileUrl}
+                            alt="Document Specimen Preview"
+                            style={{
+                              width: '120px',
+                              height: '76px',
+                              objectFit: 'cover',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1'
+                            }}
+                          />
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 700, display: 'block' }}>
+                              ✓ Document Photo Attached Successfully
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setNewFileUrl('')}
+                              style={{
+                                marginTop: '4px',
+                                background: 'none',
+                                border: 'none',
+                                color: '#dc2626',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                padding: 0,
+                                textDecoration: 'underline'
+                              }}
+                            >
+                              Remove attached photo
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Admin Notes */}
+                    <div style={{ marginTop: '14px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                        Admin Verification Remarks / Notes
+                      </label>
+                      <input
+                        type="text"
+                        value={newNotes}
+                        onChange={(e) => setNewNotes(e.target.value)}
+                        placeholder="e.g. Verified via Parivahan Sarathi API portal on 28 Oct 2026."
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '7px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#0f172a',
+                          fontSize: '12.5px'
+                        }}
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowInlineAddDoc(false)}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingDoc}
+                        style={{
+                          padding: '8px 22px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: isSubmittingDoc ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 8px rgba(22, 163, 74, 0.35)'
+                        }}
+                      >
+                        <CheckCircle2 size={15} />
+                        <span>{isSubmittingDoc ? 'Saving Document...' : '💾 Save Document to Vault'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Document Cards Grid */}
+              {loadingDocs ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  <p style={{ fontSize: '13px', margin: 0 }}>Loading driver documents from secure registry...</p>
+                </div>
+              ) : filteredDocuments.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1.5px dashed #cbd5e1'
+                }}>
+                  <Shield size={36} color="#94a3b8" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#1e293b', fontWeight: 700 }}>
+                    No documents found in this category
+                  </h4>
+                  <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: '#64748b' }}>
+                    Click "+ Add Document (Admin)" above to attach official certificates and IDs for {driver.name}.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowInlineAddDoc(true)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '7px',
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + Add New Document Now
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+                  gap: '18px'
+                }}>
+                  {filteredDocuments.map((doc) => {
+                    const isHighlighted = highlightedDocId && (
+                      (highlightedDocId === 'dl' && (doc.category === 'dl' || doc.type?.toLowerCase().includes('licence'))) ||
+                      (highlightedDocId === 'aadhaar' && (doc.category === 'aadhaar' || doc.type?.toLowerCase().includes('aadhaar'))) ||
+                      (highlightedDocId === 'pan' && (doc.category === 'pan' || doc.type?.toLowerCase().includes('pan'))) ||
+                      doc.id === highlightedDocId
+                    );
+
+                    const isAadhaar = doc.category === 'aadhaar' || doc.type?.toLowerCase().includes('aadhaar');
+                    const isDl = doc.category === 'dl' || doc.type?.toLowerCase().includes('licence') || doc.type?.toLowerCase().includes('dl');
+                    const isPan = doc.category === 'pan' || doc.type?.toLowerCase().includes('pan');
+
+                    return (
+                      <div
+                        key={doc.id}
+                        id={`doc-card-${doc.id}`}
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: isHighlighted ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                          padding: '16px',
+                          boxShadow: isHighlighted ? '0 0 0 4px rgba(2, 132, 199, 0.2)' : '0 2px 8px rgba(15, 23, 42, 0.04)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.25s ease'
+                        }}
+                      >
+                        <div>
+                          {/* Card Top: Type & Status Badge */}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '30px',
+                                height: '30px',
+                                borderRadius: '7px',
+                                background: isAadhaar ? '#ffedd5' : isDl ? '#e0f2fe' : isPan ? '#ede9fe' : '#f1f5f9',
+                                color: isAadhaar ? '#c2410c' : isDl ? '#0284c7' : isPan ? '#6d28d9' : '#475569',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {isAadhaar ? <User size={16} /> : isDl ? <Car size={16} /> : isPan ? <CreditCard size={16} /> : <FileText size={16} />}
+                              </div>
+                              <div>
+                                <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>
+                                  {doc.category?.toUpperCase() || 'DOCUMENT'}
+                                </span>
+                                <strong style={{ fontSize: '13px', color: '#0f172a', fontWeight: 700 }}>
+                                  {doc.title || doc.type}
+                                </strong>
+                              </div>
+                            </div>
+
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: '5px',
+                              background: doc.status?.toLowerCase().includes('verified') ? '#ecfdf5' : '#fef3c7',
+                              color: doc.status?.toLowerCase().includes('verified') ? '#059669' : '#b45309',
+                              border: `1px solid ${doc.status?.toLowerCase().includes('verified') ? '#a7f3d0' : '#fde68a'}`,
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              <CheckCircle2 size={11} />
+                              <span>{doc.status || 'Verified'}</span>
+                            </span>
+                          </div>
+
+                          {/* Document Number Banner */}
+                          <div style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '12px'
+                          }}>
+                            <div>
+                              <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
+                                Document Number
+                              </span>
+                              <span style={{
+                                fontFamily: 'monospace',
+                                fontSize: '14px',
+                                fontWeight: 800,
+                                color: '#0284c7',
+                                letterSpacing: '0.8px'
+                              }}>
+                                {doc.docNumber || '—'}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyDocNumber(doc.id, doc.docNumber)}
+                              title="Copy document number"
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '5px',
+                                border: '1px solid #cbd5e1',
+                                background: '#ffffff',
+                                color: copiedDocId === doc.id ? '#16a34a' : '#475569',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {copiedDocId === doc.id ? '✓ Copied' : 'Copy'}
+                            </button>
+                          </div>
+
+                          {/* Document Metadata Row */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '8px',
+                            fontSize: '11.5px',
+                            color: '#475569',
+                            marginBottom: '12px'
+                          }}>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10.5px', display: 'block' }}>Validity / Expiry:</span>
+                              <strong>{doc.expiryDate || 'Lifetime / Valid'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8', fontSize: '10.5px', display: 'block' }}>Date of Issue:</span>
+                              <strong>{doc.issueDate || '—'}</strong>
+                            </div>
+                          </div>
+
+                          {/* Document Specimen / Image Container */}
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: '170px',
+                            borderRadius: '8px',
+                            border: '1px solid #cbd5e1',
+                            overflow: 'hidden',
+                            background: '#f1f5f9',
+                            marginBottom: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => openCertificateViewer(doc)}
+                          title="Click to enlarge and inspect official certificate"
+                          >
+                            {doc.fileUrl ? (
+                              <>
+                                <img
+                                  src={doc.fileUrl}
+                                  alt={doc.title}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                                <div style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: 'rgba(15, 23, 42, 0.45)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s ease',
+                                  color: '#ffffff',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  gap: '6px'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}
+                                >
+                                  <Eye size={16} />
+                                  <span>🔍 Click to Enlarge Specimen</span>
+                                </div>
+                              </>
+                            ) : (
+                              /* Stylized Card Specimen Placeholder */
+                              <div style={{
+                                width: '100%',
+                                height: '100%',
+                                background: isAadhaar ? 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)' :
+                                            isDl ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' :
+                                            'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                padding: '14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                position: 'relative'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#334155' }}>
+                                    {isAadhaar ? 'भारत सरकार / GOVT OF INDIA' : isDl ? 'GOVERNMENT OF GUJARAT / MoRTH' : 'OFFICIAL STATUTORY RECORD'}
+                                  </span>
+                                  <span style={{ fontSize: '9px', padding: '2px 6px', background: '#ffffff', borderRadius: '4px', fontWeight: 800, color: '#0284c7', border: '1px solid #bae6fd' }}>
+                                    OFFICIAL SPECIMEN
+                                  </span>
+                                </div>
+
+                                <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '2px' }}>
+                                    {driver.name}
+                                  </div>
+                                  <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 800, color: '#0284c7', letterSpacing: '1px' }}>
+                                    {doc.docNumber || '—'}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', color: '#64748b' }}>
+                                  <span>Secured Institutional Vault</span>
+                                  <span>UIDAI/MoRTH Compliant</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Card Action Footer */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                          paddingTop: '10px',
+                          borderTop: '1px solid #f1f5f9'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openCertificateViewer(doc)}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid #0284c7',
+                                background: '#0284c7',
+                                color: '#ffffff',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                              title="View official statutory certificate specimen and photo"
+                            >
+                              <Eye size={12} />
+                              <span>View Certificate</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReplacingDocId(doc.id);
+                                if (replaceDocInputRef.current) replaceDocInputRef.current.click();
+                              }}
+                              style={{
+                                padding: '5px 9px',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                background: '#f8fafc',
+                                color: '#475569',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="Replace or upload a new photo for this document"
+                            >
+                              <Camera size={12} />
+                              <span>Replace</span>
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDocument(doc)}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid #fee2e2',
+                              background: '#fff1f2',
+                              color: '#dc2626',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                            title={`Delete ${doc.title} from vault`}
+                          >
+                            <Trash2 size={12} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1141,13 +2343,150 @@ export default function DriverDetailPage({ driverId, onBack, onStatusUpdated, on
         onDataExtracted={handleOcrExtracted}
       />
 
-      {/* Driver Documents Management Modal (Admin Authority) */}
-      <DriverDocumentsModal
-        isOpen={isDocsModalOpen}
-        onClose={() => setIsDocsModalOpen(false)}
+      {/* High-Fidelity Statutory KYC Certificate Viewer Modal */}
+      <StatutoryCertificateViewerModal
+        isOpen={certViewerState.isOpen}
+        onClose={() => setCertViewerState({ isOpen: false, category: 'dl', doc: null })}
         driver={driver}
-        onDocumentsUpdated={loadDriverData}
+        initialCategory={certViewerState.category}
+        initialDoc={certViewerState.doc}
+        onDocumentUpdated={(updatedDoc, allDocs) => {
+          if (allDocs) setDocuments(allDocs);
+          loadDriverDocuments();
+          showToast(`✓ Certificate "${updatedDoc.title || 'document'}" updated successfully.`);
+        }}
+        onTriggerOcr={(docType) => {
+          setOcrTargetType(docType);
+          setShowOcrModal(true);
+        }}
       />
+
+      {/* Hidden File Input for Document Photo Replacement */}
+      <input
+        type="file"
+        ref={replaceDocInputRef}
+        accept="image/*,.pdf"
+        onChange={handleReplaceDocFile}
+        style={{ display: 'none' }}
+      />
+
+      {/* Delete Driver Confirmation Dialog */}
+      {showDeleteConfirmModal && (
+        <div
+          className="driver-modal-overlay-custom"
+          onClick={() => !isDeleting && setShowDeleteConfirmModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.82)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div
+            className="driver-modal-dialog-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '460px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+              border: '1px solid #fee2e2'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '12px',
+                background: '#fee2e2',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Trash2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                  Delete Driver Profile?
+                </h3>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  Driver ID: {driver.id} • {driver.name}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.5', margin: '0 0 16px' }}>
+              Are you sure you want to permanently delete <strong>{driver.name}</strong> from the fleet registry?
+              This action cannot be undone. All statutory KYC records, shift records, and smart wallet ledger will be purged.
+            </p>
+
+            {driver.vehicle && (
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                marginBottom: '18px',
+                fontSize: '12px',
+                color: '#334155'
+              }}>
+                🚗 <strong>Vehicle Release:</strong> Assigned vehicle <strong>{driver.vehicle.model} [{driver.vehicle.registration}]</strong> will automatically be restored to the available fleet yard.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteConfirmModal(false)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteDriverConfirm}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.4)'
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{isDeleting ? 'Deleting Driver...' : 'Yes, Delete Driver'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

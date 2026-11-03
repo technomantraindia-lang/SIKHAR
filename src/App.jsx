@@ -17,6 +17,7 @@ import FuelMasterPage from './components/fuel/FuelMasterPage';
 import ComplianceMasterPage from './components/compliance/ComplianceMasterPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
+import LandingPage from './components/landing/LandingPage';
 import { getCachedAdminUser, logoutAdminApi } from './services/api';
 import './App.css';
 
@@ -36,6 +37,25 @@ const getInitialRoute = () => {
 export default function App() {
   const [adminUser, setAdminUser] = useState(() => getCachedAdminUser());
   const [activeRoute, setActiveRoute] = useState(getInitialRoute);
+  const [publicPath, setPublicPath] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const handlePathChange = () => setPublicPath(window.location.pathname);
+    window.addEventListener('popstate', handlePathChange);
+    return () => window.removeEventListener('popstate', handlePathChange);
+  }, []);
+
+  const openLogin = () => {
+    window.history.pushState({}, '', '/login');
+    setPublicPath('/login');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openLanding = () => {
+    window.history.pushState({}, '', '/');
+    setPublicPath('/');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Centralized navigation function syncing state, localStorage, and URL hash
   const navigateTo = (target) => {
@@ -68,18 +88,21 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [activeRoute]);
 
-  // Ensure URL hash matches current route on initial load
+  // Ensure the authenticated workspace hash matches the current route.
+  // The public homepage and /login must remain clean browser URLs.
   useEffect(() => {
+    if (!adminUser || publicPath === '/login' || (publicPath === '/' && !window.location.hash)) return;
     const initial = getInitialRoute();
     if (window.location.hash !== `#/${initial}`) {
       window.location.hash = `#/${initial}`;
     }
-  }, []);
+  }, [adminUser, publicPath]);
 
   const handleLoginSuccess = (user) => {
     setAdminUser(user);
-    const lastRoute = getInitialRoute();
-    navigateTo(lastRoute);
+    window.history.replaceState({}, '', '/');
+    setPublicPath('/');
+    navigateTo('dashboard');
   };
 
   const handleLogout = () => {
@@ -87,9 +110,18 @@ export default function App() {
     setAdminUser(null);
   };
 
-  // Phase 1: If Admin is not authenticated, strictly show dedicated Admin Security Gateway
+  // Public entry experience: root is the product landing page, /login is always the admin gateway.
+  if (publicPath === '/login') {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} onBackToHome={openLanding} />;
+  }
+
+  // Keep the public homepage reachable at the clean root URL, even when an old session is cached.
+  if (adminUser && (publicPath === '/' || publicPath === '') && !window.location.hash) {
+    return <LandingPage onOpenLogin={() => navigateTo('dashboard')} />;
+  }
+
   if (!adminUser) {
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+    return <LandingPage onOpenLogin={openLogin} />;
   }
 
   return (

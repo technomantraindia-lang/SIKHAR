@@ -16,6 +16,8 @@ import tripRoutes from './server/routes/tripRoutes.js';
 import maintenanceRoutes from './server/routes/maintenanceRoutes.js';
 import fuelRoutes from './server/routes/fuelRoutes.js';
 import complianceRoutes from './server/routes/complianceRoutes.js';
+import ocrRoutes from './server/routes/ocrRoutes.js';
+import rapidoRoutes from './server/routes/rapidoRoutes.js';
 import { testDbConnection, getDbStatus } from './server/config/db.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
@@ -35,9 +37,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable Cross-Origin Resource Sharing and JSON Body Parsing
+// Enable Cross-Origin Resource Sharing and JSON Body Parsing (25MB for document photos)
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // API Health Check
 app.get('/api/health', (req, res) => {
@@ -74,6 +77,8 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/fuel', fuelRoutes);
 app.use('/api/compliance', complianceRoutes);
+app.use('/api/ocr', ocrRoutes);
+app.use('/api/v1/fleet', rapidoRoutes);
 
 // Serve Frontend Vite Static Build (dist)
 const distPath = path.join(__dirname, 'dist');
@@ -91,22 +96,42 @@ app.use((req, res, next) => {
   next();
 });
 
-// Start Server on 0.0.0.0
-const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 SIKHAR FLEET NODE.JS APP RUNNING ON PORT ${PORT}`);
-  console.log(`🌐 Serving Frontend Build from: ${distPath}`);
-  console.log(`🔒 Authentication: /api/auth/login (Admin Only)`);
-  console.log(`📊 Dashboard API:  /api/dashboard`);
-  console.log(`=======================================================`);
+// Start Server on UNIX socket or 0.0.0.0:PORT
+const SOCKET_PATH = process.env.SOCKET_PATH;
+let server;
 
-  // Run database connection test safely
-  try {
-    await testDbConnection();
-  } catch (err) {
-    console.error('DB test error on startup:', err);
+if (SOCKET_PATH) {
+  if (fs.existsSync(SOCKET_PATH)) {
+    try { fs.unlinkSync(SOCKET_PATH); } catch (e) {}
   }
-});
+  server = app.listen(SOCKET_PATH, async () => {
+    try { fs.chmodSync(SOCKET_PATH, '0777'); } catch (e) {}
+    console.log(`=======================================================`);
+    console.log(`🚀 SIKHAR FLEET NODE.JS APP RUNNING ON UNIX SOCKET: ${SOCKET_PATH}`);
+    console.log(`🔒 Authentication: /api/auth/login (Admin Only)`);
+    console.log(`📊 Dashboard API:  /api/dashboard`);
+    console.log(`=======================================================`);
+    try {
+      await testDbConnection();
+    } catch (err) {
+      console.error('DB test error on startup:', err);
+    }
+  });
+} else {
+  server = app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 SIKHAR FLEET NODE.JS APP RUNNING ON PORT ${PORT}`);
+    console.log(`🌐 Serving Frontend Build from: ${distPath}`);
+    console.log(`🔒 Authentication: /api/auth/login (Admin Only)`);
+    console.log(`📊 Dashboard API:  /api/dashboard`);
+    console.log(`=======================================================`);
+    try {
+      await testDbConnection();
+    } catch (err) {
+      console.error('DB test error on startup:', err);
+    }
+  });
+}
 
 server.on('error', (err) => {
   console.error('🔥 SERVER LISTEN ERROR:', err);

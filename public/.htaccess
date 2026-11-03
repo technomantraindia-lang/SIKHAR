@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Forward /api requests to PHP UNIX socket gateway
+  RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
+
+  # Existing files and directories serve directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA fallback to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

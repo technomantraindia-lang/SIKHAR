@@ -237,6 +237,23 @@ export async function onboardDriverApi(driverPayload) {
   }
 }
 
+export async function deleteDriverApi(id) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete driver.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Delete driver error:', err);
+    throw err;
+  }
+}
+
 export async function assignDriverVehicleApi(driverId, vehicleRegistration, vehicleModel = 'WagonR H3 CNG', vehicleType = 'CNG') {
   try {
     const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/vehicle`, {
@@ -323,6 +340,24 @@ export async function addDriverDocumentApi(driverId, docPayload) {
     return data;
   } catch (err) {
     console.error('Add driver document error:', err);
+    throw err;
+  }
+}
+
+export async function updateDriverDocumentApi(driverId, docId, updates) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents/${encodeURIComponent(docId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update driver document.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Update driver document error:', err);
     throw err;
   }
 }
@@ -424,14 +459,7 @@ export function getCachedAdminUser() {
       // fallback
     }
   }
-  return {
-    id: 'ADM-001',
-    name: 'Fleet Administrator',
-    email: 'admin@sikharfleet.com',
-    role: 'Administrator',
-    initials: 'FA',
-    branch: 'Delhi NCR Central Hub'
-  };
+  return null;
 }
 
 export function logoutAdminApi() {
