@@ -5,7 +5,7 @@
 - Indexed source files: 66
 - Structural edges: 243
 - Matched end-to-end flows: 0
-- Updated: 2026-11-03T09:01:08.078Z
+- Updated: 2026-11-04T03:21:41.432Z
 
 ## Routes
 - ROUTE GET / -> handler @ server/routes/assignmentRoutes.js
@@ -117,7 +117,7 @@
 - DB src/components/compliance/ComplianceMasterPage.jsx -> react, backend, Wallet, driver, wallet, policy
 - DB src/components/dashboard/ExecutiveDashboard.jsx -> react, Fleet
 - DB src/components/dashboard/ModuleViewer.jsx -> react
-- DB src/components/drivers/AddDriverPage.jsx -> react, tesseract, photo, in, Name, PAN, DL, the, Aadhaar, sidebar
+- DB src/components/drivers/AddDriverPage.jsx -> react, tesseract, overwriting, filling, one, photo, in, Name, PAN, DL, the, Aadhaar, sidebar
 - DB src/components/drivers/AllDriversListPage.jsx -> react
 - DB src/components/drivers/DriverControlTower.jsx -> react
 - DB src/components/drivers/DriverDetailPage.jsx -> react, platform, form, API, the, vault, photo, status, vehicle, encrypted, server, secure, Spendable
@@ -128,21 +128,21 @@
 - DB src/components/escalations/EscalationMasterPage.jsx -> react, or, Registry
 - DB src/components/fleet/FleetControlTower.jsx -> react, Node
 - DB src/components/fuel/FuelMasterPage.jsx -> react, API, the
-- DB src/components/landing/LandingPage.jsx -> react
+- DB src/components/landing/LandingPage.jsx -> react, driver
 - DB src/components/layout/Sidebar.jsx -> react, Sections
 - DB src/components/layout/TopHeader.jsx -> react
 - DB src/components/maintenance/MaintenanceMasterPage.jsx -> react
 
 ## Symbols
 - SYMBOL src/App.jsx: App, syncing, getInitialRoute, handlePathChange, openLogin, openLanding, navigateTo, handleHashChange, handleLoginSuccess, handleLogout
-- SYMBOL src/components/auth/AdminLogin.jsx: AdminLogin, handleAdminSubmit
+- SYMBOL src/components/auth/AdminLogin.jsx: AdminLogin, handleAdminSubmit, handleFillCredentials
 - SYMBOL src/components/auth/AuthPage.jsx: AuthPage, handleLoginSubmit, handleRegisterSubmit, setDemoAccount
 - SYMBOL src/components/common/DocumentOcrScannerModal.jsx: preprocessImageForOcr, cleanIndianOcrAddress, parseIndianDocumentOcr, DocumentOcrScannerModal, clean, startCamera, stopCamera, handleSnapPhoto, handleFileChange, handleRotateSelectedImage
 - SYMBOL src/components/common/Icons.jsx: createIcon, Icon
 - SYMBOL src/components/compliance/ComplianceMasterPage.jsx: ComplianceMasterPage, showToast, handleDocVehicleChange, handleChallanVehicleChange, handleAddDocSubmit, openRenewModal, handleRenewSubmit, handleLogChallanSubmit, handlePayChallanSubmit, handleDeductWallet
 - SYMBOL src/components/dashboard/ExecutiveDashboard.jsx: ExecutiveDashboard, loadDashboard
 - SYMBOL src/components/dashboard/ModuleViewer.jsx: ModuleViewer
-- SYMBOL src/components/drivers/AddDriverPage.jsx: AddDriverPage, loadFleet, handleSingleDocFileSelect, handleSaveSingleDocImage, handleRemoveSingleDocImage, handleOcrDataExtracted, handleMultiImageUpload, handleRotateAttachedDoc, handleRemoveAttachedDoc, handleCreateNewVehicle
+- SYMBOL src/components/drivers/AddDriverPage.jsx: AddDriverPage, loadFleet, normalizeOcrDocType, normalizeAadhaarValue, normalizePanValue, normalizeDlValue, normalizePhoneValue, sanitizeDriverOcr, _handleSingleDocFileSelect, _handleSaveSingleDocImage
 - SYMBOL src/components/drivers/AllDriversListPage.jsx: AllDriversListPage, showToast, handleDeleteDriver
 - SYMBOL src/components/drivers/DriverControlTower.jsx: DriverControlTower, triggerToast, handleSelectDriver, handleBackToTower, handleOpenAllDrivers, handleOpenAddDriver
 - SYMBOL src/components/drivers/DriverDetailPage.jsx: DriverDetailPage, const, openCertificateViewer, handleDeleteDriverConfirm, handleOcrExtracted, handleApproveLeave, showToast, scrollToDocVault, handleCopyDocNumber, handleAddDocumentSubmit
@@ -153,7 +153,7 @@
 - SYMBOL src/components/escalations/EscalationMasterPage.jsx: EscalationMasterPage, showToast, handleOcrExtracted, handleVehicleChange, handleOpenCreateModal, handleCreateSubmit, handleAddNote, handleResolveTicket, handleStatusChange, handleExport
 - SYMBOL src/components/fleet/FleetControlTower.jsx: FleetControlTower, handleSearchSubmit, handleExecuteAction
 - SYMBOL src/components/fuel/FuelMasterPage.jsx: FuelMasterPage, showToast, handleFuelOcrExtracted, handleChargingVehicleChange, handleFuelVehicleChange, handleStartChargingSubmit, handleStopCharging, handleSettleCharging, handleLogFuelSubmit, handleVerifyFuelLog
-- SYMBOL src/components/landing/LandingPage.jsx: BrandMark, LandingPage, scrollTo
+- SYMBOL src/components/landing/LandingPage.jsx: BrandMark, SocialIcon, PlatformCapabilitiesSection, ServiceDots, CoreServiceIcon, ServiceAssuranceIcon, CoreServicesSection, LandingPage, scrollTo
 - SYMBOL src/components/layout/Sidebar.jsx: Sidebar, handleItemClick
 - SYMBOL src/components/layout/TopHeader.jsx: TopHeader
 - SYMBOL src/components/maintenance/MaintenanceMasterPage.jsx: MaintenanceMasterPage, loadFleet, handleMaintenanceOcrExtracted, showToast, handleVehicleSelect, handleTabChange, handleCreateSubmit, handleApproveEstimateSubmit, handleQcSubmit, handleBillSubmit

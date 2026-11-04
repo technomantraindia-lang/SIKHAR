@@ -35,6 +35,88 @@ const FLEET_AVAILABLE_VEHICLES = [
   { reg: 'UP16HT7788', model: 'Tigor EV Fleet', type: 'EV', image: '/images/tigor.jpg', status: 'Available', hub: 'Noida Hub' }
 ];
 
+const normalizeOcrDocType = (value, extracted = {}, fileName = '') => {
+  const raw = String(value || extracted.detectedType || '').toLowerCase();
+  const fileHint = String(fileName || '').toLowerCase();
+  if (raw === 'aadhaar' || raw.includes('aadhar') || raw.includes('uidai') || fileHint.includes('aadhaar') || fileHint.includes('aadhar')) return 'aadhaar';
+  if (raw === 'pan' || raw.includes('permanent') || fileHint.includes('pan')) return 'pan';
+  if (raw === 'dl' || raw.includes('licence') || raw.includes('license') || fileHint.includes('licence') || fileHint.includes('license') || fileHint.includes('dl')) return 'dl';
+  if (extracted.aadhaar || extracted.aadhaarNumber) return 'aadhaar';
+  if (extracted.panCard || extracted.panNumber || extracted.pan) return 'pan';
+  if (extracted.drivingLicence || extracted.licenceNumber || extracted.licenseNumber) return 'dl';
+  return 'other';
+};
+
+const normalizeAadhaarValue = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length !== 12 || /^0{12}$/.test(digits)) return '';
+  return `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8, 12)}`;
+};
+
+const normalizePanValue = (value) => {
+  const compact = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return /^[A-Z]{5}\d{4}[A-Z]$/.test(compact) ? compact : '';
+};
+
+const normalizeDlValue = (value) => String(value || '')
+  .toUpperCase()
+  .replace(/[^A-Z0-9\s/-]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const normalizePhoneValue = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  const local = digits.startsWith('91') && digits.length >= 12 ? digits.slice(2) : digits.slice(-10);
+  return /^[6-9]\d{9}$/.test(local) ? local : '';
+};
+
+// Keep OCR fields isolated to the document that supplied them. This prevents a
+// PAN image from overwriting Aadhaar/name fields, or a DL image from filling
+// unrelated identity fields during batch upload.
+const sanitizeDriverOcr = (extracted = {}, forcedType = 'all', fileName = '') => {
+  const docType = normalizeOcrDocType(forcedType !== 'all' ? forcedType : extracted.detectedType, extracted, fileName);
+  const rawText = String(extracted.rawText || '');
+  const aadhaarFromText = rawText.match(/(?<!\d)([2-9]\d{3}[\s-]+\d{4}[\s-]+\d{4})(?!\d)/)?.[1] || rawText.match(/(?<!\d)([2-9]\d{11})(?!\d)/)?.[1] || '';
+  const panFromText = rawText.match(/\b([A-Z]{5}\d{4}[A-Z])\b/i)?.[1] || '';
+  const base = {
+    docType: extracted.docType || (docType === 'aadhaar' ? 'Aadhaar Card' : docType === 'pan' ? 'PAN Card' : docType === 'dl' ? 'Driving Licence' : 'Driver Document'),
+    detectedType: docType,
+    rawText: extracted.rawText || ''
+  };
+
+  if (docType === 'aadhaar') {
+    return {
+      ...base,
+      aadhaar: normalizeAadhaarValue(extracted.aadhaar || extracted.aadhaarNumber || aadhaarFromText),
+      name: String(extracted.name || extracted.holderName || '').trim(),
+      phone: normalizePhoneValue(extracted.phone),
+      dob: extracted.dob || '',
+      gender: extracted.gender || '',
+      fatherName: String(extracted.fatherName || '').trim(),
+      address: String(extracted.address || extracted.permanentAddress || extracted.residentialAddress || '').trim(),
+      city: String(extracted.city || '').trim()
+    };
+  }
+
+  if (docType === 'pan') {
+    return {
+      ...base,
+      panCard: normalizePanValue(extracted.panCard || extracted.panNumber || extracted.pan || panFromText)
+    };
+  }
+
+  if (docType === 'dl') {
+    return {
+      ...base,
+      drivingLicence: normalizeDlValue(extracted.drivingLicence || extracted.licenceNumber || extracted.licenseNumber),
+      dlExpiry: extracted.dlExpiry || extracted.licenceExpiry || extracted.licenseExpiry || '',
+      dlCategory: extracted.dlCategory || extracted.licenceCategory || extracted.licenseCategory || ''
+    };
+  }
+
+  return base;
+};
+
 export default function AddDriverPage({ onBack, onDriverCreated }) {
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
@@ -104,6 +186,9 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         }
 
         if (extracted) {
+          // The selected upload category is authoritative for this input.
+          // Never let OCR text from one document type populate another type.
+          extracted = sanitizeDriverOcr(extracted, category, file.name);
           if (category === 'aadhaar') {
             setFormData(prev => ({
               ...prev,
@@ -114,7 +199,6 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
               gender: extracted.gender || prev.gender,
               phone: extracted.phone || prev.phone,
               fatherName: extracted.fatherName || prev.fatherName,
-              referenceName: extracted.fatherName || prev.referenceName,
               city: extracted.city || prev.city
             }));
           } else if (category === 'pan') {
@@ -127,8 +211,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
               ...prev,
               drivingLicence: extracted.drivingLicence || prev.drivingLicence,
               dlExpiry: extracted.dlExpiry || prev.dlExpiry,
-              dlCategory: extracted.dlCategory || prev.dlCategory,
-              name: prev.name ? prev.name : (extracted.name || '')
+              dlCategory: extracted.dlCategory || prev.dlCategory
             }));
           }
 
@@ -218,51 +301,49 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     if (!extracted) return;
     const docKind = ocrTargetType !== 'all' ? ocrTargetType : (extracted.detectedType || 'all');
 
+    const safeExtracted = sanitizeDriverOcr(extracted, docKind, extracted.fileName);
+
     if (docKind === 'aadhaar') {
       // Strict Aadhaar Mode: Only update Name, Aadhaar number, Address (and DOB/Gender/Phone)
       setFormData(prev => ({
         ...prev,
-        aadhaar: extracted.aadhaar || prev.aadhaar,
-        name: extracted.name || prev.name,
-        address: extracted.address || prev.address,
-        dob: extracted.dob || prev.dob,
-        gender: extracted.gender || prev.gender,
-        phone: extracted.phone || prev.phone,
-        fatherName: extracted.fatherName || prev.fatherName,
-        referenceName: extracted.fatherName || prev.referenceName,
-        city: extracted.city || prev.city
+        aadhaar: safeExtracted.aadhaar || prev.aadhaar,
+        name: safeExtracted.name || prev.name,
+        address: safeExtracted.address || prev.address,
+        dob: safeExtracted.dob || prev.dob,
+        gender: safeExtracted.gender || prev.gender,
+        phone: safeExtracted.phone || prev.phone,
+        fatherName: safeExtracted.fatherName || prev.fatherName,
+        city: safeExtracted.city || prev.city
       }));
     } else if (docKind === 'pan') {
       // Strict PAN Mode: Only update PAN Card Number
       setFormData(prev => ({
         ...prev,
-        panCard: extracted.panCard || prev.panCard
+        panCard: safeExtracted.panCard || prev.panCard
       }));
     } else if (docKind === 'dl') {
       // Strict Driving Licence Mode: Only update DL Number, Expiry, Category
       setFormData(prev => ({
         ...prev,
-        drivingLicence: extracted.drivingLicence || prev.drivingLicence,
-        dlExpiry: extracted.dlExpiry || prev.dlExpiry,
-        dlCategory: extracted.dlCategory || prev.dlCategory,
-        name: prev.name ? prev.name : (extracted.name || '')
+        drivingLicence: safeExtracted.drivingLicence || prev.drivingLicence,
+        dlExpiry: safeExtracted.dlExpiry || prev.dlExpiry,
+        dlCategory: safeExtracted.dlCategory || prev.dlCategory
       }));
     } else {
       setFormData(prev => ({
         ...prev,
-        name: extracted.name || prev.name,
-        phone: extracted.phone || prev.phone,
-        dob: extracted.dob || prev.dob,
-        gender: extracted.gender || prev.gender,
-        fatherName: extracted.fatherName || prev.fatherName,
-        referenceName: extracted.fatherName || prev.referenceName,
-        drivingLicence: extracted.drivingLicence || prev.drivingLicence,
-        dlExpiry: extracted.dlExpiry || prev.dlExpiry,
-        dlCategory: extracted.dlCategory || prev.dlCategory,
-        aadhaar: extracted.aadhaar || prev.aadhaar,
-        panCard: extracted.panCard || prev.panCard,
-        address: extracted.address || prev.address,
-        policeVerification: extracted.policeVerification || prev.policeVerification
+        name: safeExtracted.name || prev.name,
+        phone: safeExtracted.phone || prev.phone,
+        dob: safeExtracted.dob || prev.dob,
+        gender: safeExtracted.gender || prev.gender,
+        fatherName: safeExtracted.fatherName || prev.fatherName,
+        drivingLicence: safeExtracted.drivingLicence || prev.drivingLicence,
+        dlExpiry: safeExtracted.dlExpiry || prev.dlExpiry,
+        dlCategory: safeExtracted.dlCategory || prev.dlCategory,
+        aadhaar: safeExtracted.aadhaar || prev.aadhaar,
+        panCard: safeExtracted.panCard || prev.panCard,
+        address: safeExtracted.address || prev.address
       }));
     }
 
@@ -285,7 +366,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
       else if (targetCat === 'pan') setPanDocImage(docObj);
 
       const typeLabel = targetCat === 'dl' ? 'Driving Licence' : targetCat === 'aadhaar' ? 'Aadhaar Card' : 'PAN Card';
-      const docNum = targetCat === 'dl' ? (extracted.drivingLicence || formData.drivingLicence) : targetCat === 'aadhaar' ? (extracted.aadhaar || formData.aadhaar) : (extracted.panCard || formData.panCard);
+      const docNum = targetCat === 'dl' ? (safeExtracted.drivingLicence || formData.drivingLicence) : targetCat === 'aadhaar' ? (safeExtracted.aadhaar || formData.aadhaar) : (safeExtracted.panCard || formData.panCard);
 
       setAttachedDocs(prev => {
         const filtered = prev.filter(d => d.category !== targetCat && d.type !== targetCat);
@@ -307,13 +388,13 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
       });
     }
     const summary = [
-      extracted.name && `Name: ${extracted.name}`,
-      extracted.phone && `Mobile: ${extracted.phone}`,
-      extracted.dob && `DOB: ${extracted.dob}`,
-      extracted.gender && `Gender: ${extracted.gender}`,
-      extracted.aadhaar && `Aadhaar: ${extracted.aadhaar}`,
-      extracted.drivingLicence && `DL: ${extracted.drivingLicence}`,
-      extracted.panCard && `PAN: ${extracted.panCard}`
+      safeExtracted.name && `Name: ${safeExtracted.name}`,
+      safeExtracted.phone && `Mobile: ${safeExtracted.phone}`,
+      safeExtracted.dob && `DOB: ${safeExtracted.dob}`,
+      safeExtracted.gender && `Gender: ${safeExtracted.gender}`,
+      safeExtracted.aadhaar && `Aadhaar: ${safeExtracted.aadhaar}`,
+      safeExtracted.drivingLicence && `DL: ${safeExtracted.drivingLicence}`,
+      safeExtracted.panCard && `PAN: ${safeExtracted.panCard}`
     ].filter(Boolean).join(' • ');
     setOcrSuccessToast(`✓ Auto-Fetched from ${extracted.docType || 'Document'}: ${summary}`);
     setTimeout(() => setOcrSuccessToast(null), 6000);
@@ -373,32 +454,32 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
         if (!extracted) extracted = {};
 
-        if (extracted.name && !mergedFields.name) mergedFields.name = extracted.name;
-        if (extracted.phone && !mergedFields.phone) mergedFields.phone = extracted.phone;
-        if (extracted.dob && !mergedFields.dob) mergedFields.dob = extracted.dob;
-        if (extracted.gender && !mergedFields.gender) mergedFields.gender = extracted.gender;
-        if (extracted.fatherName && !mergedFields.fatherName) {
-          mergedFields.fatherName = extracted.fatherName;
-          mergedFields.referenceName = extracted.fatherName;
-        }
-        if (extracted.drivingLicence && !mergedFields.drivingLicence) mergedFields.drivingLicence = extracted.drivingLicence;
-        if (extracted.dlExpiry && !mergedFields.dlExpiry) mergedFields.dlExpiry = extracted.dlExpiry;
-        if (extracted.dlCategory && !mergedFields.dlCategory) mergedFields.dlCategory = extracted.dlCategory;
-        if (extracted.aadhaar && !mergedFields.aadhaar) mergedFields.aadhaar = extracted.aadhaar;
-        if (extracted.panCard && !mergedFields.panCard) mergedFields.panCard = extracted.panCard;
-        if (extracted.address && !mergedFields.address) mergedFields.address = extracted.address;
+        // Detect first, then sanitize. This is the important isolation step for
+        // batch uploads: each image can contribute only its own document fields.
+        const docType = normalizeOcrDocType(extracted.detectedType, extracted, file.name);
+        const safeExtracted = sanitizeDriverOcr(extracted, docType, file.name);
 
-        let docType = extracted.detectedType || 'other';
+        if (safeExtracted.name && !mergedFields.name) mergedFields.name = safeExtracted.name;
+        if (safeExtracted.phone && !mergedFields.phone) mergedFields.phone = safeExtracted.phone;
+        if (safeExtracted.dob && !mergedFields.dob) mergedFields.dob = safeExtracted.dob;
+        if (safeExtracted.gender && !mergedFields.gender) mergedFields.gender = safeExtracted.gender;
+        if (safeExtracted.fatherName && !mergedFields.fatherName) {
+          mergedFields.fatherName = safeExtracted.fatherName;
+        }
+        if (safeExtracted.drivingLicence && !mergedFields.drivingLicence) mergedFields.drivingLicence = safeExtracted.drivingLicence;
+        if (safeExtracted.dlExpiry && !mergedFields.dlExpiry) mergedFields.dlExpiry = safeExtracted.dlExpiry;
+        if (safeExtracted.dlCategory && !mergedFields.dlCategory) mergedFields.dlCategory = safeExtracted.dlCategory;
+        if (safeExtracted.aadhaar && !mergedFields.aadhaar) mergedFields.aadhaar = safeExtracted.aadhaar;
+        if (safeExtracted.panCard && !mergedFields.panCard) mergedFields.panCard = safeExtracted.panCard;
+        if (safeExtracted.address && !mergedFields.address) mergedFields.address = safeExtracted.address;
+
         let docTitle = file.name;
-        if (docType === 'dl' || extracted.drivingLicence) {
-          docType = 'dl';
-          docTitle = `Driving Licence Card (${extracted.drivingLicence || 'DL'})`;
-        } else if (docType === 'aadhaar' || extracted.aadhaar) {
-          docType = 'aadhaar';
-          docTitle = `Aadhaar Card (${extracted.aadhaar ? extracted.aadhaar.slice(-4) : 'UIDAI'})`;
-        } else if (docType === 'pan' || extracted.panCard) {
-          docType = 'pan';
-          docTitle = `PAN Card (${extracted.panCard || 'ITD'})`;
+        if (docType === 'dl') {
+          docTitle = `Driving Licence Card (${safeExtracted.drivingLicence || 'DL'})`;
+        } else if (docType === 'aadhaar') {
+          docTitle = `Aadhaar Card (${safeExtracted.aadhaar ? safeExtracted.aadhaar.slice(-4) : 'UIDAI'})`;
+        } else if (docType === 'pan') {
+          docTitle = `PAN Card (${safeExtracted.panCard || 'ITD'})`;
         } else {
           docTitle = `Driver KYC Document (${file.name})`;
         }
@@ -408,13 +489,13 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           title: docTitle,
           type: docType,
           category: docType,
-          docNumber: docType === 'dl' ? (extracted.drivingLicence || '') : docType === 'aadhaar' ? (extracted.aadhaar || '') : (extracted.panCard || ''),
+          docNumber: docType === 'dl' ? (safeExtracted.drivingLicence || '') : docType === 'aadhaar' ? (safeExtracted.aadhaar || '') : (safeExtracted.panCard || ''),
           fileUrl: dataUrl,
           fileSize: `${Math.round(file.size / 1024)} KB`,
           uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
           verified: true,
           status: 'Verified (OCR Cleared)',
-          extractedData: extracted
+          extractedData: safeExtracted
         };
 
         newDocs.push(docItem);
@@ -486,18 +567,26 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           extracted = parseIndianDocumentOcr(recognized, doc.type) || {};
         }
 
-        if (extracted && (extracted.name || extracted.drivingLicence || extracted.aadhaar || extracted.phone)) {
+        if (extracted && (extracted.name || extracted.drivingLicence || extracted.aadhaar || extracted.phone || extracted.panCard)) {
+          const safeExtracted = sanitizeDriverOcr(extracted, doc.category || doc.type, doc.fileName);
           setFormData((prev) => ({
             ...prev,
-            name: extracted.name || prev.name,
-            phone: extracted.phone || prev.phone,
-            drivingLicence: extracted.drivingLicence || prev.drivingLicence,
-            aadhaar: extracted.aadhaar || prev.aadhaar,
-            dob: extracted.dob || prev.dob,
-            gender: extracted.gender || prev.gender,
-            fatherName: extracted.fatherName || prev.fatherName,
-            address: extracted.address || prev.address
+            name: safeExtracted.name || prev.name,
+            phone: safeExtracted.phone || prev.phone,
+            drivingLicence: safeExtracted.drivingLicence || prev.drivingLicence,
+            dlExpiry: safeExtracted.dlExpiry || prev.dlExpiry,
+            dlCategory: safeExtracted.dlCategory || prev.dlCategory,
+            aadhaar: safeExtracted.aadhaar || prev.aadhaar,
+            panCard: safeExtracted.panCard || prev.panCard,
+            dob: safeExtracted.dob || prev.dob,
+            gender: safeExtracted.gender || prev.gender,
+            fatherName: safeExtracted.fatherName || prev.fatherName,
+            address: safeExtracted.address || prev.address
           }));
+
+          setAttachedDocs((prev) => prev.map((item, index) => index === docIndex
+            ? { ...item, docNumber: safeExtracted.drivingLicence || safeExtracted.aadhaar || safeExtracted.panCard || item.docNumber, extractedData: safeExtracted }
+            : item));
         }
       } catch (err) {
         console.warn('Rotated OCR warning:', err);
@@ -523,10 +612,10 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     emergencyContact: '',
     emergencyRelation: 'Brother',
     // Reference / Guarantor (PDF Step 01)
-    referenceName: 'Suresh Verma',
-    referencePhone: '98101 88990',
+    referenceName: '',
+    referencePhone: '',
     referenceRelation: 'Guarantor',
-    referenceAddress: 'Sector 14, Gurgaon',
+    referenceAddress: '',
     // Statutory KYC (PDF Page 3 & 4)
     drivingLicence: '',
     dlExpiry: '2030-11-14',
@@ -701,7 +790,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         drivingLicence: formData.drivingLicence.trim().toUpperCase(),
         dlExpiry: formData.dlExpiry || '14 Nov 2030',
         dlCategory: formData.dlCategory,
-        aadhaar: formData.aadhaar.trim() || 'XXXX-XXXX-9821',
+        aadhaar: formData.aadhaar.trim(),
         panCard: formData.panCard.trim().toUpperCase() || '',
         policeVerification: formData.policeVerification,
         kycReviewStatus: formData.kycReviewStatus,
@@ -928,6 +1017,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         <div className="adp-form-col">
           {/* Main Unified Batch OCR KYC Document Upload Center */}
           <div
+            className="adp-ocr-upload-card"
             onDragOver={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -1274,7 +1364,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       value={formData.dob}
                       onChange={(e) => updateField('dob', e.target.value)}
                     />
-                    <span className="adp-field-hint">Auto-extracted from Aadhaar / DL / PAN OCR</span>
+                    <span className="adp-field-hint">Auto-extracted from Aadhaar or Driving Licence OCR</span>
                   </div>
 
                   <div className="adp-form-group">
@@ -1299,12 +1389,9 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       value={formData.fatherName}
                       onChange={(e) => {
                         updateField('fatherName', e.target.value);
-                        if (!formData.referenceName || formData.referenceName === 'Suresh Verma') {
-                          updateField('referenceName', e.target.value);
-                        }
                       }}
                     />
-                    <span className="adp-field-hint">Auto-extracted from PAN Father's Name or DL S/D/W</span>
+                    <span className="adp-field-hint">Auto-extracted from Aadhaar S/O, D/O or W/O details</span>
                   </div>
 
                   <div className="adp-form-group">
@@ -1370,7 +1457,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   {/* Personal Reference / Guarantor (PDF Page 3 & 5 requirement) */}
                   <div className="adp-form-group">
                     <label className="adp-field-label">
-                      Personal Reference / Guarantor Name <span className="req">*</span>
+                      Personal Reference / Guarantor Name
                     </label>
                     <input
                       type="text"

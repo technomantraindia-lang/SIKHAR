@@ -45,7 +45,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
   });
 
   // Active View Tab: 'documents' | 'challans' | 'timeline' | 'vehicles'
-  const [activeTab, setActiveTab] = useState('documents');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,9 +240,80 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
     }
   };
 
-  const kpis = complianceData.kpis || {};
   const documents = complianceData.documents || [];
   const challans = complianceData.challans || [];
+  const pendingChallans = challans.filter((item) => String(item.status || '').toLowerCase() === 'pending payment');
+  const expiringDocuments = documents.filter((item) => {
+    const daysRemaining = Number(item.daysRemaining);
+    return item.status === 'Expiring Soon' || (daysRemaining > 0 && daysRemaining <= 30);
+  });
+  const breachedDocuments = documents.filter((item) => {
+    const daysRemaining = Number(item.daysRemaining);
+    return item.status === 'Breached' || daysRemaining <= 0;
+  });
+  const visibleVehicles = new Set(documents.map((item) => item.vehicle).filter(Boolean));
+  const breachedVehicles = new Set(breachedDocuments.map((item) => item.vehicle).filter(Boolean));
+  const compliantVehicles = Math.max(0, visibleVehicles.size - breachedVehicles.size);
+  const kpis = {
+    totalMonitored: documents.length,
+    compliantVehicles,
+    expiringSoon: expiringDocuments.length,
+    breachedExpired: breachedDocuments.length,
+    pendingChallans: pendingChallans.length,
+    totalChallanAmount: pendingChallans.reduce((sum, item) => sum + (Number(item.fineAmount) || 0), 0)
+  };
+  const complianceRate = visibleVehicles.size
+    ? ((compliantVehicles / visibleVehicles.size) * 100).toFixed(1)
+    : '0.0';
+  const insuranceActive = documents.filter((item) => /insurance/i.test(item.type || '') && item.status === 'Valid').length;
+  const fitnessOverdue = documents.filter((item) => /fitness/i.test(item.type || '') && (item.status === 'Breached' || Number(item.daysRemaining) <= 0)).length;
+  const permitsValid = documents.filter((item) => /permit/i.test(item.type || '') && item.status === 'Valid').length;
+
+  // The overview follows the reference wireframe: one operational row per
+  // compliance obligation, with the detailed document/challan tabs below it.
+  const complianceDefinitions = [
+    { label: 'Service', match: (d) => /service|maintenance/i.test(d.type || ''), filter: 'service' },
+    { label: 'Insurance', match: (d) => /insurance/i.test(d.type || ''), filter: 'insurance' },
+    { label: 'Permit', match: (d) => /permit/i.test(d.type || ''), filter: 'permit' },
+    { label: 'Fitness', match: (d) => /fitness/i.test(d.type || ''), filter: 'fitness' },
+    { label: 'PUC', match: (d) => /puc|pollution/i.test(d.type || ''), filter: 'puc' },
+    { label: 'Challan', match: () => false, filter: 'challan' }
+  ];
+  const complianceRows = complianceDefinitions.map((definition) => {
+    if (definition.label === 'Challan') {
+      const pending = challans.filter((item) => item.status === 'Pending Payment');
+      return {
+        ...definition,
+        due: pending.length,
+        breached: 0,
+        vehicles: pending.map((item) => item.vehicle).filter(Boolean),
+        nextDue: pending.map((item) => item.dueDate).filter(Boolean).sort()[0] || 'Open'
+      };
+    }
+
+    const matching = documents.filter(definition.match);
+    const due = matching.filter((item) => item.daysRemaining > 0 && item.daysRemaining <= 30);
+    const breached = matching.filter((item) => item.daysRemaining <= 0);
+    const vehicles = [...new Set([...due, ...breached].map((item) => item.vehicle).filter(Boolean))];
+    const nextDue = matching
+      .filter((item) => item.daysRemaining > 0)
+      .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate))[0]?.expiryDate || '—';
+
+    return { ...definition, due: due.length, breached: breached.length, vehicles, nextDue };
+  });
+
+  const openComplianceRow = (row) => {
+    if (row.label === 'Challan') {
+      setActiveTab('challans');
+      return;
+    }
+    if (row.label === 'Service') {
+      setActiveTab('timeline');
+      return;
+    }
+    setDocTypeFilter(row.filter);
+    setActiveTab('documents');
+  };
 
   return (
     <div className="escalation-master-stage">
@@ -328,7 +399,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num">
-            {kpis.totalMonitored || 148} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Docs</span>
+            {kpis.totalMonitored} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Docs</span>
           </div>
           <div className="esc-kpi-sub">
             67 Active fleet vehicles
@@ -344,10 +415,10 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num" style={{ color: '#059669' }}>
-            {kpis.compliantVehicles || 58} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Fleet</span>
+            {kpis.compliantVehicles} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Fleet</span>
           </div>
           <div className="esc-kpi-sub">
-            <span style={{ color: '#16a34a', fontWeight: 700 }}>86.5%</span> fully compliant
+            <span style={{ color: '#16a34a', fontWeight: 700 }}>{complianceRate}%</span> fully compliant
           </div>
         </div>
 
@@ -360,7 +431,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num" style={{ color: '#d97706' }}>
-            {kpis.expiringSoon || 9} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Due</span>
+            {kpis.expiringSoon} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Due</span>
           </div>
           <div className="esc-kpi-sub">
             Renewal recommended
@@ -376,7 +447,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num" style={{ color: '#dc2626' }}>
-            {kpis.breachedExpired || 3} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Overdue</span>
+            {kpis.breachedExpired} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Overdue</span>
           </div>
           <div className="esc-kpi-sub">
             <strong style={{ color: '#dc2626' }}>Ground Fleet (P1)</strong>
@@ -392,7 +463,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num" style={{ color: '#b91c1c' }}>
-            {kpis.pendingChallans || 6} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Pending</span>
+            {kpis.pendingChallans} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Pending</span>
           </div>
           <div className="esc-kpi-sub">
             Virtual court notices
@@ -408,7 +479,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
             </div>
           </div>
           <div className="esc-kpi-num" style={{ color: '#7c3aed' }}>
-            ₹{(kpis.totalChallanAmount || 14500).toLocaleString()}
+            ₹{kpis.totalChallanAmount.toLocaleString('en-IN')}
           </div>
           <div className="esc-kpi-sub">
             Driver wallet deductible
@@ -421,7 +492,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
         <div className="vm-stat-pill" onClick={() => { setActiveTab('documents'); setDocTypeFilter('insurance'); }} style={{ cursor: 'pointer' }}>
           <span className="pulse-dot green" />
           <span className="vm-stat-label">Insurance Policies:</span>
-          <strong className="vm-stat-value green">67 Active</strong>
+          <strong className="vm-stat-value green">{insuranceActive} Active</strong>
           <span className="vm-stat-sub">(Digit &amp; ICICI)</span>
         </div>
 
@@ -430,7 +501,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
         <div className="vm-stat-pill" onClick={() => { setActiveTab('documents'); setDocTypeFilter('fitness'); }} style={{ cursor: 'pointer' }}>
           <span className="pulse-dot amber" />
           <span className="vm-stat-label">RTO Fitness Tests:</span>
-          <strong className="vm-stat-value amber">2 Overdue</strong>
+          <strong className="vm-stat-value amber">{fitnessOverdue} Overdue</strong>
           <span className="vm-stat-sub">(Burari RTO)</span>
         </div>
 
@@ -439,7 +510,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
         <div className="vm-stat-pill" onClick={() => { setActiveTab('documents'); setDocTypeFilter('permit'); }} style={{ cursor: 'pointer' }}>
           <span className="pulse-dot cyan" />
           <span className="vm-stat-label">NCR Reciprocal Permits:</span>
-          <strong className="vm-stat-value cyan">64 Valid</strong>
+          <strong className="vm-stat-value cyan">{permitsValid} Valid</strong>
         </div>
 
         <div className="vm-stat-divider" />
@@ -447,7 +518,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
         <div className="vm-stat-pill" onClick={() => setActiveTab('challans')} style={{ cursor: 'pointer' }}>
           <span className="pulse-dot red" />
           <span className="vm-stat-label">Traffic Challan Desk:</span>
-          <strong className="vm-stat-value red">6 Notices</strong>
+          <strong className="vm-stat-value red">{pendingChallans.length} Notices</strong>
           <span className="vm-stat-sub">(Deductible from Wallet)</span>
         </div>
       </div>
@@ -457,6 +528,14 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
         <div className="esc-search-tabs-row">
           {/* Segmented Status Tabs */}
           <div className="esc-status-tabs">
+            <button
+              className={`esc-status-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              <Shield size={14} />
+              <span>Vehicle Compliance Overview</span>
+            </button>
+
             <button
               className={`esc-status-tab-btn ${activeTab === 'documents' ? 'active' : ''}`}
               onClick={() => setActiveTab('documents')}
@@ -539,6 +618,79 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
           </div>
         </div>
       </div>
+
+      {/* ========================================================
+          TAB 0: REFERENCE-WIREFRAME COMPLIANCE OVERVIEW
+          ======================================================== */}
+      {activeTab === 'overview' && (
+        <div className="rto-overview-panel">
+          <div className="rto-overview-heading">
+            <div>
+              <h2>Vehicle Compliance</h2>
+              <p>Due, breached and upcoming RTO obligations across the active commercial fleet.</p>
+            </div>
+            <span className="rto-overview-live"><span /> Live compliance register</span>
+          </div>
+
+          <div className="rto-overview-kpis">
+            <div className="rto-overview-kpi">
+              <span>Due</span>
+              <strong className="warn">{kpis.expiringSoon}</strong>
+              <small>Renew within 30 days</small>
+            </div>
+            <div className="rto-overview-kpi">
+              <span>Breached</span>
+              <strong className="bad">{kpis.breachedExpired}</strong>
+              <small>Ground and resolve immediately</small>
+            </div>
+            <div className="rto-overview-kpi">
+              <span>Compliant</span>
+              <strong className="good">{kpis.compliantVehicles}</strong>
+              <small>Roadworthy fleet vehicles</small>
+            </div>
+          </div>
+
+          <div className="rto-overview-table-wrap">
+            <table className="rto-overview-table">
+              <thead>
+                <tr>
+                  <th>Compliance</th>
+                  <th>Due</th>
+                  <th>Breached</th>
+                  <th>Affected Vehicles</th>
+                  <th>Next Due</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {complianceRows.map((row) => (
+                  <tr key={row.label}>
+                    <td><strong>{row.label}</strong></td>
+                    <td><span className={row.due ? 'rto-count warn' : 'rto-count'}>{row.due}</span></td>
+                    <td><span className={row.breached ? 'rto-count bad' : 'rto-count'}>{row.breached || '—'}</span></td>
+                    <td>
+                      {row.vehicles.length > 0
+                        ? row.vehicles.join(', ')
+                        : <span className="rto-muted">No vehicles requiring action</span>}
+                    </td>
+                    <td><strong>{row.nextDue}</strong></td>
+                    <td>
+                      <button className="btn small primary" onClick={() => openComplianceRow(row)}>
+                        View Vehicles <ChevronRight size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="rto-overview-note">
+            <Shield size={15} />
+            <span>Use this overview for daily roadworthiness decisions. Open the detailed tabs to inspect certificates, renew records, log challans, or settle driver deductions.</span>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================
           TAB 1: COMPLIANCE DOCUMENTS TABLE

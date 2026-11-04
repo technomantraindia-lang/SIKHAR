@@ -6,7 +6,7 @@
 - Technology: React, Vite, Express, MySQL, Node.js/npm
 - Active file at refresh: None
 - Local code graph: 66 files · 243 edges · 0 matched flows
-- Refreshed: 2026-11-03T09:01:08.096Z
+- Refreshed: 2026-11-04T03:21:41.445Z
 
 ## Framework Intelligence (V4.7.8)
 - Profiles: react, node
@@ -53,7 +53,7 @@
 - src/components/escalations/EscalationChatSection.jsx: EscalationChatSection, AudioCtx
 - src/components/fleet/FleetControlTower.jsx: FleetControlTower
 - src/components/fuel/FuelMasterPage.jsx: FuelMasterPage
-- src/components/landing/LandingPage.jsx: LandingPage, BrandMark, Icon
+- src/components/landing/LandingPage.jsx: LandingPage, BrandMark, SocialIcon, PlatformCapabilitiesSection, ServiceDots
 - src/components/layout/Sidebar.jsx: Sidebar, MENU_SECTIONS, Icon, SubIcon
 - src/components/layout/TopHeader.jsx: TopHeader
 - src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx: CommercialLeaseAgreementPreviewModal
@@ -106,12 +106,12 @@
 - src/services/localStore.js: getRegisteredUsers, registerUser, authenticateUser, getCurrentUser, logoutUser, getDashboardData
 - server/routes/assignmentRoutes.js: GET /, POST /, POST /:id/revert, POST /:id/extend, readJson, writeJson, syncAndExpireAssignments, newVehStatus, isAlreadyAllocated, asgIndex, assignment
 - server/routes/authRoutes.js: POST /login, GET /me, getAdminData
-- server/routes/complianceRoutes.js: GET /, POST /document, PUT /document/:id/renew, POST /challan, POST /challan/:id/pay, PUT /challan/:id/deduct-wallet, getComplianceData, saveComplianceData, updateComplianceKpis, docCount, challanCount
+- server/routes/complianceRoutes.js: GET /, POST /document, PUT /document/:id/renew, POST /challan, POST /challan/:id/pay, PUT /challan/:id/deduct-wallet, getComplianceData, saveComplianceData, calculateComplianceKpis, updateComplianceKpis, docCount, challanCount
 - server/routes/dashboardRoutes.js: GET /, POST /quick-action, getDashboardData
 - server/routes/driverRoutes.js: GET /, GET /wallet-health, GET /:id, PUT /:id/status, POST /:id/wallet/topup, POST /, PUT /:id/vehicle, POST /:id/leave, readDriversData, writeDriversData, unassignVehicleInFleet, isTransactionToday
 - server/routes/escalationRoutes.js: GET /, GET /:id, POST /, POST /:id/notes, GET /:id/messages, POST /:id/messages, PUT /:id, POST /:id/resolve, getEscalationsData, saveEscalationsData, updateKpiCounts, ensureTicketMessages
 - server/routes/fleetRoutes.js: GET /, GET /vehicles/:id, POST /vehicles, PUT /vehicles/:id/status, POST /vehicles/:id/action, getFleetData, saveFleetData
-- server/routes/fuelRoutes.js: GET /, POST /session/start, POST /session/:id/stop, POST /session/:id/settle, POST /log, PUT /log/:id/verify, getFuelData, saveFuelData, updateFuelKpis, activeSessions, settledSessions, totalKwh
+- server/routes/fuelRoutes.js: GET /, POST /session/start, POST /session/:id/stop, POST /session/:id/settle, POST /log, PUT /log/:id/verify, getFuelData, saveFuelData, updateFuelKpis, activeSessions, _settledSessions, totalKwh
 - server/routes/maintenanceRoutes.js: GET /, GET /:id, POST /job-cards, PATCH /:id/advance-stage, POST /:id/estimate, POST /:id/qc, POST /:id/bill, POST /:id/payment, getMaintenanceData, saveMaintenanceData, updateMaintKpis
 - server/routes/ocrRoutes.js: POST /gemini, GET /status, extractBase64
 - server/routes/rapidoRoutes.js: PUT /on_order_status/:orderId, GET /integration-status, verifyRapidoApiKey
@@ -276,4 +276,4 @@
 - src/components/landing/LandingPage.jsx -> src/components/common/Icons.jsx, src/components/landing/LandingPage.css
 - src/components/layout/Sidebar.jsx -> src/components/common/Icons.jsx
 - src/components/layout/TopHeader.jsx -> src/components/common/Icons.jsx
-- src/components/maintenance/MaintenanceMasterPage.jsx -> src/components/common/Icons.jsx, src/
+- src/components/main

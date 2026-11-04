@@ -24,28 +24,36 @@ function saveComplianceData(data) {
   fs.writeFileSync(complianceDataPath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// Recalculate KPIs based on current documents and challans
-function updateComplianceKpis(data) {
+// Calculate KPIs from the same records that power the compliance tables.
+// Do not use the values persisted in compliance.json as the source of truth;
+// those values can become stale after a document/challan is filtered or updated.
+function calculateComplianceKpis(data) {
   const docs = data.documents || [];
   const challans = data.challans || [];
 
   const totalMonitored = docs.length;
-  const _compliantDocs = docs.filter(d => d.status === 'Valid').length;
   const expiringSoon = docs.filter(d => d.status === 'Expiring Soon' || (d.daysRemaining > 0 && d.daysRemaining <= 30)).length;
-  const breachedExpired = docs.filter(d => d.status === 'Breached' || d.daysRemaining <= 0).length;
+  const breachedDocs = docs.filter(d => d.status === 'Breached' || d.daysRemaining <= 0);
+  const breachedExpired = breachedDocs.length;
 
   const pendingChallansList = challans.filter(c => c.status === 'Pending Payment');
   const pendingChallansCount = pendingChallansList.length;
   const totalChallanAmount = pendingChallansList.reduce((sum, c) => sum + (Number(c.fineAmount) || 0), 0);
+  const vehicles = new Set(docs.map(d => d.vehicle).filter(Boolean));
+  const breachedVehicles = new Set(breachedDocs.map(d => d.vehicle).filter(Boolean));
 
-  data.kpis = {
-    totalMonitored: totalMonitored + 130, // fleet aggregate
-    compliantVehicles: 58,
-    expiringSoon: expiringSoon + 6,
+  return {
+    totalMonitored,
+    compliantVehicles: Math.max(0, vehicles.size - breachedVehicles.size),
+    expiringSoon,
     breachedExpired,
     pendingChallans: pendingChallansCount,
     totalChallanAmount
   };
+}
+
+function updateComplianceKpis(data) {
+  data.kpis = calculateComplianceKpis(data);
 }
 
 // GET /api/compliance - Returns compliance dashboard, documents, and challans
@@ -97,7 +105,12 @@ router.get('/', (req, res) => {
     return res.json({
       success: true,
       data: {
-        kpis: data.kpis,
+        // Always return KPIs calculated from the current records, not stale
+        // values saved by an earlier version of the dashboard.
+        // KPIs must describe the exact arrays returned below. This prevents
+        // a pending count from showing while the current challan view is empty
+        // because of an active search/status/vehicle filter.
+        kpis: calculateComplianceKpis({ documents, challans }),
         documents,
         challans
       }

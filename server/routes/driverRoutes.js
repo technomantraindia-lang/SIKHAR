@@ -431,7 +431,7 @@ router.post('/', (req, res) => {
     drivingLicence,
     dlExpiry = '14 Nov 2030',
     dlCategory = 'Commercial LMV',
-    aadhaar = 'XXXX-XXXX-9999',
+    aadhaar = '',
     panCard = '',
     policeVerification = 'Verified (Clear)',
     rentalModel = 'Fixed Daily Rental',
@@ -553,7 +553,7 @@ router.post('/', (req, res) => {
       fatherName: fatherName.trim(),
       aadhaar: aadhaar.trim(),
       aadhaarVerified: true,
-      panCard: panCard ? panCard.trim().toUpperCase() : 'ABCDE1234F',
+      panCard: panCard ? panCard.trim().toUpperCase() : '',
       panVerified: true,
       drivingLicence: drivingLicence.trim().toUpperCase(),
       dlExpiry: dlExpiry.trim(),
@@ -566,12 +566,7 @@ router.post('/', (req, res) => {
         phone: referencePhone.trim(),
         relation: referenceRelation,
         address: referenceAddress.trim() || city
-      } : {
-        name: 'Suresh Verma',
-        phone: '+91 98101 88990',
-        relation: 'Fleet Guarantor',
-        address: 'Sector 14, Gurgaon'
-      },
+      } : null,
       address: address.trim()
     },
     documents: (() => {
@@ -594,7 +589,7 @@ router.post('/', (req, res) => {
         });
       }
       const hasAadhaar = docList.some(d => (d.category === 'aadhaar' || d.type === 'aadhaar' || String(d.type).toLowerCase().includes('aadhaar')));
-      if (!hasAadhaar) {
+      if (!hasAadhaar && aadhaar.trim()) {
         docList.unshift({
           id: `doc-adh-${newId}`,
           type: 'Aadhaar Card',
@@ -639,7 +634,10 @@ router.post('/', (req, res) => {
         uploadedBy: d.uploadedBy || 'Admin Authority',
         fileUrl: d.fileUrl || '',
         fileSize: d.fileSize || '',
-        status: d.status || 'Verified'
+        status: d.status || 'Verified',
+        notes: d.notes || '',
+        source: d.source || 'Driver onboarding OCR upload',
+        extractedData: d.extractedData || undefined
       }));
     })(),
     deal: {

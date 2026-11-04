@@ -13,6 +13,7 @@ import {
   Compass,
   Gauge
 } from '../common/Icons';
+import bannerImage from '../../assets/image copy 3.png';
 import './LandingPage.css';
 
 function BrandMark({ compact = false }) {
@@ -145,6 +146,140 @@ const governancePillars = [
   }
 ];
 
+const coreServices = [
+  { title: 'Employee Transport', description: 'Safe, reliable, and on-time commute solutions for your workforce.', icon: 'people' },
+  { title: 'Electric Mobility (EV)', description: 'Sustainable and low-emission fleet solutions for a cleaner, greener Delhi NCR.', icon: 'bolt', featured: true },
+  { title: 'Corporate & Executive Fleet', description: 'Premium and comfortable mobility for business travel, client meetings, and leadership.', icon: 'calendar' },
+  { title: 'Commercial & Logistics', description: 'Efficient fleet support for cargo movement, supply chain, and operational logistics.', icon: 'box' },
+  { title: 'Last-Mile & Shuttle Services', description: 'Flexible and reliable transport for campuses, offices, and multi-location operations.', icon: 'pin' },
+];
+
+const serviceAssurances = [
+  { label: 'Compliant & Secure', icon: 'shield' },
+  { label: 'Real-time Operations', icon: 'chart' },
+  { label: 'Multi-Platform Ready', icon: 'layers' },
+  { label: 'Sustainable Mobility', icon: 'leaf' },
+];
+
+const platformCapabilities = [
+  { title: <>Real-Time<br />Tracking</>, description: 'Live location, trip visibility, and route insights.', icon: MapPin },
+  { title: <>Operational<br />Analytics</>, description: 'Performance, utilization, and revenue insights.', icon: Gauge },
+  { title: <>Compliance &amp;<br />Governance</>, description: 'Automated KYC, permits, fitness, and regulatory checks.', icon: Shield },
+  { title: <>Partner<br />Integration</>, description: 'Seamless data sync with Rapido, Uber, Ola, etc.', icon: Compass },
+  { title: <>Fleet<br />Management</>, description: 'Vehicles, allocation, maintenance, and usage.', icon: Car },
+  { title: <>Revenue &amp;<br />Reconciliation</>, description: 'Trip earnings import, revenue share, and settlement.', icon: IndianRupee },
+];
+
+function SocialIcon({ type }) {
+  if (type === 'linkedin') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 10v6M8 8v.01M12 16v-3.2a2.8 2.8 0 0 1 5.6 0V16M12 10v6" /></svg>;
+  if (type === 'youtube') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3" /><path d="m10 9 5 3-5 3V9Z" fill="currentColor" stroke="none" /></svg>;
+  if (type === 'x') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3.8l3.6 5.1L16.7 4H19l-5.5 6.4L19.5 20h-3.8l-4-5.7L6.9 20H4.5l5.7-6.7L5 4Z" fill="currentColor" stroke="none" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5" /><circle cx="12" cy="12" r="3.5" /><circle cx="17.2" cy="6.9" r="1" fill="currentColor" stroke="none" /></svg>;
+}
+
+function PlatformCapabilitiesSection({ onOpenLogin }) {
+  return (
+    <section className="platform-capabilities-section" id="platform-capabilities">
+      <div className="platform-capabilities-backdrop" aria-hidden="true" />
+      <div className="platform-capabilities-main">
+        <div className="platform-capabilities-copy">
+          <div className="platform-capabilities-badge"><span className="platform-layers-mark">▱</span><span>Platform Capabilities</span></div>
+          <h2>A Unified Platform for<br />End-to-End Fleet<br /><span>Operations</span></h2>
+          <p>Monitor, manage, and optimize your commercial fleet with real-time visibility, automation, and actionable insights.</p>
+          <ul className="platform-check-list">
+            <li><span>✓</span>Operational Control</li>
+            <li><span>✓</span>Regulatory Compliance</li>
+            <li><span>✓</span>Partner Integrations</li>
+            <li><span>✓</span>Revenue Intelligence</li>
+          </ul>
+          <div className="platform-action-row">
+            <button type="button" className="platform-primary-btn" onClick={onOpenLogin}>Explore Platform <ArrowRight size={18} /></button>
+            <button type="button" className="platform-demo-btn" onClick={() => document.getElementById('core-services')?.scrollIntoView({ behavior: 'smooth' })}><span>▶</span>Watch Demo</button>
+          </div>
+        </div>
+        <div className="platform-capabilities-visual">
+          <img src="/images/platform-devices.png" alt="Sikhar Fleet dashboard on laptop and mobile" />
+        </div>
+      </div>
+      <div className="platform-capability-strip">
+        {platformCapabilities.map(({ title, description, icon: Icon }) => (
+          <div className="platform-capability-card" key={description}>
+            <div className="platform-capability-icon"><Icon size={29} strokeWidth={1.9} /></div>
+            <div><h3>{title}</h3><p>{description}</p></div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ServiceDots() {
+  return <span className="core-services-dots" aria-hidden="true">{Array.from({ length: 9 }).map((_, i) => <i key={i} />)}</span>;
+}
+
+function CoreServiceIcon({ type, featured = false }) {
+  return (
+    <div className={`core-service-visual ${featured ? 'is-featured' : ''}`}>
+      <svg viewBox="0 0 72 72" className="core-service-platform" aria-hidden="true">
+        <defs>
+          <linearGradient id={`core-platform-${type}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={featured ? '#0795ff' : '#ecf7ff'} />
+            <stop offset="1" stopColor={featured ? '#0b5ec9' : '#8fc5fa'} />
+          </linearGradient>
+        </defs>
+        <path d="M36 9 67 26 36 43 5 26 36 9Z" fill={`url(#core-platform-${type})`} opacity=".74" />
+        <path d="m5 26 31 18 31-18v9L36 53 5 35v-9Z" fill={`url(#core-platform-${type})`} opacity=".9" />
+        <path d="m5 35 31 18 31-18M5 27l31 18 31-18" stroke={featured ? '#00bfff' : '#8ac8ff'} strokeWidth="1.4" />
+      </svg>
+      <svg viewBox="0 0 72 72" className="core-service-line-icon" aria-hidden="true">
+        {type === 'people' && <><circle cx="36" cy="20" r="8" /><path d="M22 40c0-7 6-12 14-12s14 5 14 12v3H22v-3Z" /><path d="M21 27c-5 0-9 3-9 8v3h8M51 27c5 0 9 3 9 8v3h-8M28 11c-4-1-8 2-8 7 0 2 1 4 3 5M44 11c4-1 8 2 8 7 0 2-1 4-3 5" /></>}
+        {type === 'bolt' && <path d="M42 8 25 34h12l-5 28 18-34H38l4-20Z" fill="currentColor" stroke="none" />}
+        {type === 'calendar' && <><rect x="18" y="16" width="36" height="38" rx="5" /><path d="M26 12v9M46 12v9M18 27h36M28 40l6 6 11-13" /></>}
+        {type === 'box' && <><path d="m36 11 18 10v23L36 54 18 44V21l18-10Z" /><path d="m18 21 18 11 18-11M36 32v22M28 16l18 10" /></>}
+        {type === 'pin' && <><path d="M53 29c0 14-17 29-17 29S19 43 19 29a17 17 0 1 1 34 0Z" /><circle cx="36" cy="29" r="5" /></>}
+      </svg>
+    </div>
+  );
+}
+
+function ServiceAssuranceIcon({ type }) {
+  if (type === 'shield') return <Shield size={40} strokeWidth={1.8} />;
+  if (type === 'chart') return <span className="core-assurance-chart"><span /><span /><span /></span>;
+  if (type === 'leaf') return <svg viewBox="0 0 44 44" aria-hidden="true"><path d="M35 8C20 8 11 15 11 27c0 5 3 9 8 9 12 0 16-11 16-28Z" /><path d="M7 38c6-10 12-16 22-22" /></svg>;
+  return <svg viewBox="0 0 44 44" aria-hidden="true"><path d="m22 6 16 8-16 8-16-8 16-8Z" /><path d="m6 22 16 8 16-8M6 30l16 8 16-8" /></svg>;
+}
+
+function CoreServicesSection({ onOpenLogin }) {
+  return (
+    <section className="core-services-section" id="core-services">
+      <div className="core-services-orb core-services-orb-left" />
+      <div className="core-services-orb core-services-orb-right" />
+      <div className="core-services-curve core-services-curve-top" />
+      <div className="core-services-curve core-services-curve-bottom" />
+      <div className="core-services-inner">
+        <div className="core-services-heading">
+          <div className="core-services-eyebrow"><ServiceDots /><span>OUR CORE SERVICES</span></div>
+          <h2>Comprehensive <span>Fleet Solutions</span></h2>
+          <p>End-to-end mobility and operational solutions for businesses, enterprises, and institutions across Delhi NCR.</p>
+        </div>
+        <div className="core-services-grid">
+          {coreServices.map((service) => (
+            <button key={service.icon} type="button" className="core-service-card" onClick={onOpenLogin}>
+              <span className="core-service-glow" />
+              <CoreServiceIcon type={service.icon} />
+              <span className="core-service-copy"><strong>{service.title}</strong><span>{service.description}</span></span>
+              <span className="core-service-arrow"><ArrowRight size={25} strokeWidth={2.6} /></span>
+            </button>
+          ))}
+        </div>
+        <div className="core-assurance-bar" aria-label="Sikhar Fleet benefits">
+          {serviceAssurances.map((assurance, index) => <React.Fragment key={assurance.label}>{index > 0 && <span className="core-assurance-divider" />}<div className="core-assurance-item"><span className="core-assurance-icon"><ServiceAssuranceIcon type={assurance.icon} /></span><strong>{assurance.label}</strong></div></React.Fragment>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage({ onOpenLogin }) {
   const [activePillar, setActivePillar] = useState(0);
 
@@ -171,8 +306,8 @@ export default function LandingPage({ onOpenLogin }) {
           </button>
 
           <nav className="clean-nav-menu" aria-label="Main Navigation">
-            <button type="button" onClick={() => scrollTo('fleet-segments')}>
-              Fleet Architecture
+            <button type="button" onClick={() => scrollTo('core-services')}>
+              Core Services
             </button>
             <button type="button" onClick={() => scrollTo('operations')}>
               Governance
@@ -207,7 +342,7 @@ export default function LandingPage({ onOpenLogin }) {
         <section className="clean-hero-banner" id="hero">
           <div className="clean-hero-bg">
             <img
-              src="/images/hero_banner_real.png"
+              src={bannerImage}
               alt="Sikhar Fleet commercial vehicles on highway network"
               className="clean-hero-img"
             />
@@ -227,7 +362,7 @@ export default function LandingPage({ onOpenLogin }) {
             </h1>
 
             <p className="clean-hero-desc">
-              Reliable Fleet Solutions for Every Journey.
+              Reliable, compliant, and technology-led fleet solutions for every journey in Delhi NCR.
             </p>
 
             <div className="clean-hero-cta">
@@ -236,24 +371,35 @@ export default function LandingPage({ onOpenLogin }) {
                 className="clean-btn-primary"
                 onClick={onOpenLogin}
               >
-                <span>Sign In</span>
+                <span>Get Started</span>
                 <ArrowRight size={15} />
               </button>
 
               <button
                 type="button"
                 className="clean-btn-secondary"
-                onClick={() => scrollTo('fleet-segments')}
+                onClick={() => scrollTo('core-services')}
               >
                 <span>Explore Fleet Architecture</span>
                 <ChevronRight size={15} />
               </button>
             </div>
+
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* 3. MULTI-CATEGORY FLEET ARCHITECTURE */}
+        {/* 3. SCREENSHOT-MATCHED CORE SERVICES */}
+        {/* ========================================================================= */}
+        <CoreServicesSection onOpenLogin={onOpenLogin} />
+
+        {/* ========================================================================= */}
+        {/* 4. PLATFORM CAPABILITIES SECTION */}
+        {/* ========================================================================= */}
+        <PlatformCapabilitiesSection onOpenLogin={onOpenLogin} />
+
+        {/* ========================================================================= */}
+        {/* 4. MULTI-CATEGORY FLEET ARCHITECTURE */}
         {/* ========================================================================= */}
         <section className="clean-section clean-fleet-section" id="fleet-segments">
           <div className="clean-section-header">
@@ -545,6 +691,51 @@ export default function LandingPage({ onOpenLogin }) {
           </button>
         </div>
       </footer>
+      <footer className="sikhar-footer">
+        <div className="sikhar-footer-content">
+          <div className="footer-brand-column">
+            <BrandMark compact />
+            <p>A commercial fleet operations platform for Indian businesses — from driver KYC to revenue and compliance.</p>
+            <div className="footer-socials" aria-label="Social links">
+              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><SocialIcon type="linkedin" /></a>
+              <a href="https://www.youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube"><SocialIcon type="youtube" /></a>
+              <a href="https://x.com" target="_blank" rel="noreferrer" aria-label="X"><SocialIcon type="x" /></a>
+              <a href="https://www.instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><SocialIcon type="instagram" /></a>
+            </div>
+          </div>
+          <div className="footer-link-column">
+            <h3>Platform</h3>
+            <a href="#fleet-segments">Fleet Management</a>
+            <a href="#operations">Trips &amp; Revenue</a>
+            <a href="#operations">Fuel &amp; Telematics</a>
+            <a href="#operations">Compliance</a>
+            <a href="#hubs">Reports &amp; Analytics</a>
+          </div>
+          <div className="footer-link-column">
+            <h3>Company</h3>
+            <a href="#hero">About Us</a>
+            <a href="#operations">Our Approach</a>
+            <a href="#hero">Careers</a>
+            <a href="#hubs">Contact Us</a>
+          </div>
+          <div className="footer-link-column">
+            <h3>Resources</h3>
+            <a href="#core-services">Blogs &amp; Insights</a>
+            <a href="#operations">Product Docs</a>
+            <a href="#hubs">Help Center</a>
+            <a href="#core-services">What’s New</a>
+          </div>
+        </div>
+        <div className="footer-bottom-row">
+          <span>© 2026 Sikhar Fleet. All rights reserved.</span>
+          <nav aria-label="Legal links">
+            <a href="#hero">Privacy Policy</a><i />
+            <a href="#hero">Terms of Use</a><i />
+            <a href="#hero">Cookie Policy</a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }
+

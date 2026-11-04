@@ -52,8 +52,18 @@ router.post('/gemini', async (req, res) => {
       });
     }
 
+    const requestedTypeInstruction = docType === 'pan'
+      ? 'This is a PAN upload. Extract ONLY the PAN number. Do not copy a name, date of birth, address, phone, or any other field.'
+      : docType === 'aadhaar'
+      ? 'This is an Aadhaar upload. Extract the Aadhaar number and the holder name. You may also return other clearly printed Aadhaar fields, but never invent PAN or Driving Licence data. Ignore any VID number.'
+      : docType === 'dl'
+      ? 'This is a Driving Licence upload. Extract ONLY the licence number, validity/expiry date, and licence category/class. Do not copy PAN, Aadhaar, phone, or unrelated identity fields.'
+      : 'Identify the document type first, then return only fields that belong to that document type.';
+
     const systemPrompt = `You are an expert Indian Government Document OCR extraction system for commercial fleet driver onboarding and vehicle compliance.
 Carefully examine this document image (it could be an Indian Driving Licence, Aadhaar Card Front/Back, PAN Card, Vehicle Registration Certificate RC, Traffic Challan, Fuel Receipt, or Workshop Bill).
+
+${requestedTypeInstruction}
 
 Extract all visible identity, licensing, and vehicle information with extreme precision.
 Pay special attention to Indian documents:
@@ -170,12 +180,19 @@ Return ONLY a valid JSON object matching this exact structure:
       parsedResult.address = '';
       parsedResult.name = '';
       parsedResult.phone = '';
+      parsedResult.dob = '';
+      parsedResult.gender = '';
+      parsedResult.fatherName = '';
       parsedResult.detectedType = 'pan';
     } else if (isDl) {
       parsedResult.aadhaar = '';
       parsedResult.panCard = '';
       parsedResult.address = '';
       parsedResult.phone = '';
+      parsedResult.name = '';
+      parsedResult.dob = '';
+      parsedResult.gender = '';
+      parsedResult.fatherName = '';
       parsedResult.detectedType = 'dl';
     }
 
