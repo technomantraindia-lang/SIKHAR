@@ -37,6 +37,13 @@ const DOCUMENT_CATEGORIES = [
   { value: 'other', label: 'Other Fleet KYC Document', defaultTitle: 'Auxiliary Identification Document' }
 ];
 
+const hasUploadedDocumentImage = (doc) => {
+  const url = doc?.fileUrl;
+  return typeof url === 'string'
+    && url.length > 200
+    && !url.includes('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+};
+
 export default function DriverDocumentsModal({
   isOpen,
   onClose,
@@ -847,7 +854,7 @@ export default function DriverDocumentsModal({
                       )}
 
                       {/* Document Image Thumbnail / Visual Specimen */}
-                      {doc.fileUrl ? (
+                      {hasUploadedDocumentImage(doc) ? (
                         <div
                           onClick={() => setPreviewDoc(doc)}
                           style={{
@@ -899,10 +906,11 @@ export default function DriverDocumentsModal({
                           justifyContent: 'space-between'
                         }}>
                           <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                            Institutional KYC Record Active
+                            <Camera size={13} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+                            Document image not uploaded
                           </span>
                           <span style={{ fontSize: '10.5px', color: '#38bdf8', fontWeight: 700 }}>
-                            ✓ Digital Certificate
+                            Admin upload required
                           </span>
                         </div>
                       )}
@@ -922,23 +930,24 @@ export default function DriverDocumentsModal({
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
                             type="button"
-                            onClick={() => setPreviewDoc(doc)}
+                            onClick={() => hasUploadedDocumentImage(doc) && setPreviewDoc(doc)}
+                            disabled={!hasUploadedDocumentImage(doc)}
                             style={{
                               padding: '4px 10px',
                               borderRadius: '4px',
-                              background: '#0284c7',
+                              background: hasUploadedDocumentImage(doc) ? '#0284c7' : '#334155',
                               border: '1px solid #38bdf8',
                               color: '#ffffff',
                               fontSize: '11px',
                               fontWeight: 700,
-                              cursor: 'pointer',
+                              cursor: hasUploadedDocumentImage(doc) ? 'pointer' : 'not-allowed',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '4px'
                             }}
                           >
                             <Eye size={12} />
-                            <span>Preview</span>
+                            <span>{hasUploadedDocumentImage(doc) ? 'Preview' : 'No image'}</span>
                           </button>
 
                           <button

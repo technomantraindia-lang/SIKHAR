@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Maximize2,
   FileUp,
+  Trash2,
   RefreshCw,
   Sparkles,
   Phone,
@@ -23,7 +24,7 @@ import {
   Lock,
   Award
 } from '../common/Icons';
-import { updateDriverDocumentApi, addDriverDocumentApi } from '../../services/api';
+import { updateDriverDocumentApi } from '../../services/api';
 
 /**
  * High-Fidelity Indian National Emblem SVG (Ashok Lion Capital)
@@ -155,6 +156,7 @@ export default function StatutoryCertificateViewerModal({
   const [isUploading, setIsUploading] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const [actionNotice, setActionNotice] = useState(null);
+  const [attachedDoc, setAttachedDoc] = useState(initialDoc);
   const fileInputRef = useRef(null);
 
   // Sync initialCategory when modal opens
@@ -162,7 +164,8 @@ export default function StatutoryCertificateViewerModal({
     if (initialCategory) {
       setActiveTab(initialCategory);
     }
-  }, [initialCategory, isOpen]);
+    setAttachedDoc(initialDoc || null);
+  }, [initialCategory, initialDoc, isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -188,11 +191,14 @@ export default function StatutoryCertificateViewerModal({
 
   // Find matching document record in driver.documents
   const currentDoc = useMemo(() => {
-    if (!driver || !Array.isArray(driver.documents)) return null;
-    return driver.documents.find(
-      (d) => d.category === activeTab || (d.type && d.type.toLowerCase().includes(activeTab))
-    );
-  }, [driver, activeTab]);
+    const docs = [
+      ...(attachedDoc ? [attachedDoc] : []),
+      ...(Array.isArray(driver?.documents) ? driver.documents : [])
+    ];
+    return docs.find(
+      (d) => d && (d.category === activeTab || (d.type && d.type.toLowerCase().includes(activeTab)))
+    ) || null;
+  }, [driver, activeTab, attachedDoc]);
 
   // Determine if valid scanned image exists (not placeholder 39 bytes)
   const hasValidScanImage = useMemo(() => {
@@ -239,6 +245,10 @@ export default function StatutoryCertificateViewerModal({
   };
 
   const handleDownloadSpecimen = () => {
+    if (!hasValidScanImage) {
+      showNotice('Upload the real document image first. No specimen is available for download.');
+      return;
+    }
     showNotice(`Preparing official PDF certificate specimen for ${driver.name}...`);
     // Create print view or download
     window.print();
@@ -247,6 +257,33 @@ export default function StatutoryCertificateViewerModal({
   const handleUploadPhotoClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!currentDoc?.id || !hasValidScanImage) return;
+    if (!window.confirm(`Delete the uploaded ${CATEGORY_TABS.find((tab) => tab.id === activeTab)?.label || 'document'} image? The document number and KYC record will remain.`)) return;
+
+    try {
+      setIsUploading(true);
+      showNotice('Removing uploaded document image...');
+      const res = await updateDriverDocumentApi(driver.id, currentDoc.id, {
+        fileUrl: '',
+        status: 'Pending Upload',
+        verified: false,
+        updatedAt: new Date().toISOString()
+      });
+
+      if (res && res.document) {
+        setAttachedDoc(res.document);
+        if (onDocumentUpdated) onDocumentUpdated(res.document, res.documents);
+        showNotice('Uploaded image deleted. You can upload a new image now.');
+      }
+    } catch (err) {
+      console.error('Failed to delete document image:', err);
+      showNotice(err.message || 'Could not delete the uploaded image.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -289,6 +326,7 @@ export default function StatutoryCertificateViewerModal({
 
           const res = await updateDriverDocumentApi(driver.id, docId, updates);
           if (res && res.document) {
+            setAttachedDoc(res.document);
             showNotice('✓ Document scan attached and secured in encrypted vault!');
             if (onDocumentUpdated) {
               onDocumentUpdated(res.document, res.documents);
@@ -300,6 +338,7 @@ export default function StatutoryCertificateViewerModal({
           showNotice('Notice: Image updated in memory preview.');
         } finally {
           setIsUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
         }
       };
       reader.readAsDataURL(file);
@@ -571,7 +610,7 @@ export default function StatutoryCertificateViewerModal({
                 gap: '5px'
               }}>
                 <Sparkles size={13} />
-                <span>Statutory Government Specimen</span>
+                <span>Document image not uploaded</span>
               </span>
             )}
           </div>
@@ -688,7 +727,7 @@ export default function StatutoryCertificateViewerModal({
                 />
               </div>
             </div>
-          ) : (
+          ) : hasValidScanImage ? (
             /* MODE B: INSTITUTIONAL GOVERNMENT STATUTORY DIGITAL SPECIMEN CARDS */
             <div style={{ width: '100%', maxWidth: '780px' }}>
               {/* TAB 1: COMMERCIAL DRIVING LICENCE (FORM 7 MoRTH) */}
@@ -1394,6 +1433,58 @@ export default function StatutoryCertificateViewerModal({
                 </div>
               )}
             </div>
+          ) : (
+            <div style={{
+              width: '100%',
+              maxWidth: '620px',
+              padding: '42px 30px',
+              background: '#ffffff',
+              border: '1.5px dashed #94a3b8',
+              borderRadius: '16px',
+              textAlign: 'center',
+              boxShadow: '0 8px 22px rgba(15, 23, 42, 0.06)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                margin: '0 auto 14px',
+                borderRadius: '16px',
+                background: '#f1f5f9',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <FileUp size={30} />
+              </div>
+              <h3 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: '18px' }}>
+                {CATEGORY_TABS.find((tab) => tab.id === activeTab)?.label || 'Document'} image not uploaded
+              </h3>
+              <p style={{ margin: '0 auto 20px', maxWidth: '470px', color: '#64748b', fontSize: '13px', lineHeight: 1.55 }}>
+                This viewer shows only the real image uploaded by an admin. The digital certificate/specimen is hidden until a document photo is attached to this driver record.
+              </p>
+              <button
+                type="button"
+                onClick={handleUploadPhotoClick}
+                disabled={isUploading}
+                style={{
+                  padding: '10px 18px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: '#0284c7',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: isUploading ? 'wait' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px'
+                }}
+              >
+                <Camera size={16} />
+                {isUploading ? 'Uploading...' : 'Upload document image'}
+              </button>
+            </div>
           )}
         </div>
 
@@ -1434,8 +1525,33 @@ export default function StatutoryCertificateViewerModal({
               title="Upload or replace photo scan for this certificate"
             >
               <Camera size={15} />
-              <span>{isUploading ? 'Uploading...' : 'Attach / Replace Scanned Photo'}</span>
+              <span>{isUploading ? 'Uploading...' : hasValidScanImage ? 'Edit / Replace Image' : 'Upload Image'}</span>
             </button>
+
+            {hasValidScanImage && (
+              <button
+                type="button"
+                onClick={handleDeletePhoto}
+                disabled={isUploading}
+                style={{
+                  padding: '8px 13px',
+                  borderRadius: '8px',
+                  border: '1px solid #fecaca',
+                  background: '#fff1f2',
+                  color: '#dc2626',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: isUploading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Delete only the uploaded image; keep the KYC record"
+              >
+                <Trash2 size={14} />
+                <span>Delete Image</span>
+              </button>
+            )}
 
             {onTriggerOcr && (
               <button
@@ -1470,6 +1586,7 @@ export default function StatutoryCertificateViewerModal({
             <button
               type="button"
               onClick={handleDownloadSpecimen}
+              disabled={!hasValidScanImage}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
@@ -1478,14 +1595,15 @@ export default function StatutoryCertificateViewerModal({
                 color: '#334155',
                 fontSize: '12.5px',
                 fontWeight: 700,
-                cursor: 'pointer',
+                cursor: hasValidScanImage ? 'pointer' : 'not-allowed',
+                opacity: hasValidScanImage ? 1 : 0.55,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px'
               }}
             >
               <Download size={15} />
-              <span>Download Specimen</span>
+              <span>{hasValidScanImage ? 'Download Specimen' : 'Upload image first'}</span>
             </button>
 
             <button

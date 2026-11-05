@@ -20,7 +20,8 @@ import {
   Download,
   Camera,
   FileUp,
-  ArrowRight
+  ArrowRight,
+  Edit
 } from '../common/Icons';
 import AdminOptionSelect from '../common/AdminOptionSelect';
 import {
@@ -33,7 +34,8 @@ import {
   deleteDriverApi,
   fetchDriverDocumentsApi,
   addDriverDocumentApi,
-  deleteDriverDocumentApi
+  deleteDriverDocumentApi,
+  fetchTripsApi
 } from '../../services/api';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import StatutoryCertificateViewerModal from './StatutoryCertificateViewerModal';
@@ -59,8 +61,16 @@ const DOC_CATEGORIES_CONFIG = [
   { value: 'other', label: 'Other Fleet Statutory Record', defaultTitle: 'Auxiliary Statutory Identification' }
 ];
 
-export default function DriverDetailPage({ driverId, initialTab = 'overview', onBack, onStatusUpdated, onNavigate }) {
+const hasUploadedDocumentImage = (doc) => {
+  const url = doc?.fileUrl;
+  return typeof url === 'string'
+    && url.length > 200
+    && !url.includes('data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+};
+
+export default function DriverDetailPage({ driverId, initialTab = 'overview', onBack, onStatusUpdated, onNavigate, onEdit }) {
   const [driver, setDriver] = useState(null);
+  const [driverTrips, setDriverTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   const [topupAmount, setTopupAmount] = useState('');
@@ -231,6 +241,13 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
       setLoading(true);
       const res = await fetchDriverByIdApi(driverId);
       setDriver(res);
+      try {
+        const tripsRes = await fetchTripsApi({ driver: res.name });
+        setDriverTrips(Array.isArray(tripsRes?.trips) ? tripsRes.trips : []);
+      } catch (tripError) {
+        console.warn('Could not fetch driver trips:', tripError.message);
+        setDriverTrips([]);
+      }
       loadDriverDocuments();
     } catch (err) {
       console.error('Failed to load driver details:', err);
@@ -501,6 +518,10 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
         </div>
 
         <div className="nav-right-actions">
+          <button className="btn-refresh-telemetry" onClick={() => onEdit?.(driver)} title="Edit this driver master record">
+            <Edit size={14} />
+            <span>Edit Driver</span>
+          </button>
           <button
             className="btn-refresh-telemetry"
             onClick={loadDriverData}
@@ -1006,7 +1027,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             {/* Shift Assignment Tag */}
             <div className="shift-allocation-banner mb-4">
               <span className="shift-banner-label">Assigned Shift:</span>
-              <strong className="shift-banner-val">{driver.shift || '07:00 AM - 07:00 PM (12-Hour Active Shift)'}</strong>
+              <strong className="shift-banner-val">{driver.shift || 'Shift not assigned'}</strong>
               {driver.shiftType && <span className="shift-model-pill">{driver.shiftType}</span>}
               {driver.coDriver && <span className="shift-co-driver-pill">Paired Co-Driver: {driver.coDriver}</span>}
             </div>
@@ -1014,13 +1035,13 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             <div className="attendance-stats-triplet">
               <div className="att-stat-box">
                 <span className="att-stat-lbl">Present Days This Month</span>
-                <strong className="att-stat-val text-green">{driver.attendance?.presentDays || 26} Days</strong>
-                <span className="att-stat-sub">96.3% Duty Attendance</span>
+                <strong className="att-stat-val text-green">{driver.attendance?.presentDays ?? 0} Days</strong>
+                <span className="att-stat-sub">Recorded attendance</span>
               </div>
               <div className="att-stat-box">
                 <span className="att-stat-lbl">Approved Leaves</span>
-                <strong className="att-stat-val text-amber">{driver.attendance?.leaveDays || 1} Day</strong>
-                <span className="att-stat-sub">Zero unexcused absences</span>
+                <strong className="att-stat-val text-amber">{driver.attendance?.leaveDays ?? 0} Days</strong>
+                <span className="att-stat-sub">Approved leave records</span>
               </div>
               <div className="att-stat-box">
                 <span className="att-stat-lbl">Shift Punctuality Score</span>
@@ -1043,6 +1064,25 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                   </tr>
                 </thead>
                 <tbody>
+                  {driverTrips.map((trip) => (
+                    <tr key={trip.id}>
+                      <td><strong>#{trip.id}</strong></td>
+                      <td>{trip.startTime || trip.endTime || '—'}</td>
+                      <td>{trip.pickupLocation || '—'} → {trip.dropLocation || '—'}</td>
+                      <td>{Number(trip.distanceKm || 0).toLocaleString('en-IN')} km</td>
+                      <td className="text-green font-bold">₹{Number(trip.grossFare || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td><span className={`pill ${trip.status === 'Completed' ? 'green' : 'orange'}`}>{trip.status || 'Recorded'}</span></td>
+                    </tr>
+                  ))}
+                  {!driverTrips.length && (
+                    <tr>
+                      <td colSpan="6" className="text-muted" style={{ textAlign: 'center', padding: '20px' }}>
+                        No trip records are linked to this driver yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tbody style={{ display: 'none' }}>
                   <tr>
                     <td><strong>#TRP-8821</strong></td>
                     <td>Today, 03:15 PM</td>
@@ -2103,7 +2143,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                           onClick={() => openCertificateViewer(doc)}
                           title="Click to enlarge and inspect official certificate"
                           >
-                            {doc.fileUrl ? (
+                            {hasUploadedDocumentImage(doc) ? (
                               <>
                                 <img
                                   src={doc.fileUrl}
@@ -2145,6 +2185,22 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                                 justifyContent: 'space-between',
                                 position: 'relative'
                               }}>
+                                <div style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  zIndex: 2,
+                                  background: '#f8fafc',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  color: '#64748b'
+                                }}>
+                                  <Camera size={24} />
+                                  <strong style={{ fontSize: '12px', color: '#334155' }}>Document image not uploaded</strong>
+                                  <span style={{ fontSize: '10.5px' }}>Admin upload required to preview</span>
+                                </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <span style={{ fontSize: '11px', fontWeight: 800, color: '#334155' }}>
                                     {isAadhaar ? 'भारत सरकार / GOVT OF INDIA' : isDl ? 'GOVERNMENT OF GUJARAT / MoRTH' : 'OFFICIAL STATUTORY RECORD'}
@@ -2198,10 +2254,10 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                                 alignItems: 'center',
                                 gap: '4px'
                               }}
-                              title="View official statutory certificate specimen and photo"
+                              title={hasUploadedDocumentImage(doc) ? 'View uploaded statutory document photo' : 'Open viewer and upload the document photo'}
                             >
                               <Eye size={12} />
-                              <span>View Certificate</span>
+                              <span>{hasUploadedDocumentImage(doc) ? 'View Certificate' : 'Upload / View'}</span>
                             </button>
 
                             <button

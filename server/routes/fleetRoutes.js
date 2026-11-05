@@ -162,6 +162,80 @@ router.post('/vehicles', (req, res) => {
   }
 });
 
+// PUT /api/fleet/vehicles/:id - Edit an existing vehicle master record
+router.put('/vehicles/:id', (req, res) => {
+  try {
+    const data = getFleetData();
+    const vehicleId = String(req.params.id || '').toUpperCase();
+    const index = data.vehicles.findIndex(v =>
+      String(v.id || '').toUpperCase() === vehicleId || String(v.registration || '').toUpperCase() === vehicleId
+    );
+
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Vehicle not found.' });
+    }
+
+    const input = req.body || {};
+    const vehicle = data.vehicles[index];
+    const editableFields = [
+      'model', 'type', 'connectorType', 'chassis', 'hub', 'location', 'status', 'odometer',
+      'battery', 'lender', 'monthlyEmi', 'dailyRentRate', 'permitExpiry', 'insuranceExpiry',
+      'fitnessExpiry', 'pucExpiry', 'driver', 'driverPhone', 'notes'
+    ];
+
+    editableFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(input, field) && input[field] !== undefined) {
+        vehicle[field] = input[field];
+      }
+    });
+
+    // The registration is the master-record key. It is intentionally immutable here;
+    // a plate change should be handled as a controlled asset transfer, not a silent rename.
+    vehicle.id = vehicle.id || vehicle.registration;
+    vehicle.registration = vehicle.registration || vehicle.id;
+    vehicle.location = input.hub || input.location || vehicle.location || 'Sikhar Hub Central Yard';
+    vehicle.hub = input.hub || vehicle.hub || vehicle.location;
+    vehicle.driver = vehicle.driver || 'Unassigned';
+    vehicle.driverStatus = vehicle.driver !== 'Unassigned' ? 'Assigned' : 'Available in Yard';
+    vehicle.odometer = input.odometer !== undefined
+      ? `${Number(input.odometer) || 0} km`
+      : vehicle.odometer;
+
+    const moneyValue = (value, fallback) => {
+      if (value === undefined || value === null || value === '') return fallback;
+      const clean = String(value).replace(/[^0-9.]/g, '');
+      return clean ? `â‚¹${Number(clean).toLocaleString('en-IN')}` : fallback;
+    };
+    vehicle.monthlyEmi = moneyValue(input.monthlyEmi, vehicle.monthlyEmi || 'â‚¹21,000');
+    vehicle.dailyRentRate = moneyValue(input.dailyRentRate, vehicle.dailyRentRate || 'â‚¹1,150');
+
+    const expiryLabel = (value, fallback) => value ? `Valid Â· ${value}` : fallback;
+    if (Object.prototype.hasOwnProperty.call(input, 'permitExpiry')) vehicle.permit = expiryLabel(input.permitExpiry, vehicle.permit);
+    if (Object.prototype.hasOwnProperty.call(input, 'insuranceExpiry')) vehicle.insurance = expiryLabel(input.insuranceExpiry, vehicle.insurance);
+    if (Object.prototype.hasOwnProperty.call(input, 'fitnessExpiry')) vehicle.fitness = expiryLabel(input.fitnessExpiry, vehicle.fitness);
+    if (Object.prototype.hasOwnProperty.call(input, 'pucExpiry')) vehicle.puc = expiryLabel(input.pucExpiry, vehicle.puc);
+    vehicle.since = 'Updated just now';
+    vehicle.nextAction = vehicle.status === 'Ready to Deploy' ? 'Put on Road' : (vehicle.nextAction || 'Commissioning Review');
+
+    data.summary = data.summary || { metrics: {} };
+    data.summary.metrics = data.summary.metrics || {};
+    const metric = (key, label, value) => {
+      data.summary.metrics[key] = { ...(data.summary.metrics[key] || {}), label, value };
+    };
+    metric('totalFleet', 'Total Fleet', data.vehicles.length);
+    metric('onRoad', 'On Road', data.vehicles.filter(v => v.status === 'On Road').length);
+    metric('atWorkshop', 'At Workshop', data.vehicles.filter(v => v.status === 'At Workshop').length);
+    metric('readyToDeploy', 'Ready to Deploy', data.vehicles.filter(v => v.status === 'Ready to Deploy').length);
+    metric('breakdown', 'Breakdown', data.vehicles.filter(v => v.status === 'Breakdown').length);
+
+    saveFleetData(data);
+    return res.json({ success: true, message: `Vehicle ${vehicle.registration} updated successfully.`, vehicle });
+  } catch (error) {
+    console.error('Error updating vehicle asset:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update vehicle asset.' });
+  }
+});
+
 // PUT /api/fleet/vehicles/:id/status - Update operational status
 router.put('/vehicles/:id/status', (req, res) => {
   try {

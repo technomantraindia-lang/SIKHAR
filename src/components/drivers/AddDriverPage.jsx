@@ -17,7 +17,7 @@ import {
   FileUp,
   Trash2
 } from '../common/Icons';
-import { onboardDriverApi, fetchFleetTowerApi, createVehicleApi, scanDocumentWithGeminiApi } from '../../services/api';
+import { onboardDriverApi, updateDriverApi, fetchFleetTowerApi, createVehicleApi, scanDocumentWithGeminiApi } from '../../services/api';
 import AdminOptionSelect from '../common/AdminOptionSelect';
 import DocumentOcrScannerModal, {
   preprocessImageForOcr,
@@ -118,7 +118,8 @@ const sanitizeDriverOcr = (extracted = {}, forcedType = 'all', fileName = '') =>
   return base;
 };
 
-export default function AddDriverPage({ onBack, onDriverCreated }) {
+export default function AddDriverPage({ onBack, onDriverCreated, onDriverUpdated, driver = null }) {
+  const isEditMode = Boolean(driver);
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [viewMode, setViewMode] = useState('all'); // 'all' (single page scroll) or 'wizard' (step by step)
@@ -652,6 +653,55 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     initialBalance: 0
   });
 
+  useEffect(() => {
+    if (!driver) return;
+    const deal = driver.deal || {};
+    const vehicle = driver.vehicle || {};
+    const kyc = driver.kyc || {};
+    const reference = kyc.reference || {};
+    const emergencyText = String(kyc.emergencyContact || '');
+    const emergencyMatch = emergencyText.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    const parseNumber = (value) => String(value || '').replace(/[^0-9.]/g, '');
+    setFormData((prev) => ({
+      ...prev,
+      name: driver.name || prev.name,
+      phone: driver.phone || prev.phone,
+      altPhone: driver.altPhone || prev.altPhone,
+      city: driver.city || driver.location || prev.city,
+      address: kyc.address || prev.address,
+      emergencyContact: (emergencyMatch ? emergencyMatch[1] : emergencyText) || prev.emergencyContact,
+      emergencyRelation: (emergencyMatch ? emergencyMatch[2] : '') || prev.emergencyRelation,
+      referenceName: reference.name || prev.referenceName,
+      referencePhone: reference.phone || prev.referencePhone,
+      referenceRelation: reference.relation || prev.referenceRelation,
+      referenceAddress: reference.address || prev.referenceAddress,
+      drivingLicence: kyc.drivingLicence || prev.drivingLicence,
+      dlExpiry: kyc.dlExpiry || prev.dlExpiry,
+      dlCategory: kyc.dlCategory || prev.dlCategory,
+      aadhaar: kyc.aadhaar || prev.aadhaar,
+      panCard: kyc.panCard || prev.panCard,
+      policeVerification: kyc.policeVerification || prev.policeVerification,
+      dob: kyc.dob || prev.dob,
+      gender: kyc.gender || prev.gender,
+      fatherName: kyc.fatherName || prev.fatherName,
+      leaseAssigned: Boolean(deal.type),
+      rentalModel: deal.type || prev.rentalModel,
+      agreedRate: parseNumber(deal.rate),
+      securityDeposit: parseNumber(deal.deposit),
+      contractMonths: deal.contractMonths || prev.contractMonths,
+      billingFrequency: deal.frequency || prev.billingFrequency,
+      taxRule: deal.taxRule || prev.taxRule,
+      shiftType: driver.shiftType || prev.shiftType,
+      coDriver: driver.coDriver || prev.coDriver,
+      agreementVersion: deal.agreementVersion || prev.agreementVersion,
+      agreementSigned: Boolean(deal.agreementSigned),
+      depositReceiptNumber: deal.depositReceipt || prev.depositReceiptNumber,
+      depositConfirmed: deal.depositStatus === 'Held in Escrow',
+      selectedVehicleReg: vehicle.registration || prev.selectedVehicleReg,
+      handoverOdometer: String(deal.handoverOdometer || '').replace(/[^0-9.]/g, '') || prev.handoverOdometer
+    }));
+  }, [driver]);
+
   const [fleetVehicles, setFleetVehicles] = useState(FLEET_AVAILABLE_VEHICLES);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
   const [newVehReg, setNewVehReg] = useState('');
@@ -841,8 +891,10 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         depositStatus: formData.leaseAssigned && formData.depositConfirmed ? 'Held in Escrow' : 'Unassigned',
         // PDF Step 06 Vehicle & Handover
         vehicleRegistration: formData.selectedVehicleReg || '',
-        vehicleModel: selectedVehicleObj ? (selectedVehicleObj.model || selectedVehicleObj.reg) : (formData.selectedVehicleReg ? 'Commercial Fleet Vehicle' : ''),
-        vehicleType: selectedVehicleObj ? selectedVehicleObj.type : 'CNG',
+        vehicleModel: selectedVehicleObj
+          ? (selectedVehicleObj.model || selectedVehicleObj.reg)
+          : (driver?.vehicle?.model || (formData.selectedVehicleReg ? 'Commercial Fleet Vehicle' : '')),
+        vehicleType: selectedVehicleObj ? selectedVehicleObj.type : (driver?.vehicle?.type || 'CNG'),
         handoverOdometer: `${formData.handoverOdometer} km`,
         initialBalance: Number(formData.initialBalance) || 0,
         // Attached KYC Documents Vault
@@ -899,8 +951,12 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         payload.securityDeposit = '';
       }
 
-      const res = await onboardDriverApi(payload);
-      if (onDriverCreated) {
+      const res = isEditMode
+        ? await updateDriverApi(driver.id, payload)
+        : await onboardDriverApi(payload);
+      if (isEditMode && onDriverUpdated) {
+        onDriverUpdated(res.data || res.driver);
+      } else if (onDriverCreated) {
         onDriverCreated(res.data);
       } else {
         onBack();
@@ -940,7 +996,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
             <span>Back to Driver Directory</span>
           </button>
           <span className="adp-crumb-sep">/</span>
-          <span className="adp-crumb-current">Onboard Commercial Driver (PDF 6-Gate Plan)</span>
+          <span className="adp-crumb-current">{isEditMode ? 'Edit Driver Master Record' : 'Onboard Commercial Driver (PDF 6-Gate Plan)'}</span>
         </div>
 
         <div className="adp-top-actions">
@@ -987,7 +1043,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
               <span className="adp-live-pulse-dot" />
               <span>SIKHAR DRIVER ONBOARDING • 6-STAGE LEASE ACTIVATION PROTOCOL</span>
             </div>
-            <h1 className="adp-hero-title">Onboard Commercial Driver & Activate Lease</h1>
+            <h1 className="adp-hero-title">{isEditMode ? 'Edit Commercial Driver Profile' : 'Onboard Commercial Driver & Activate Lease'}</h1>
             <p className="adp-hero-desc">
               Executes the institutional client plan: verify mobile, enforce MoRTH DL/KYC clearance, bind commercial lease terms (including 12-hour dual-driver shifts), secure escrow deposit, and hand over fleet asset.
             </p>
@@ -2307,12 +2363,12 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                 {loading ? (
                   <>
                     <span className="adp-btn-spinner" />
-                    <span>Activating Driver Account...</span>
+                    <span>{isEditMode ? 'Saving Driver Changes...' : 'Activating Driver Account...'}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={18} />
-                    <span>Complete Driver Onboarding & Activate Profile</span>
+                    <span>{isEditMode ? 'Save Driver Profile Changes' : 'Complete Driver Onboarding & Activate Profile'}</span>
                   </>
                 )}
               </button>

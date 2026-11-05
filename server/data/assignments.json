@@ -1,6 +1,29 @@
 {
   "activeAssignments": [
     {
+      "id": "ASG-2026-6395",
+      "driverId": "drv-19",
+      "driverName": "Parekh Dhruv  tester",
+      "driverPhone": "9628424115",
+      "originalVehicle": null,
+      "assignedVehicle": {
+        "registration": "DL3CAB1234",
+        "model": "TATA TIAGO EV",
+        "type": "EV",
+        "startOdometer": "100 km"
+      },
+      "assignmentType": "permanent",
+      "durationDays": 1,
+      "startDate": "2026-11-05T06:31:16.961Z",
+      "endDate": "2026-11-06T06:31:16.961Z",
+      "reason": "nothing",
+      "notes": "Assigned TATA TIAGO EV to Parekh Dhruv  tester for 2 days.",
+      "oldVehicleAction": "yard_reserve",
+      "status": "Active",
+      "assignedBy": "Fleet Administrator",
+      "createdAt": "2026-11-05T06:31:17.045Z"
+    },
+    {
       "id": "ASG-2026-6564",
       "driverId": "drv-18",
       "driverName": "QA Test Driver 1105104011",

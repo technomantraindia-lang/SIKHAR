@@ -55,6 +55,7 @@ export default function DriverControlTower({ onNavigate }) {
   });
 
   const [selectedDriverTab, setSelectedDriverTab] = useState('overview');
+  const [editingDriver, setEditingDriver] = useState(null);
 
   const [actionToast, setActionToast] = useState(null);
 
@@ -114,10 +115,24 @@ export default function DriverControlTower({ onNavigate }) {
   };
 
   const handleOpenAddDriver = () => {
+    setEditingDriver(null);
     setShowAllDriversPage(false);
     setShowAddPage(true);
     try {
       localStorage.setItem('sikhar_driver_view_mode', 'add');
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleOpenEditDriver = (driver) => {
+    setEditingDriver(driver);
+    setSelectedDriverId(null);
+    setShowAllDriversPage(false);
+    setShowAddPage(true);
+    try {
+      localStorage.setItem('sikhar_driver_view_mode', 'add');
+      localStorage.removeItem('sikhar_driver_selected_id');
     } catch {
       // ignore
     }
@@ -134,6 +149,7 @@ export default function DriverControlTower({ onNavigate }) {
         onBack={handleBackToTower}
         onStatusUpdated={loadDrivers}
         onNavigate={onNavigate}
+        onEdit={handleOpenEditDriver}
       />
     );
   }
@@ -153,7 +169,16 @@ export default function DriverControlTower({ onNavigate }) {
   if (showAddPage) {
     return (
       <AddDriverPage
+        key={editingDriver?.id || 'new-driver'}
         onBack={handleBackToTower}
+        driver={editingDriver}
+        onDriverUpdated={(updatedDriver) => {
+          setEditingDriver(null);
+          setShowAddPage(false);
+          handleSelectDriver(updatedDriver.id);
+          triggerToast(`Driver ${updatedDriver.name} profile updated successfully!`);
+          loadDrivers();
+        }}
         onDriverCreated={(newDriver) => {
           setShowAddPage(false);
           handleSelectDriver(newDriver.id);

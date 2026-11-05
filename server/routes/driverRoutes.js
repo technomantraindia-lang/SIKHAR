@@ -315,6 +315,118 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// PUT /api/drivers/:id - Edit the driver master/profile record
+router.put('/:id', (req, res) => {
+  const { id } = req.params;
+  const input = req.body || {};
+  const data = readDriversData();
+  const index = (data.drivers || []).findIndex(d => d.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  const driver = data.drivers[index];
+  const previousRegistration = driver.vehicle?.registration || '';
+  const has = (field) => Object.prototype.hasOwnProperty.call(input, field);
+  const clean = (value) => String(value ?? '').trim();
+
+  if (has('name') && clean(input.name)) driver.name = clean(input.name);
+  if (has('phone')) driver.phone = clean(input.phone);
+  if (has('altPhone')) driver.altPhone = clean(input.altPhone);
+  if (has('city')) {
+    driver.city = clean(input.city);
+    driver.location = clean(input.city);
+  }
+  if (has('photoUrl')) driver.photo = input.photoUrl || '';
+  if (has('shiftType')) driver.shiftType = input.shiftType || '';
+  if (has('coDriver')) driver.coDriver = input.coDriver ? clean(input.coDriver) : null;
+
+  driver.kyc = driver.kyc || {};
+  ['dob', 'gender', 'fatherName', 'aadhaar', 'panCard', 'drivingLicence', 'dlExpiry', 'dlCategory', 'policeVerification', 'address'].forEach((field) => {
+    if (has(field)) driver.kyc[field] = clean(input[field]);
+  });
+  if (has('panCard')) driver.kyc.panCard = clean(input.panCard).toUpperCase();
+  if (has('drivingLicence')) driver.kyc.drivingLicence = clean(input.drivingLicence).toUpperCase();
+  if (has('emergencyContact')) {
+    const relation = clean(input.emergencyRelation);
+    driver.kyc.emergencyContact = clean(input.emergencyContact) + (relation ? ` (${relation})` : '');
+  }
+  if (has('referenceName') || has('referencePhone') || has('referenceRelation') || has('referenceAddress')) {
+    driver.kyc.reference = clean(input.referenceName) ? {
+      name: clean(input.referenceName),
+      phone: clean(input.referencePhone),
+      relation: clean(input.referenceRelation),
+      address: clean(input.referenceAddress) || driver.city || ''
+    } : null;
+  }
+
+  if (has('leaseAssigned')) {
+    if (input.leaseAssigned === true) {
+      const agreedRate = clean(input.agreedRate);
+      const securityDeposit = clean(input.securityDeposit);
+      driver.deal = {
+        ...(driver.deal || {}),
+        type: clean(input.rentalModel),
+        rate: agreedRate.startsWith('â‚¹') ? agreedRate : `â‚¹${agreedRate} / day`,
+        deposit: securityDeposit.startsWith('â‚¹') ? securityDeposit : `â‚¹${securityDeposit} (Secured in Escrow)`,
+        frequency: clean(input.billingFrequency),
+        taxRule: clean(input.taxRule),
+        contractMonths: Number(input.contractMonths) || 0,
+        agreementVersion: clean(input.agreementVersion),
+        agreementSigned: input.agreementSigned === true,
+        depositReceipt: clean(input.depositReceipt),
+        depositStatus: clean(input.depositStatus) || 'Unassigned',
+        handoverOdometer: clean(input.handoverOdometer),
+        handoverStatus: driver.deal?.handoverStatus || 'Completed & QC Inspected'
+      };
+    } else {
+      driver.deal = null;
+    }
+  }
+
+  if (has('vehicleRegistration')) {
+    if (clean(input.vehicleRegistration)) {
+      driver.vehicle = {
+        registration: clean(input.vehicleRegistration).toUpperCase(),
+        model: clean(input.vehicleModel) || 'WagonR H3 CNG',
+        type: clean(input.vehicleType) || 'CNG',
+        status: 'Assigned 1:1'
+      };
+      driver.status = 'On Duty';
+    } else {
+      driver.vehicle = null;
+      if (driver.status === 'On Duty') driver.status = 'Ready';
+    }
+  }
+
+  if (Array.isArray(input.documents) && input.documents.length > 0) {
+    const incomingCategories = new Set(input.documents.map(doc => doc.category || doc.type));
+    driver.documents = [
+      ...(driver.documents || []).filter(doc => !incomingCategories.has(doc.category || doc.type)),
+      ...input.documents
+    ];
+  }
+
+  data.summary = data.summary || {};
+  data.summary.totalDrivers = data.drivers.length;
+  data.summary.onDuty = data.drivers.filter(d => d.status === 'On Duty').length;
+  data.summary.onLeave = data.drivers.filter(d => d.status === 'On Leave').length;
+  data.summary.suspended = data.drivers.filter(d => d.status === 'Suspended').length;
+  data.summary.ready = data.drivers.filter(d => d.status === 'Ready').length;
+  data.summary.unassigned = data.drivers.filter(d => !d.vehicle).length;
+
+  writeDriversData(data);
+  syncVehicleAssignmentInFleet(driver, previousRegistration);
+
+  return res.json({
+    success: true,
+    message: `Driver ${driver.name} profile updated successfully.`,
+    data: driver,
+    driver
+  });
+});
+
 // PUT /api/drivers/:id/status - Update driver duty status
 router.put('/:id/status', (req, res) => {
   const { id } = req.params;

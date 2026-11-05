@@ -31,6 +31,7 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
 
   const [viewMode, setViewMode] = useState(getInitialView);
   const [selectedVehicleId, setSelectedVehicleId] = useState(getInitialId);
+  const [editingVehicle, setEditingVehicle] = useState(null);
 
   // Sync subRoute prop changes from sidebar navigation
   useEffect(() => {
@@ -63,9 +64,20 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
   };
 
   const handleOpenAddVehicle = () => {
+    setEditingVehicle(null);
     setViewMode('add');
     try {
       localStorage.setItem('sikhar_vehicle_view_mode', 'add');
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleOpenEditVehicle = (vehicle) => {
+    setEditingVehicle(vehicle);
+    setViewMode('edit');
+    try {
+      localStorage.setItem('sikhar_vehicle_view_mode', 'edit');
     } catch {
       // ignore
     }
@@ -85,6 +97,7 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
 
   const handleBackToMaster = () => {
     setViewMode('master');
+    setEditingVehicle(null);
     setSelectedVehicleId(null);
     if (onNavigate) {
       onNavigate('vehicles');
@@ -105,6 +118,12 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
     }
   };
 
+  const handleEditSuccess = (updatedVehicle) => {
+    setEditingVehicle(null);
+    if (updatedVehicle?.id) handleSelectVehicle(updatedVehicle.id);
+    else handleBackToMaster();
+  };
+
   const handleNavigateToDriver = (_driverName) => {
     if (onNavigate) {
       onNavigate('drivers');
@@ -118,15 +137,18 @@ export default function VehicleManager({ subRoute = null, initialVehicleId = nul
         onBack={handleBackToMaster}
         onNavigateToDriver={handleNavigateToDriver}
         onNavigateToAssignment={handleOpenAssignment}
+        onEdit={handleOpenEditVehicle}
       />
     );
   }
 
-  if (viewMode === 'add') {
+  if (viewMode === 'add' || viewMode === 'edit') {
     return (
       <AddVehiclePage
+        key={viewMode === 'edit' ? (editingVehicle?.id || 'edit-vehicle') : 'new-vehicle'}
         onBack={handleBackToMaster}
-        onSuccess={handleAddSuccess}
+        vehicle={viewMode === 'edit' ? editingVehicle : null}
+        onSuccess={viewMode === 'edit' ? handleEditSuccess : handleAddSuccess}
       />
     );
   }

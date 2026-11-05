@@ -39,6 +39,8 @@ import AdminOptionSelect from '../common/AdminOptionSelect';
 import CommercialLeaseAgreementPreviewModal from './CommercialLeaseAgreementPreviewModal';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 
+const LEASE_DRAFT_STORAGE_KEY = 'sikhar_booking_lease_draft_v1';
+
 export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
   const [leases, setLeases] = useState([]);
@@ -94,7 +96,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   const [billingFrequency, setBillingFrequency] = useState('Daily');
   const [rateAmount, setRateAmount] = useState(1000);
   const [taxPercent, setTaxPercent] = useState(5);
-  const [securityDeposit, setSecurityDeposit] = useState(75000);
+  const [securityDeposit, setSecurityDeposit] = useState('');
   const [driverSharePercent, setDriverSharePercent] = useState(75);
   const [sikharSharePercent, setSikharSharePercent] = useState(25);
   const [rapidoDriverId, setRapidoDriverId] = useState('RAPIDO-RJ1024');
@@ -107,12 +109,122 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   // Step 4: Agreement & Deposit Confirmation
   const [isAgreementSigned, setIsAgreementSigned] = useState(false);
   const [isDepositConfirmed, setIsDepositConfirmed] = useState(false);
-  const [depositReceiptRef, setDepositReceiptRef] = useState('UTR-ESC-2026-9901');
+  const [depositReceiptRef, setDepositReceiptRef] = useState('');
+
+  const depositDisplay = securityDeposit === '' || securityDeposit === null
+    ? 'Not entered'
+    : `₹${Number(securityDeposit).toLocaleString('en-IN')}`;
+  const numericInputValue = (value) => Number(String(value ?? '').replace(/[^0-9.]/g, ''));
+
+  const handleToggleDepositConfirmation = () => {
+    if (isDepositConfirmed) {
+      setIsDepositConfirmed(false);
+      return;
+    }
+    if (Number(securityDeposit) <= 0) {
+      alert('Please enter a security deposit amount before confirming escrow payment.');
+      return;
+    }
+    if (!depositReceiptRef.trim()) {
+      alert('Please enter the UTR / bank transaction reference before confirming escrow payment.');
+      return;
+    }
+    setIsDepositConfirmed(true);
+  };
 
   // Agreement Preview & Document OCR Modals
   const [showAgreementPreviewModal, setShowAgreementPreviewModal] = useState(false);
   const [showOcrScannerModal, setShowOcrScannerModal] = useState(false);
   const [ocrTargetType, setOcrTargetType] = useState('all');
+  const [draftHydrated, setDraftHydrated] = useState(false);
+
+  const draftPayload = JSON.stringify({
+    activeTab,
+    wizardStep,
+    driverSearchQuery,
+    selectedDriverId,
+    customerName,
+    customerPhone,
+    aadhaar,
+    isAadhaarVerified,
+    drivingLicence,
+    referenceName,
+    referencePhone,
+    address,
+    hasLivePhoto,
+    dealType,
+    billingFrequency,
+    rateAmount,
+    taxPercent,
+    securityDeposit,
+    driverSharePercent,
+    sikharSharePercent,
+    rapidoDriverId,
+    billingStartDate,
+    selectedVehicleReg,
+    selectedVehicleObj,
+    assignedVehicleSource,
+    isAgreementSigned,
+    isDepositConfirmed,
+    depositReceiptRef,
+    isEditingDetails
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LEASE_DRAFT_STORAGE_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (!draft || draft.activeTab !== 'new') return;
+
+      setActiveTab('new');
+      if (draft.wizardStep) setWizardStep(draft.wizardStep);
+      if (draft.driverSearchQuery !== undefined) setDriverSearchQuery(draft.driverSearchQuery);
+      if (draft.selectedDriverId !== undefined) setSelectedDriverId(draft.selectedDriverId);
+      if (draft.customerName !== undefined) setCustomerName(draft.customerName);
+      if (draft.customerPhone !== undefined) setCustomerPhone(draft.customerPhone);
+      if (draft.aadhaar !== undefined) setAadhaar(draft.aadhaar);
+      if (draft.isAadhaarVerified !== undefined) setIsAadhaarVerified(draft.isAadhaarVerified);
+      if (draft.drivingLicence !== undefined) setDrivingLicence(draft.drivingLicence);
+      if (draft.referenceName !== undefined) setReferenceName(draft.referenceName);
+      if (draft.referencePhone !== undefined) setReferencePhone(draft.referencePhone);
+      if (draft.address !== undefined) setAddress(draft.address);
+      if (draft.hasLivePhoto !== undefined) setHasLivePhoto(draft.hasLivePhoto);
+      if (draft.dealType !== undefined) setDealType(draft.dealType);
+      if (draft.billingFrequency !== undefined) setBillingFrequency(draft.billingFrequency);
+      if (draft.rateAmount !== undefined) setRateAmount(draft.rateAmount);
+      if (draft.taxPercent !== undefined) setTaxPercent(draft.taxPercent);
+      if (draft.securityDeposit !== undefined) setSecurityDeposit(draft.securityDeposit);
+      if (draft.driverSharePercent !== undefined) setDriverSharePercent(draft.driverSharePercent);
+      if (draft.sikharSharePercent !== undefined) setSikharSharePercent(draft.sikharSharePercent);
+      if (draft.rapidoDriverId !== undefined) setRapidoDriverId(draft.rapidoDriverId);
+      if (draft.billingStartDate !== undefined) setBillingStartDate(draft.billingStartDate);
+      if (draft.selectedVehicleReg !== undefined) setSelectedVehicleReg(draft.selectedVehicleReg);
+      if (draft.selectedVehicleObj !== undefined) setSelectedVehicleObj(draft.selectedVehicleObj);
+      if (draft.assignedVehicleSource !== undefined) setAssignedVehicleSource(draft.assignedVehicleSource);
+      if (draft.isAgreementSigned !== undefined) setIsAgreementSigned(draft.isAgreementSigned);
+      if (draft.isDepositConfirmed !== undefined) setIsDepositConfirmed(draft.isDepositConfirmed);
+      if (draft.depositReceiptRef !== undefined) setDepositReceiptRef(draft.depositReceiptRef);
+      if (draft.isEditingDetails !== undefined) setIsEditingDetails(draft.isEditingDetails);
+    } catch (error) {
+      console.warn('Could not restore the lease draft:', error);
+    } finally {
+      setDraftHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftHydrated || activeTab !== 'new') return;
+    localStorage.setItem(LEASE_DRAFT_STORAGE_KEY, draftPayload);
+  }, [activeTab, draftHydrated, draftPayload]);
+
+  const clearLeaseDraft = () => {
+    try {
+      localStorage.removeItem(LEASE_DRAFT_STORAGE_KEY);
+    } catch {
+      // ignore storage failures
+    }
+  };
 
   const handleOcrExtracted = (data) => {
     if (data.name) setCustomerName(data.name);
@@ -241,11 +353,12 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
   };
 
   const resetLeaseWizard = () => {
+    clearLeaseDraft();
     handleClearDriverSelection();
     setDriverSearchQuery('');
     setDealType('');
-    setBillingFrequency('');
-    setRateAmount('');
+    setBillingFrequency('Daily');
+    setRateAmount(1000);
     setTaxPercent('');
     setSecurityDeposit('');
     setDriverSharePercent(75);
@@ -388,7 +501,12 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       alert('Please select a vehicle asset from inventory.');
       return;
     }
-    if (!dealType || !billingFrequency || Number(rateAmount) <= 0 || Number(securityDeposit) <= 0) {
+    const normalizedDealType = String(dealType || '').trim();
+    const normalizedBillingFrequency = String(billingFrequency || '').trim() || (normalizedDealType ? 'Daily' : '');
+    const normalizedRateAmount = numericInputValue(rateAmount);
+    const normalizedSecurityDeposit = numericInputValue(securityDeposit);
+
+    if (!normalizedDealType || !normalizedBillingFrequency || normalizedRateAmount <= 0 || normalizedSecurityDeposit <= 0) {
       alert('Please complete the lease model, billing frequency, rate, and security deposit.');
       return;
     }
@@ -407,17 +525,17 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
         address,
         referenceName,
         referencePhone,
-        dealType,
-        billingFrequency,
-        rateAmount: Number(rateAmount) || 0,
+        dealType: normalizedDealType,
+        billingFrequency: normalizedBillingFrequency,
+        rateAmount: normalizedRateAmount,
         driverSharePercent: Number(driverSharePercent) || 75,
         sikharSharePercent: Number(sikharSharePercent) || 25,
         rapidoDriverId,
         taxPercent: Number(taxPercent) || 0,
-        securityDeposit: Number(securityDeposit) || 0,
+        securityDeposit: normalizedSecurityDeposit,
         depositStatus: isDepositConfirmed ? 'Held in Escrow' : 'Pending',
-        depositPaid: isDepositConfirmed ? (Number(securityDeposit) || 75000) : 0,
-        depositPending: isDepositConfirmed ? 0 : (Number(securityDeposit) || 0),
+        depositPaid: isDepositConfirmed ? normalizedSecurityDeposit : 0,
+        depositPending: isDepositConfirmed ? 0 : normalizedSecurityDeposit,
         depositReceiptRef: isDepositConfirmed ? depositReceiptRef : '',
         isDepositConfirmed,
         agreementSigned: isAgreementSigned,
@@ -437,6 +555,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
           : `✅ Lease activated! Security deposit of ₹${Number(securityDeposit).toLocaleString('en-IN')} recorded as Pending Dues.`
       );
       setActiveTab('active');
+      clearLeaseDraft();
       setWizardStep(1);
       setIsAgreementSigned(false);
       setIsDepositConfirmed(false);
@@ -1591,7 +1710,10 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   <button
                     type="button"
                     className={`type-toggle-btn ${dealType === 'Fixed Lease' ? 'is-selected' : ''}`}
-                    onClick={() => setDealType('Fixed Lease')}
+                    onClick={() => {
+                      setDealType('Fixed Lease');
+                      setBillingFrequency((current) => current || 'Daily');
+                    }}
                   >
                     <div className="toggle-btn-left">
                       <Car size={18} />
@@ -1606,7 +1728,10 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   <button
                     type="button"
                     className={`type-toggle-btn ${dealType === 'Revenue Share' ? 'is-selected' : ''}`}
-                    onClick={() => setDealType('Revenue Share')}
+                    onClick={() => {
+                      setDealType('Revenue Share');
+                      setBillingFrequency((current) => current || 'Daily');
+                    }}
                   >
                     <div className="toggle-btn-left">
                       <TrendingUp size={18} />
@@ -1910,7 +2035,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                         <li><strong>Vehicle Asset:</strong> {selectedVehicleObj?.model || 'Maruti WagonR'} [{selectedVehicleReg}]</li>
                         <li><strong>Commercial Deal:</strong> {dealType} ({dealType === 'Fixed Lease' ? `₹${rateAmount}/day` : '75% Driver / 25% Sikhar'})</li>
                         <li><strong>Tenure:</strong> 12 Months from Activation Date</li>
-                        <li><strong>Security Deposit:</strong> ₹{Number(securityDeposit).toLocaleString('en-IN')} (Refundable upon clean handover)</li>
+                        <li><strong>Security Deposit:</strong> {depositDisplay} (Refundable upon clean handover)</li>
                       </ul>
                     </div>
                     <div className="agreement-signing-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -1949,10 +2074,15 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   <div className="form-field-group">
                     <label className="input-label">Deposit Amount (₹)</label>
                     <input
-                      type="text"
+                      type="number"
                       className="styled-input-text font-mono"
-                      value={`₹${Number(securityDeposit).toLocaleString('en-IN')}`}
-                      readOnly
+                      value={securityDeposit}
+                      onChange={(e) => setSecurityDeposit(e.target.value)}
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      placeholder="Enter deposit amount"
+                      aria-label="Deposit amount in rupees"
                     />
                   </div>
 
@@ -1977,7 +2107,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                       <button
                         type="button"
                         className={`btn ${isDepositConfirmed ? 'secondary' : 'primary'} small`}
-                        onClick={() => setIsDepositConfirmed(!isDepositConfirmed)}
+                        onClick={handleToggleDepositConfirmation}
                       >
                         {isDepositConfirmed ? 'Revoke Receipt' : 'Confirm Escrow Payment'}
                       </button>
@@ -1989,7 +2119,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                     <span style={{ color: isDepositConfirmed ? "#166534" : "#92400e" }}>
                       {isDepositConfirmed
                         ? '✓ Security deposit confirmed. Funds will be locked in institutional escrow upon activation.'
-                        : 'ℹ Optional Deposit Gate: If deposit is not confirmed now, you can still proceed with activation — the ₹' + Number(securityDeposit).toLocaleString('en-IN') + ' deposit will be tracked as Pending Deposit Dues against the driver.'}
+                        : 'ℹ Optional Deposit Gate: If deposit is not confirmed now, you can still proceed with activation — the ' + depositDisplay + ' deposit will be tracked as Pending Deposit Dues against the driver.'}
                     </span>
                   </div>
                 </div>
@@ -2041,12 +2171,13 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                     <span className="tile-label">COMMERCIAL DEAL</span>
                     <strong className="tile-val">{dealType}</strong>
                     <span className="tile-sub">{dealType === 'Fixed Lease' ? `₹${rateAmount}/day` : '75% Driver / 25% Sikhar'}</span>
+                    <span className="tile-sub">{billingFrequency || 'Daily'} billing schedule</span>
                   </div>
 
                   <div className="summary-tile">
                     <span className="tile-label">SECURITY DEPOSIT</span>
                     <strong className="tile-val" style={{ color: isDepositConfirmed ? '#16a34a' : '#d97706' }}>
-                      ₹{Number(securityDeposit).toLocaleString('en-IN')}
+                      {depositDisplay}
                     </strong>
                     <span className="tile-sub" style={{ color: isDepositConfirmed ? '#059669' : '#b45309' }}>
                       {isDepositConfirmed ? '✓ Verified & Held in Escrow' : '⏳ Pending Deposit Dues'}
@@ -2061,11 +2192,11 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                   <div className="check-line good">✓ Formal lease agreement digitally executed</div>
                   {isDepositConfirmed ? (
                     <div className="check-line good">
-                      ✓ Security deposit of ₹{Number(securityDeposit).toLocaleString('en-IN')} held in institutional escrow
+                      ✓ Security deposit of {depositDisplay} held in institutional escrow
                     </div>
                   ) : (
                     <div className="check-line warn" style={{ color: '#b45309', background: '#fffbeb', padding: '7px 12px', borderRadius: '6px' }}>
-                      ⏳ Security deposit of ₹{Number(securityDeposit).toLocaleString('en-IN')} pending — will be tracked as Pending Deposit Dues
+                      ⏳ Security deposit of {depositDisplay} pending — will be tracked as Pending Deposit Dues
                     </div>
                   )}
                 </div>

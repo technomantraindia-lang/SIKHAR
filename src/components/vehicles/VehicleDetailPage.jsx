@@ -9,12 +9,13 @@ import {
   MapPin,
   CheckCircle2,
   AlertTriangle,
-  Phone
+  Phone,
+  Edit
 } from '../common/Icons';
 import { fetchVehicleDetailApi, executeVehicleActionApi } from '../../services/api';
 import SpeedometerTelemetryCard from './SpeedometerTelemetryCard';
 
-export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver, onNavigateToAssignment }) {
+export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver, onNavigateToAssignment, onEdit }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [vehicle, setVehicle] = useState(null);
@@ -171,6 +172,11 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
         <div className="command-actions-row">
           <button className="btn secondary" onClick={onBack}>
             ← Back to Master
+          </button>
+
+          <button className="btn secondary" onClick={() => onEdit?.(vehicle)} title="Edit this vehicle master record">
+            <Edit size={14} />
+            <span>Edit Vehicle</span>
           </button>
 
           {vehicle.status === 'Ready to Deploy' && (

@@ -201,6 +201,24 @@ export async function createVehicleApi(vehicleData) {
   }
 }
 
+export async function updateVehicleApi(vehicleId, vehicleData) {
+  try {
+    const response = await fetch(`${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vehicleData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update vehicle asset.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Update vehicle API error:', err);
+    throw err;
+  }
+}
+
 export async function updateVehicleStatusApi(vehicleId, status, reason = '', driver = undefined, nextAction = '') {
   try {
     const response = await fetch(`${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}/status`, {
@@ -253,6 +271,24 @@ export async function fetchDriverByIdApi(id) {
     return data.data;
   } catch (err) {
     console.error('Fetch driver profile error:', err);
+    throw err;
+  }
+}
+
+export async function updateDriverApi(id, driverData) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(driverData)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update driver profile.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Update driver profile error:', err);
     throw err;
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Car,
   ChevronRight,
@@ -9,10 +9,19 @@ import {
   Scan
 } from '../common/Icons';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
-import { createVehicleApi } from '../../services/api';
+import { createVehicleApi, updateVehicleApi } from '../../services/api';
 import AdminOptionSelect from '../common/AdminOptionSelect';
 
-export default function AddVehiclePage({ onBack, onSuccess }) {
+const numericMoney = (value = '') => String(value).replace(/[^0-9.]/g, '');
+const dateFromLabel = (value = '') => {
+  const raw = String(value).split('Â·').pop().trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+};
+
+export default function AddVehiclePage({ onBack, onSuccess, vehicle = null }) {
+  const isEditMode = Boolean(vehicle);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showOcrModal, setShowOcrModal] = useState(false);
@@ -40,6 +49,32 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
     driverPhone: '—',
     notes: 'Brand new asset inducted into Sikhar commercial fleet.'
   });
+
+  useEffect(() => {
+    if (!vehicle) return;
+    setFormData((prev) => ({
+      ...prev,
+      registration: vehicle.registration || prev.registration,
+      model: vehicle.model || prev.model,
+      type: vehicle.type || prev.type,
+      connectorType: vehicle.connectorType || prev.connectorType,
+      chassis: vehicle.chassis || prev.chassis,
+      hub: vehicle.hub || vehicle.location || prev.hub,
+      status: vehicle.status || prev.status,
+      odometer: String(vehicle.odometer || prev.odometer).replace(/[^0-9.]/g, ''),
+      battery: vehicle.battery || prev.battery,
+      lender: vehicle.lender || prev.lender,
+      monthlyEmi: numericMoney(vehicle.monthlyEmi || prev.monthlyEmi),
+      dailyRentRate: numericMoney(vehicle.dailyRentRate || prev.dailyRentRate),
+      permitExpiry: dateFromLabel(vehicle.permit || vehicle.permitExpiry || prev.permitExpiry),
+      insuranceExpiry: dateFromLabel(vehicle.insurance || vehicle.insuranceExpiry || prev.insuranceExpiry),
+      fitnessExpiry: dateFromLabel(vehicle.fitness || vehicle.fitnessExpiry || prev.fitnessExpiry),
+      pucExpiry: dateFromLabel(vehicle.puc || vehicle.pucExpiry || prev.pucExpiry),
+      driver: vehicle.driver || prev.driver,
+      driverPhone: vehicle.driverPhone || prev.driverPhone,
+      notes: vehicle.notes || prev.notes
+    }));
+  }, [vehicle]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -104,7 +139,9 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
         dailyRentRate: `₹${formData.dailyRentRate.replace(/[₹,]/g, '')}`
       };
 
-      const result = await createVehicleApi(payload);
+      const result = isEditMode
+        ? await updateVehicleApi(vehicle.id || vehicle.registration, payload)
+        : await createVehicleApi(payload);
       if (result.success) {
         if (onSuccess) {
           onSuccess(result.vehicle);
@@ -148,10 +185,10 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
           <div className="breadcrumb-nav">
             <span className="breadcrumb-link" onClick={onBack}>Vehicle Master</span>
             <ChevronRight size={14} className="breadcrumb-sep" />
-            <span className="breadcrumb-active">Asset Onboarding Gate</span>
+            <span className="breadcrumb-active">{isEditMode ? 'Edit Asset Master Record' : 'Asset Onboarding Gate'}</span>
           </div>
           <h1 className="executive-greeting">
-            ONBOARD NEW VEHICLE ASSET
+            {isEditMode ? 'EDIT VEHICLE ASSET' : 'ONBOARD NEW VEHICLE ASSET'}
           </h1>
           <div className="executive-subline">
             Register Institutional Commercial Asset · Powertrain Telemetry · RTO Compliance &amp; Capital Financing
@@ -207,9 +244,10 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                 placeholder="e.g. DL52GD9901 or HR38AK9922"
                 value={formData.registration}
                 onChange={(e) => handleChange('registration', e.target.value.toUpperCase())}
+                disabled={isEditMode}
                 required
               />
-              <span className="form-helper">Format: State Code + District + Series + 4 Digits</span>
+              <span className="form-helper">{isEditMode ? 'Registration is the immutable asset master key.' : 'Format: State Code + District + Series + 4 Digits'}</span>
             </div>
 
             <div className="form-group">

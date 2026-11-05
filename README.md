@@ -357,7 +357,7 @@ In create and update forms, configurable dropdowns include **ï¼‹ Add new optionâ
 3. Enter the new value.
 4. The value is saved and becomes available immediately in that form and in other forms using the same option group.
 
-When MySQL is connected, these values are stored in the `admin_dropdown_options` table. If the database is temporarily unavailable during local development, the API stores them in `server/data/options.json` and continues working. Live vehicle, driver and lease selectors still use real records from their master data; the add-new control is intended for business master values such as lenders, service types, payment methods, hubs, escalation categories and document types.
+When MySQL is connected, these values are stored in the `admin_dropdown_options` table. If the database is temporarily unavailable during local development, the API stores them in `server/data/options.json` and continues working. Live vehicle, driver and lease selectors still use real records from their master data; the add-new control is intended for business master values such as lenders, service types, payment methods, hubs, escalation categories and document types. 
 
 ## Useful commands
 

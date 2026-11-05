@@ -6,30 +6,30 @@
     "currentDate": "19 Aug 2026",
     "metrics": {
       "totalFleet": {
-        "label": "TOTAL FLEET",
-        "value": 16,
+        "label": "Total Fleet",
+        "value": 17,
         "subline": "100% of fleet"
       },
       "onRoad": {
-        "label": "ON ROAD",
+        "label": "On Road",
         "value": 6,
         "subline": "83.6% of fleet",
         "status": "good"
       },
       "atWorkshop": {
-        "label": "AT WORKSHOP",
+        "label": "At Workshop",
         "value": 1,
         "subline": "7.5% of fleet",
         "status": "warn"
       },
       "readyToDeploy": {
-        "label": "READY TO DEPLOY",
-        "value": 6,
+        "label": "Ready to Deploy",
+        "value": 7,
         "subline": "4.5% of fleet",
         "status": "blue"
       },
       "breakdown": {
-        "label": "BREAKDOWN",
+        "label": "Breakdown",
         "value": 1,
         "subline": "1.5% of fleet",
         "status": "bad"
@@ -64,6 +64,65 @@
     }
   },
   "vehicles": [
+    {
+      "id": "DL3CAB1234",
+      "registration": "DL3CAB1234",
+      "model": "TATA TIAGO EV",
+      "type": "EV",
+      "connectorType": "CCS2 (Combined Charging System)",
+      "driver": "Parekh Dhruv  tester",
+      "driverPhone": "9628424115",
+      "driverStatus": "On Duty",
+      "status": "On Road",
+      "location": "Sikhar Hub Central Operations Yard",
+      "hub": "Sikhar Hub Central Operations Yard",
+      "since": "Allocated just now",
+      "duration": "0d Allocation",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
+      "odometer": "100 km",
+      "battery": "100%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Nov 2026",
+      "permit": "Valid Â· 2027-03-30",
+      "insurance": "Valid Â· 2027-02-27",
+      "fitness": "Valid Â· 2028-01-14",
+      "puc": "Valid Â· 2027-06-29",
+      "chassis": "MAT631EV6T8TESYT ",
+      "lender": "Signo Financing",
+      "monthlyEmi": "â‚¹21,000",
+      "challansCount": 0,
+      "challansAmount": "₹0",
+      "dailyRentRate": "â‚¹1,150",
+      "notes": "Brand new asset inducted into Sikhar commercial fleet.",
+      "assignmentHistory": [
+        {
+          "driver": "Parekh Dhruv  tester",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "05/11/2026",
+          "toDate": "Present",
+          "handoverKm": "100 km",
+          "status": "Active",
+          "reason": "nothing"
+        },
+        {
+          "driver": "In Yard Inventory",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "10 Oct 2026",
+          "toDate": "Present",
+          "handoverKm": "100 km",
+          "status": "Active"
+        }
+      ],
+      "permitExpiry": "2027-03-30",
+      "insuranceExpiry": "2027-02-27",
+      "fitnessExpiry": "2028-01-14",
+      "pucExpiry": "2027-06-29",
+      "allocatedTo": "Parekh Dhruv  tester",
+      "allocatedUntil": "2026-11-06T06:31:16.961Z",
+      "allocationType": "permanent"
+    },
     {
       "id": "QB1105104011",
       "registration": "QB1105104011",

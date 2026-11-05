@@ -17666,6 +17666,7 @@
 .finance-ar-view-btn:hover { text-decoration: underline; }
 .finance-ar-empty, .finance-soa-empty { padding: 34px !important; color: #8798aa !important; text-align: center; }
 .finance-ar-error, .finance-soa-error { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 11px 13px; border: 1px solid #f5c5ca; border-radius: 9px; color: #b83245; background: #fff4f5; font-size: 12px; }
+.finance-soa-source-warning { margin-bottom: 14px; padding: 11px 13px; border: 1px solid #f4d38a; border-radius: 9px; color: #8a5a00; background: #fff9e9; font-size: 12px; line-height: 1.45; }
 .finance-ar-loading, .finance-soa-loading, .finance-soa-empty-state { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 240px; border: 1px dashed #cfdae6; border-radius: 14px; color: #74879d; background: #fbfdff; font-size: 13px; }
 
 .finance-soa-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 11px 13px; border: 1px solid #dfe8f2; border-radius: 12px; background: #fff; }

@@ -115,6 +115,11 @@ export default function FinanceCustomerSoaPage({ onBackToDashboard, onNavigate }
       </div>
 
       {error && <div className="finance-soa-error">{error}</div>}
+      {report?.dataSource?.connected === false && (
+        <div className="finance-soa-source-warning" role="status">
+          <strong>Saved-record mode:</strong> Live SQL is currently unavailable, so this statement is built from the saved operational records on this server. Reconnect the database to see live SQL updates.
+        </div>
+      )}
       {loading && !report ? <div className="finance-soa-loading"><RefreshCw size={22} className="spin-icon" />Building customer ledger…</div> : report ? (
         <>
           <div className="finance-soa-toolbar">
