@@ -1,13 +1,31 @@
 {
   "kpis": {
-    "totalMonitored": 148,
-    "compliantVehicles": 58,
-    "expiringSoon": 9,
+    "totalMonitored": 13,
+    "compliantVehicles": 4,
+    "expiringSoon": 2,
     "breachedExpired": 3,
     "pendingChallans": 6,
     "totalChallanAmount": 14500
   },
   "documents": [
+    {
+      "id": "CMP-INS-013",
+      "vehicle": "QA1105104011",
+      "driver": "QA Test Driver 1105104011",
+      "type": "Insurance",
+      "docNumber": "QA-INS-1105104011",
+      "issuer": "QA Insurer Updated",
+      "coverage": "QA Fleet Insurance",
+      "startDate": "2026-11-05",
+      "expiryDate": "2028-12-31",
+      "daysRemaining": 787,
+      "status": "Valid",
+      "premiumInr": 12000,
+      "feeInr": 500,
+      "lastVerified": "2026-11-05",
+      "documentUrl": "/docs/insurance_QA1105104011.pdf",
+      "notes": "QA renewal passed."
+    },
     {
       "id": "CMP-INS-001",
       "vehicle": "DL52GD6605",
@@ -205,6 +223,24 @@
     }
   ],
   "challans": [
+    {
+      "id": "CHL-008",
+      "challanNumber": "QA-CHL-1105104011",
+      "vehicle": "QB1105104011",
+      "driver": "QA Test Driver 1105104011",
+      "violation": "QA test violation",
+      "violationDate": "2026-11-05T05:10:14.644Z",
+      "location": "QA Test Road",
+      "authority": "QA Traffic Authority",
+      "fineAmount": 500,
+      "status": "Paid",
+      "driverDeduction": "Pending Approval",
+      "dueDate": "2027-01-31",
+      "courtStatus": "Closed & Disposed",
+      "evidenceUrl": "/images/challan_sample.jpg",
+      "paymentDate": "2026-11-05T05:10:14.649Z",
+      "utrReference": "QA-CHL-PAY-1105104011"
+    },
     {
       "id": "CHL-001",
       "challanNumber": "DL5290124892",

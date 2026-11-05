@@ -18,6 +18,7 @@ import {
   Trash2
 } from '../common/Icons';
 import { onboardDriverApi, fetchFleetTowerApi, createVehicleApi, scanDocumentWithGeminiApi } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 import DocumentOcrScannerModal, {
   preprocessImageForOcr,
   parseIndianDocumentOcr
@@ -602,51 +603,52 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
   const [formData, setFormData] = useState({
     name: '',
-    dob: '1986-07-16',
-    gender: 'Male',
+    dob: '',
+    gender: '',
     fatherName: '',
     phone: '',
     altPhone: '',
-    city: 'Gurgaon Operations Hub',
+    city: '',
     address: '',
     emergencyContact: '',
-    emergencyRelation: 'Brother',
+    emergencyRelation: '',
     // Reference / Guarantor (PDF Step 01)
     referenceName: '',
     referencePhone: '',
-    referenceRelation: 'Guarantor',
+    referenceRelation: '',
     referenceAddress: '',
     // Statutory KYC (PDF Page 3 & 4)
     drivingLicence: '',
-    dlExpiry: '2030-11-14',
-    dlCategory: 'Commercial LMV',
+    dlExpiry: '',
+    dlCategory: '',
     aadhaar: '',
     panCard: '',
-    policeVerification: 'Verified (Clear)',
-    kycReviewStatus: 'Verified',
+    policeVerification: 'Pending Review',
+    kycReviewStatus: 'Pending Review',
     // Commercial Deal Terms (PDF Step 02 & 04)
-    rentalModel: 'Fixed Daily Rental',
-    agreedRate: '1000',
-    securityDeposit: '75000',
-    contractMonths: 12,
-    billingFrequency: 'Daily Debit (00:00 hrs)',
-    taxRule: 'GST 5% (Commercial Passenger Transport)',
+    leaseAssigned: false,
+    rentalModel: '',
+    agreedRate: '',
+    securityDeposit: '',
+    contractMonths: '',
+    billingFrequency: '',
+    taxRule: '',
     // 12-Hour Shift Specifics
-    shiftType: 'Day Shift (06:00 AM - 06:00 PM)',
-    coDriver: 'Sandeep Kumar (Shared)',
+    shiftType: '',
+    coDriver: '',
     // Agreement Signing (PDF Step 04)
-    agreementVersion: 'v1.0 (Master Commercial Lease)',
-    agreementSigned: true,
-    signingMethod: 'Digital Aadhaar e-Sign',
+    agreementVersion: '',
+    agreementSigned: false,
+    signingMethod: '',
     // Deposit Confirmation (PDF Step 05)
-    depositMode: 'Bank Transfer (Escrow)',
-    depositReceiptNumber: 'UTR-89127632',
-    depositConfirmed: true,
+    depositMode: '',
+    depositReceiptNumber: '',
+    depositConfirmed: false,
     // Vehicle Asset Allocation (PDF Step 06)
-    selectedVehicleReg: 'DL52GD6605',
-    handoverOdometer: '45,210',
-    handoverKeys: true,
-    handoverQcPassed: true,
+    selectedVehicleReg: '',
+    handoverOdometer: '',
+    handoverKeys: false,
+    handoverQcPassed: false,
     initialBalance: 0
   });
 
@@ -730,13 +732,37 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleLeaseAssignmentToggle = (assigned) => {
+    setFormData((prev) => assigned ? {
+      ...prev,
+      leaseAssigned: true
+    } : {
+      ...prev,
+      leaseAssigned: false,
+      rentalModel: '',
+      agreedRate: '',
+      securityDeposit: '',
+      contractMonths: '',
+      billingFrequency: '',
+      taxRule: '',
+      shiftType: '',
+      coDriver: '',
+      agreementVersion: '',
+      agreementSigned: false,
+      signingMethod: '',
+      depositMode: '',
+      depositReceiptNumber: '',
+      depositConfirmed: false
+    });
+  };
+
   // Readiness Calculation for the live preview widget (aligned with PDF 6 gates)
   const readinessChecks = [
     { label: 'Gate 01: Driver Profile & Mobile Verified', done: !!formData.name.trim() && formData.phone.trim().length >= 10 && mobileVerified },
     { label: 'Gate 02: Commercial DL, PAN Card & KYC', done: !!formData.drivingLicence.trim() },
-    { label: 'Gate 03: Commercial Deal & Tax Rule', done: Number(formData.agreedRate) > 0 },
-    { label: 'Gate 04: Agreement v1.0 Generated & Signed', done: formData.agreementSigned },
-    { label: 'Gate 05: Escrow Security Deposit Confirmed', done: formData.depositConfirmed && Number(formData.securityDeposit) > 0 },
+    { label: 'Gate 03: Commercial Deal & Tax Rule', done: !formData.leaseAssigned || (Number(formData.agreedRate) > 0 && !!formData.rentalModel) },
+    { label: 'Gate 04: Agreement v1.0 Generated & Signed', done: !formData.leaseAssigned || formData.agreementSigned },
+    { label: 'Gate 05: Escrow Security Deposit Confirmed', done: !formData.leaseAssigned || (formData.depositConfirmed && Number(formData.securityDeposit) > 0) },
     { label: 'Gate 06: Vehicle Handover & Odometer Ready', done: !formData.selectedVehicleReg || (formData.handoverKeys && formData.handoverQcPassed) }
   ];
   const completedChecksCount = readinessChecks.filter((c) => c.done).length;
@@ -766,19 +792,23 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
       alert('Please fill in required fields: Full Name, Mobile Phone, and Commercial Driving Licence.');
       return;
     }
+    if (formData.leaseAssigned && (!formData.rentalModel || !formData.billingFrequency || !formData.taxRule || Number(formData.contractMonths) <= 0 || Number(formData.agreedRate) <= 0 || Number(formData.securityDeposit) <= 0)) {
+      alert('Please complete all lease terms, or choose “No lease assigned currently”.');
+      return;
+    }
 
     try {
       setLoading(true);
 
       const payload = {
         name: formData.name.trim(),
-        dob: formData.dob || '1986-07-16',
-        gender: formData.gender || 'Male',
+        dob: formData.dob,
+        gender: formData.gender,
         fatherName: formData.fatherName.trim(),
         phone: formData.phone.trim(),
         altPhone: formData.altPhone.trim(),
         city: formData.city,
-        address: formData.address.trim() || `${formData.city}, Delhi NCR`,
+        address: formData.address.trim(),
         emergencyContact: formData.emergencyContact.trim(),
         emergencyRelation: formData.emergencyRelation,
         // PDF Step 01 Reference
@@ -795,19 +825,20 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
         policeVerification: formData.policeVerification,
         kycReviewStatus: formData.kycReviewStatus,
         // PDF Step 02 & 03 Commercial Deal
-        rentalModel: formData.rentalModel,
+        leaseAssigned: formData.leaseAssigned,
+        rentalModel: formData.leaseAssigned ? formData.rentalModel : '',
         agreedRate: `₹${Number(formData.agreedRate).toLocaleString('en-IN')} / day`,
         securityDeposit: `₹${Number(formData.securityDeposit).toLocaleString('en-IN')} (Secured in Escrow)`,
-        contractMonths: Number(formData.contractMonths) || 12,
-        billingFrequency: formData.billingFrequency,
-        taxRule: formData.taxRule,
-        shiftType: formData.rentalModel === '12-Hour Shift Lease' ? formData.shiftType : '24-Hour Dedicated',
-        coDriver: formData.rentalModel === '12-Hour Shift Lease' ? formData.coDriver : '',
+        contractMonths: formData.leaseAssigned ? Number(formData.contractMonths) || 0 : 0,
+        billingFrequency: formData.leaseAssigned ? formData.billingFrequency : '',
+        taxRule: formData.leaseAssigned ? formData.taxRule : '',
+        shiftType: formData.leaseAssigned && formData.rentalModel === '12-Hour Shift Lease' ? formData.shiftType : '',
+        coDriver: formData.leaseAssigned && formData.rentalModel === '12-Hour Shift Lease' ? formData.coDriver : '',
         // PDF Step 04 & 05 Agreement & Escrow
-        agreementVersion: formData.agreementVersion,
-        agreementSigned: formData.agreementSigned,
-        depositReceipt: formData.depositReceiptNumber,
-        depositStatus: 'Held in Escrow',
+        agreementVersion: formData.leaseAssigned ? formData.agreementVersion : '',
+        agreementSigned: formData.leaseAssigned && formData.agreementSigned,
+        depositReceipt: formData.leaseAssigned ? formData.depositReceiptNumber : '',
+        depositStatus: formData.leaseAssigned && formData.depositConfirmed ? 'Held in Escrow' : 'Unassigned',
         // PDF Step 06 Vehicle & Handover
         vehicleRegistration: formData.selectedVehicleReg || '',
         vehicleModel: selectedVehicleObj ? (selectedVehicleObj.model || selectedVehicleObj.reg) : (formData.selectedVehicleReg ? 'Commercial Fleet Vehicle' : ''),
@@ -862,6 +893,11 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
           return docs.length > 0 ? docs : undefined;
         })()
       };
+
+      if (!formData.leaseAssigned) {
+        payload.agreedRate = '';
+        payload.securityDeposit = '';
+      }
 
       const res = await onboardDriverApi(payload);
       if (onDriverCreated) {
@@ -1369,15 +1405,17 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">Gender</label>
-                    <select
+                    <AdminOptionSelect
+                      group="driver_gender"
                       className="adp-select-input"
                       value={formData.gender}
                       onChange={(e) => updateField('gender', e.target.value)}
                     >
+                      <option value="" disabled>Select gender</option>
                       <option value="Male">Male (पुरुष)</option>
                       <option value="Female">Female (महिला)</option>
                       <option value="Other">Other / Transgender</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   <div className="adp-form-group">
@@ -1472,18 +1510,20 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   <div className="adp-form-group">
                     <label className="adp-field-label">Guarantor Relation & Phone</label>
                     <div className="flex-gap-2">
-                      <select
+                      <AdminOptionSelect
+                        group="driver_relation"
                         className="adp-select-input"
                         style={{ width: '130px' }}
                         value={formData.referenceRelation}
                         onChange={(e) => updateField('referenceRelation', e.target.value)}
                       >
+                        <option value="" disabled>Select relation</option>
                         <option value="Guarantor">Guarantor</option>
                         <option value="Father">Father</option>
                         <option value="Brother">Brother</option>
                         <option value="Spouse">Spouse</option>
                         <option value="Peer Driver">Fleet Peer</option>
-                      </select>
+                      </AdminOptionSelect>
                       <input
                         type="tel"
                         className="adp-text-input"
@@ -1497,18 +1537,20 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   <div className="adp-form-group full-width">
                     <label className="adp-field-label">Emergency Contact Line</label>
                     <div className="flex-gap-2">
-                      <select
+                      <AdminOptionSelect
+                        group="driver_relation"
                         className="adp-select-input"
                         style={{ width: '130px' }}
                         value={formData.emergencyRelation}
                         onChange={(e) => updateField('emergencyRelation', e.target.value)}
                       >
+                        <option value="" disabled>Select relation</option>
                         <option value="Brother">Brother</option>
                         <option value="Father">Father</option>
                         <option value="Spouse">Spouse</option>
                         <option value="Mother">Mother</option>
                         <option value="Relative">Relative</option>
-                      </select>
+                      </AdminOptionSelect>
                       <input
                         type="tel"
                         className="adp-text-input"
@@ -1579,15 +1621,17 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">Licence Category</label>
-                    <select
+                    <AdminOptionSelect
+                      group="driver_licence_category"
                       className="adp-select-input"
                       value={formData.dlCategory}
                       onChange={(e) => updateField('dlCategory', e.target.value)}
                     >
+                      <option value="" disabled>Select licence category</option>
                       <option value="Commercial LMV">Commercial LMV (Light Motor Vehicle Transport)</option>
                       <option value="Commercial Transport">Commercial Transport (Badge Holder)</option>
                       <option value="LMV-NT">LMV-NT (Non-Transport with Commercial Permit)</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   <div className="adp-form-group">
@@ -1621,7 +1665,8 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">Police Verification Certificate</label>
-                    <select
+                    <AdminOptionSelect
+                      group="driver_police_verification"
                       className="adp-select-input"
                       value={formData.policeVerification}
                       onChange={(e) => updateField('policeVerification', e.target.value)}
@@ -1629,12 +1674,13 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       <option value="Verified (Clear)">Verified (Clear Commissioner Report on Record)</option>
                       <option value="In Verification">In Verification (Receipt Uploaded, 14-Day Grace)</option>
                       <option value="Exempted/Pending">Pending (7-Day Provisional Window)</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   <div className="adp-form-group">
                     <label className="adp-field-label">KYC Review Lifecycle Status</label>
-                    <select
+                    <AdminOptionSelect
+                      group="driver_kyc_status"
                       className="adp-select-input"
                       value={formData.kycReviewStatus}
                       onChange={(e) => updateField('kycReviewStatus', e.target.value)}
@@ -1642,7 +1688,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       <option value="Verified">Verified (Full Statutory Compliance Cleared)</option>
                       <option value="Submitted">Submitted (Under Operations Review)</option>
                       <option value="Provisional">Provisional (Awaiting Physical Verification)</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
                 </div>
 
@@ -1689,7 +1735,28 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   </div>
                 </div>
 
-                <div className="adp-grid-2col">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', padding: '12px 14px', marginBottom: '16px', border: '1px solid #cbd5e1', borderRadius: '8px', background: formData.leaseAssigned ? '#eff6ff' : '#f8fafc' }}>
+                  <div>
+                    <strong style={{ display: 'block', color: '#0f172a', fontSize: '13px' }}>
+                      {formData.leaseAssigned ? 'Commercial lease assignment enabled' : 'No lease assigned currently'}
+                    </strong>
+                    <span style={{ color: '#64748b', fontSize: '12px' }}>
+                      {formData.leaseAssigned
+                        ? 'Enter the actual deal terms below. Nothing is signed or held in escrow until you confirm it.'
+                        : 'Keep this driver in the standby pool and assign a lease later from the driver or lease workflow.'}
+                    </span>
+                  </div>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.leaseAssigned}
+                      onChange={(e) => handleLeaseAssignmentToggle(e.target.checked)}
+                    />
+                    Assign lease now
+                  </label>
+                </div>
+
+                <div className="adp-grid-2col" style={{ opacity: formData.leaseAssigned ? 1 : 0.55, pointerEvents: formData.leaseAssigned ? 'auto' : 'none' }}>
                   {/* Model Selection Row */}
                   <div className="adp-form-group full-width">
                     <label className="adp-field-label">Select Commercial Lease Model</label>
@@ -1749,14 +1816,15 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                       <div className="shift-config-grid">
                         <div className="adp-form-group">
                           <label className="adp-field-label">Assigned Shift Window</label>
-                          <select
+                          <AdminOptionSelect
+                            group="driver_shift_type"
                             className="adp-select-input"
                             value={formData.shiftType}
                             onChange={(e) => updateField('shiftType', e.target.value)}
                           >
                             <option value="Day Shift (06:00 AM - 06:00 PM)">Day Shift (06:00 AM – 06:00 PM • 12 Hours)</option>
                             <option value="Night Shift (06:00 PM - 06:00 AM)">Night Shift (06:00 PM – 06:00 AM • 12 Hours)</option>
-                          </select>
+                          </AdminOptionSelect>
                         </div>
 
                         <div className="adp-form-group">
@@ -1800,29 +1868,33 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   {/* Billing Frequency (PDF Step 02) */}
                   <div className="adp-form-group">
                     <label className="adp-field-label">Billing Frequency & Cycle</label>
-                    <select
+                    <AdminOptionSelect
+                      group="billing_frequency"
                       className="adp-select-input"
                       value={formData.billingFrequency}
                       onChange={(e) => updateField('billingFrequency', e.target.value)}
                     >
+                      <option value="" disabled>Select billing frequency</option>
                       <option value="Daily Debit (00:00 hrs)">Daily Automated Wallet Debit (00:00 hrs)</option>
                       <option value="Weekly Cycle (Every Monday)">Weekly Cycle (Every Monday)</option>
                       <option value="Monthly Advance">Monthly Advance Invoice</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   {/* Tax Rule (PDF Step 02) */}
                   <div className="adp-form-group">
                     <label className="adp-field-label">Statutory Tax Rule (GST)</label>
-                    <select
+                    <AdminOptionSelect
+                      group="tax_rule"
                       className="adp-select-input"
                       value={formData.taxRule}
                       onChange={(e) => updateField('taxRule', e.target.value)}
                     >
+                      <option value="" disabled>Select tax rule</option>
                       <option value="GST 5% (Commercial Passenger Transport)">GST 5% (Commercial Passenger Transport with ITC)</option>
                       <option value="GST Exempt (Section 11)">GST Exempt (Section 11 Non-AC / Specialized)</option>
                       <option value="GST 18% (Commercial Hire)">GST 18% (Commercial Equipment Hire)</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   {/* Security Deposit in Escrow (PDF Step 05) */}
@@ -1847,15 +1919,17 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   {/* Contract Agreement Tenure & Versioning (PDF Step 04) */}
                   <div className="adp-form-group">
                     <label className="adp-field-label">Contract Agreement Tenure</label>
-                    <select
+                    <AdminOptionSelect
+                      group="contract_tenure"
                       className="adp-select-input"
                       value={formData.contractMonths}
                       onChange={(e) => updateField('contractMonths', e.target.value)}
                     >
+                      <option value="" disabled>Select contract tenure</option>
                       <option value="6">6 Months Contract (Provisional)</option>
                       <option value="12">12 Months (1 Year Standard Fleet Lease)</option>
                       <option value="24">24 Months (2 Year Extended Master Lease)</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   {/* Agreement Versioning & E-Sign Status (PDF Step 04) */}
@@ -2479,7 +2553,8 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
                     Powertrain Fuel Type
                   </label>
-                  <select
+                  <AdminOptionSelect
+                    group="vehicle_type"
                     value={newVehType}
                     onChange={(e) => setNewVehType(e.target.value)}
                     style={{
@@ -2494,7 +2569,7 @@ export default function AddDriverPage({ onBack, onDriverCreated }) {
                     <option value="EV">EV (Electric)</option>
                     <option value="Petrol">Petrol</option>
                     <option value="Diesel">Diesel</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div>

@@ -19,6 +19,7 @@ import {
   X
 } from '../common/Icons';
 import { fetchWalletHealthApi, topupDriverWalletApi } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1130,7 +1131,8 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
                 <div className="clean-form-group">
                   <label className="clean-form-label">Payment Mode *</label>
                   <div className="clean-select-wrap">
-                    <select
+                    <AdminOptionSelect
+                      group="wallet_topup_method"
                       className="clean-form-input clean-form-select"
                       value={topupMethod}
                       onChange={(e) => setTopupMethod(e.target.value)}
@@ -1139,7 +1141,7 @@ export default function WalletHealthPage({ onNavigate, onBackToDashboard }) {
                       <option value="Cash at Hub">Cash Deposited at Operations Hub Terminal</option>
                       <option value="Bank Transfer (NEFT)">Bank Transfer / Direct NEFT</option>
                       <option value="Admin Credit Voucher">Admin Concession / Credit Voucher</option>
-                    </select>
+                    </AdminOptionSelect>
                   </div>
                 </div>
 

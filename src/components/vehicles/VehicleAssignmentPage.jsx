@@ -25,6 +25,7 @@ import {
   revertAssignmentApi,
   extendAssignmentApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavigateToAddVehicle, onBackToDashboard, onNavigate }) {
   const [loading, setLoading] = useState(true);
@@ -759,7 +760,8 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
 
                 <div className="form-field-group">
                   <label className="input-label">Operational Assignment Reason *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="assignment_reason"
                     className="styled-input-select"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
@@ -770,7 +772,7 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                     <option value="Airport Multi-Luggage Duty">Airport Multi-Luggage Duty</option>
                     <option value="Temporary Relief Driver Assignment">Temporary Relief Driver Assignment</option>
                     <option value="Other">Other Custom Reason</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 {reason === 'Other' && (

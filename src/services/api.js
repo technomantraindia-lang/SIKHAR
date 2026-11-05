@@ -2,6 +2,24 @@
 
 const API_BASE = '/api';
 
+export async function fetchAdminOptionsApi(group) {
+  const response = await fetch(`${API_BASE}/options?group=${encodeURIComponent(group)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to load dropdown options.');
+  return data.data || [];
+}
+
+export async function createAdminOptionApi(group, value) {
+  const response = await fetch(`${API_BASE}/options`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ group, value, label: value })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to save the new dropdown option.');
+  return data.data;
+}
+
 export async function loginAdminApi(email, password) {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
@@ -37,6 +55,80 @@ export async function fetchDashboardApi() {
     // Return cached if network is interrupted
     const cached = localStorage.getItem('sikhar_cached_dashboard');
     if (cached) return JSON.parse(cached);
+    throw err;
+  }
+}
+
+export async function fetchFinanceReportApi(reportType = 'pnl', period = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/finance/reports/${encodeURIComponent(reportType)}`);
+    if (period.from) url.searchParams.set('from', period.from);
+    if (period.to) url.searchParams.set('to', period.to);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to build finance report.');
+    }
+    return data.data;
+  } catch (err) {
+    console.error('Finance report API error:', err);
+    throw err;
+  }
+}
+
+export async function fetchReceivablesApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/finance/receivables`);
+    if (filters.search) url.searchParams.set('search', filters.search);
+    if (filters.status && filters.status !== 'all') url.searchParams.set('status', filters.status);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to retrieve accounts receivable.');
+    return data.data;
+  } catch (err) {
+    console.error('Accounts receivable API error:', err);
+    throw err;
+  }
+}
+
+export async function fetchCustomerSoaApi(customerKey) {
+  try {
+    const response = await fetch(`${API_BASE}/finance/customer-soa/${encodeURIComponent(customerKey)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to retrieve customer statement.');
+    return data.data;
+  } catch (err) {
+    console.error('Customer SOA API error:', err);
+    throw err;
+  }
+}
+
+export async function fetchPayablesApi(filters = {}) {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/finance/payables`);
+    if (filters.search) url.searchParams.set('search', filters.search);
+    if (filters.status && filters.status !== 'all') url.searchParams.set('status', filters.status);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to retrieve accounts payable.');
+    return data.data;
+  } catch (err) {
+    console.error('Accounts payable API error:', err);
+    throw err;
+  }
+}
+
+export async function fetchAssetFinancingApi(period = 'month') {
+  try {
+    const url = new URL(`${window.location.origin}${API_BASE}/finance/asset-financing`);
+    url.searchParams.set('period', period);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to retrieve asset financing.');
+    return data.data;
+  } catch (err) {
+    console.error('Asset financing API error:', err);
     throw err;
   }
 }
@@ -268,6 +360,24 @@ export async function assignDriverVehicleApi(driverId, vehicleRegistration, vehi
     return data;
   } catch (err) {
     console.error('Assign vehicle error:', err);
+    throw err;
+  }
+}
+
+export async function updateDriverLeaseApi(driverId, assigned, deal = null) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/lease`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned, deal })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update lease assignment.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Update driver lease error:', err);
     throw err;
   }
 }

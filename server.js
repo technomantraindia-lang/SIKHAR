@@ -18,7 +18,10 @@ import fuelRoutes from './server/routes/fuelRoutes.js';
 import complianceRoutes from './server/routes/complianceRoutes.js';
 import ocrRoutes from './server/routes/ocrRoutes.js';
 import rapidoRoutes from './server/routes/rapidoRoutes.js';
+import financeRoutes from './server/routes/financeRoutes.js';
+import optionsRoutes from './server/routes/optionsRoutes.js';
 import { testDbConnection, getDbStatus } from './server/config/db.js';
+import { hydrateOperationalDomains, operationalSnapshotStatus, operationalStorageMiddleware } from './server/config/operationalStore.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
 process.on('uncaughtException', (err) => {
@@ -42,6 +45,9 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+// Persist every successful admin mutation to MySQL before returning the response.
+app.use(operationalStorageMiddleware());
+
 // API Health Check
 app.get('/api/health', (req, res) => {
   const dbInfo = getDbStatus();
@@ -54,7 +60,10 @@ app.get('/api/health', (req, res) => {
       host: dbInfo.host,
       connected: dbInfo.isConnected
     },
-    storageMode: dbInfo.isConnected ? 'MySQL Database Active' : 'Local Filesystem JSON Fallback',
+    storageMode: dbInfo.isConnected
+      ? 'MySQL primary: operational snapshots + finance ledger; JSON is a local cache'
+      : 'Local Filesystem JSON Fallback',
+    operationalStorage: operationalSnapshotStatus(),
     timestamp: new Date().toISOString()
   });
 });
@@ -79,6 +88,8 @@ app.use('/api/fuel', fuelRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/v1/fleet', rapidoRoutes);
+app.use('/api/finance', financeRoutes);
+app.use('/api/options', optionsRoutes);
 
 // Serve Frontend Vite Static Build (dist)
 const distPath = path.join(__dirname, 'dist');
@@ -112,7 +123,8 @@ if (SOCKET_PATH) {
     console.log(`📊 Dashboard API:  /api/dashboard`);
     console.log(`=======================================================`);
     try {
-      await testDbConnection();
+      const dbResult = await testDbConnection();
+      if (dbResult.success && process.env.SKIP_OPERATIONAL_HYDRATION !== 'true') await hydrateOperationalDomains();
     } catch (err) {
       console.error('DB test error on startup:', err);
     }
@@ -126,7 +138,8 @@ if (SOCKET_PATH) {
     console.log(`📊 Dashboard API:  /api/dashboard`);
     console.log(`=======================================================`);
     try {
-      await testDbConnection();
+      const dbResult = await testDbConnection();
+      if (dbResult.success && process.env.SKIP_OPERATIONAL_HYDRATION !== 'true') await hydrateOperationalDomains();
     } catch (err) {
       console.error('DB test error on startup:', err);
     }

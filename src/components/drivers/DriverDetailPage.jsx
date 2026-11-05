@@ -22,11 +22,13 @@ import {
   FileUp,
   ArrowRight
 } from '../common/Icons';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 import {
   fetchDriverByIdApi,
   updateDriverStatusApi,
   topupDriverWalletApi,
   assignDriverVehicleApi,
+  updateDriverLeaseApi,
   requestDriverLeaveApi,
   deleteDriverApi,
   fetchDriverDocumentsApi,
@@ -416,6 +418,21 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
     }
   };
 
+  const handleUnassignLease = async () => {
+    if (!driver?.deal) return;
+    if (!window.confirm(`Unassign the commercial lease for ${driver.name}? The driver will remain available for a later lease assignment.`)) return;
+    try {
+      const res = await updateDriverLeaseApi(driver.id, false);
+      setDriver(res.data);
+      showToast(`Lease unassigned for ${driver.name}.`);
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err) {
+      alert(err.message || 'Failed to unassign lease.');
+    }
+  };
+
+  const hasLease = Boolean(driver?.deal?.type);
+
   if (loading) {
     return (
       <div className="driver-detail-page-container">
@@ -521,7 +538,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                 ★ {driver.rating || '4.8'} Rating
               </span>
               <span className="driver-contract-badge">
-                {driver.deal?.type || 'Fixed Daily Rental'}
+                {driver.deal?.type || 'No lease assigned'}
               </span>
             </div>
 
@@ -533,17 +550,17 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
               <span className="meta-item-dot">•</span>
               <span className="meta-item">
                 <MapPin size={13} className="text-muted" />
-                <span>{driver.city || 'Gurgaon Operations Hub'}</span>
+                <span>{driver.city || 'Not provided'}</span>
               </span>
               <span className="meta-item-dot">•</span>
               <span className="meta-item">
                 <Shield size={13} className="text-muted" />
-                <span>DL: <strong>{driver.kyc?.drivingLicence || 'HR-2620170098765'}</strong></span>
+                <span>DL: <strong>{driver.kyc?.drivingLicence || 'Not provided'}</strong></span>
               </span>
               <span className="meta-item-dot">•</span>
               <span className="meta-item">
                 <FileText size={13} className="text-muted" />
-                <span>PAN: <strong className="font-mono">{driver.kyc?.panCard || 'ABCDE1234F'}</strong></span>
+                <span>PAN: <strong className="font-mono">{driver.kyc?.panCard || 'Not provided'}</strong></span>
               </span>
               <span className="meta-item-dot">•</span>
               <span className="meta-item">
@@ -629,7 +646,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             <div className="detail-kpi-card green-accent">
               <span className="kpi-mini-lbl">TODAY'S GROSS EARNINGS</span>
               <div className="kpi-main-val-row">
-                <strong className="kpi-num text-green">{driver.todayGross || '₹1,850'}</strong>
+                <strong className="kpi-num text-green">{driver.todayGross ?? '₹0'}</strong>
                 <span className="kpi-badge-positive">+14% vs avg</span>
               </div>
               <span className="kpi-sub-desc">Total fares collected via digital meter</span>
@@ -638,7 +655,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             <div className="detail-kpi-card blue-accent">
               <span className="kpi-mini-lbl">COMPLETED TRIPS</span>
               <div className="kpi-main-val-row">
-                <strong className="kpi-num text-navy">{driver.todayTrips || 12} trips</strong>
+                <strong className="kpi-num text-navy">{driver.todayTrips ?? 0} trips</strong>
                 <span className="kpi-badge-neutral">Current Shift</span>
               </div>
               <span className="kpi-sub-desc">Zero cancellations recorded today</span>
@@ -647,7 +664,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             <div className="detail-kpi-card purple-accent">
               <span className="kpi-mini-lbl">PUNCTUALITY SCORE</span>
               <div className="kpi-main-val-row">
-                <strong className="kpi-num text-purple">{driver.attendance?.punctuality || '98%'}</strong>
+                <strong className="kpi-num text-purple">{driver.attendance?.punctuality ?? 'Not available'}</strong>
                 <span className="kpi-badge-positive">Grade A</span>
               </div>
               <span className="kpi-sub-desc">On-time yard check-in for past 30 shifts</span>
@@ -1007,7 +1024,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
               </div>
               <div className="att-stat-box">
                 <span className="att-stat-lbl">Shift Punctuality Score</span>
-                <strong className="att-stat-val text-blue">{driver.attendance?.punctuality || '98%'}</strong>
+                <strong className="att-stat-val text-blue">{driver.attendance?.punctuality ?? 'Not available'}</strong>
                 <span className="att-stat-sub">Logged in on time at yard terminal</span>
               </div>
             </div>
@@ -1089,36 +1106,48 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                   type="button"
                   className="btn-driver-secondary"
                   onClick={() => setIsAgreementModalOpen(true)}
+                  disabled={!hasLease}
                 >
                   <FileText size={14} />
-                  <span>View Executed Agreement (v1.0)</span>
+                  <span>{hasLease ? 'View Executed Agreement' : 'No Lease Agreement'}</span>
                 </button>
+                {hasLease && (
+                  <button
+                    type="button"
+                    className="btn-driver-secondary"
+                    onClick={handleUnassignLease}
+                    style={{ color: '#b91c1c', borderColor: '#fecaca', background: '#fff1f2' }}
+                  >
+                    <X size={14} />
+                    <span>Unassign Lease</span>
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="deal-terms-grid-lg">
               <div className="deal-card-lg">
                 <span className="deal-card-lbl">Commercial Rental Model</span>
-                <strong className="deal-card-val">{driver.deal?.type || 'Fixed Daily Rental'}</strong>
-                <span className="deal-card-sub">{driver.deal?.frequency || 'Daily debit cycle at 00:00 hrs'}</span>
+                <strong className="deal-card-val">{driver.deal?.type || 'No lease assigned'}</strong>
+                <span className="deal-card-sub">{driver.deal?.frequency || 'Assign a commercial lease when ready'}</span>
               </div>
 
               <div className="deal-card-lg">
                 <span className="deal-card-lbl">Daily Rental Rate</span>
-                <strong className="deal-card-val text-green">{driver.deal?.rate || '₹1,000 / day'}</strong>
-                <span className="deal-card-sub">{driver.deal?.taxRule || 'GST 5% Passenger Transport'}</span>
+                <strong className="deal-card-val text-green">{driver.deal?.rate || '—'}</strong>
+                <span className="deal-card-sub">{driver.deal?.taxRule || 'No lease terms recorded'}</span>
               </div>
 
               <div className="deal-card-lg">
                 <span className="deal-card-lbl">Security Deposit in Escrow</span>
-                <strong className="deal-card-val text-blue">{driver.deal?.deposit || '₹75,000'}</strong>
-                <span className="deal-card-sub">{driver.deal?.depositReceipt ? `Receipt: ${driver.deal.depositReceipt}` : 'Secured in IDFC First Escrow'}</span>
+                <strong className="deal-card-val text-blue">{driver.deal?.deposit || '—'}</strong>
+                <span className="deal-card-sub">{driver.deal?.depositReceipt ? `Receipt: ${driver.deal.depositReceipt}` : 'No escrow deposit recorded'}</span>
               </div>
 
               <div className="deal-card-lg">
                 <span className="deal-card-lbl">Agreement Duration</span>
-                <strong className="deal-card-val">{driver.deal?.contractMonths || 12} Months</strong>
-                <span className="deal-card-sub">Started: {driver.deal?.startDate || '01 Jan 2026'}</span>
+                <strong className="deal-card-val">{driver.deal?.contractMonths ? `${driver.deal.contractMonths} Months` : '—'}</strong>
+                <span className="deal-card-sub">{driver.deal?.startDate ? `Started: ${driver.deal.startDate}` : 'No agreement start date'}</span>
               </div>
             </div>
 
@@ -1302,7 +1331,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                     </div>
                   </div>
                   <div className="kyc-item-body">
-                    <p className="kyc-val-text font-mono">{driver.kyc?.panCard || 'ABCDE1234F'}</p>
+                    <p className="kyc-val-text font-mono">{driver.kyc?.panCard || 'Not provided'}</p>
                     <span className="kyc-status-badge valid">
                       Income Tax Dept / NSDL Verified
                     </span>
@@ -1352,7 +1381,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                     <strong>Personal Guarantor & Reference</strong>
                   </div>
                   <div className="kyc-item-body">
-                    <p className="kyc-val-text">{driver.kyc?.reference?.name || 'Suresh Verma'}</p>
+                    <p className="kyc-val-text">{driver.kyc?.reference?.name || 'Not provided'}</p>
                     <span className="kyc-status-badge valid">
                       {driver.kyc?.reference?.relation || 'Guarantor'} • Phone: {driver.kyc?.reference?.phone || '+91 98101 88990'}
                     </span>
@@ -1533,7 +1562,8 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                         <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
                           Document Category *
                         </label>
-                        <select
+                        <AdminOptionSelect
+                          group="driver_document_type"
                           value={newDocCategory}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -1562,7 +1592,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                           {DOC_CATEGORIES_CONFIG.map(cfg => (
                             <option key={cfg.value} value={cfg.value}>{cfg.label}</option>
                           ))}
-                        </select>
+                        </AdminOptionSelect>
                       </div>
 
                       {/* Document Title */}
@@ -1674,7 +1704,8 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                         <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
                           Audit Verification Status
                         </label>
-                        <select
+                        <AdminOptionSelect
+                          group="driver_document_status"
                           value={newDocStatus}
                           onChange={(e) => setNewDocStatus(e.target.value)}
                           style={{
@@ -1690,7 +1721,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                         >
                           <option value="Verified">✓ Verified (MoRTH / UIDAI / ITD)</option>
                           <option value="Pending Verification">⏳ Pending Verification</option>
-                        </select>
+                        </AdminOptionSelect>
                       </div>
                     </div>
 
@@ -2244,7 +2275,8 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
               </p>
               <div className="form-group mb-3">
                 <label className="text-xs font-bold text-navy block mb-1">Leave Reason</label>
-                <select
+                <AdminOptionSelect
+                  group="driver_leave_reason"
                   className="adp-select-input"
                   value={leaveReason}
                   onChange={(e) => setLeaveReason(e.target.value)}
@@ -2253,7 +2285,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                   <option value="Medical Rest">Medical Rest</option>
                   <option value="Festival Leave">Festival Leave</option>
                   <option value="Personal Emergency">Personal Emergency</option>
-                </select>
+                </AdminOptionSelect>
               </div>
               <div className="form-group mb-3">
                 <label className="text-xs font-bold text-navy block mb-1">Approved Leave Duration (Days)</label>
@@ -2286,7 +2318,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
             <div className="modal-dialog-header">
               <div>
                 <h3>Master Commercial Vehicle Lease Agreement</h3>
-                <span className="text-xs text-muted">Version: {driver.deal?.agreementVersion || 'v1.0 (Executed)'} • Sikhar Fleet Private Limited</span>
+                <span className="text-xs text-muted">Version: {driver.deal?.agreementVersion || 'Not assigned'} • Sikhar Fleet Private Limited</span>
               </div>
               <button className="btn-modal-close" onClick={() => setIsAgreementModalOpen(false)}>✕</button>
             </div>
@@ -2305,13 +2337,13 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                 <div className="agr-clause">
                   <strong>2. COMMERCIAL TERMS & DEBIT CYCLE</strong>
                   <p>
-                    Model: <strong>{driver.deal?.type || 'Fixed Daily Rental'}</strong>. Agreed Rate: <strong>{driver.deal?.rate || '₹1,000 / day'}</strong>. Debit frequency: {driver.deal?.frequency || 'Daily debit from Spendable Wallet at 00:00 hrs'}. Applicable GST: {driver.deal?.taxRule || '5% Commercial Passenger Transport'}.
+                    Model: <strong>{driver.deal?.type || 'No lease assigned'}</strong>. Agreed Rate: <strong>{driver.deal?.rate || '—'}</strong>. Debit frequency: {driver.deal?.frequency || 'Not assigned'}. Applicable GST: {driver.deal?.taxRule || 'Not assigned'}.
                   </p>
                 </div>
                 <div className="agr-clause">
                   <strong>3. SECURITY DEPOSIT IN ESCROW</strong>
                   <p>
-                    Security Deposit of <strong>{driver.deal?.deposit || '₹75,000'}</strong> is secured in the IDFC First Bank Escrow account. Receipt reference: {driver.deal?.depositReceipt || 'UTR-98218731'}.
+                    Security Deposit of <strong>{driver.deal?.deposit || '—'}</strong> is secured in the IDFC First Bank Escrow account. Receipt reference: {driver.deal?.depositReceipt || 'Not assigned'}.
                   </p>
                 </div>
                 <div className="agr-clause">

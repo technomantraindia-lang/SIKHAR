@@ -33,6 +33,30 @@ function writeJson(file, data) {
   }
 }
 
+function syncDriverFromLease(lease) {
+  if (!lease?.driverId) return;
+  const driversData = readJson(DRIVERS_FILE, { drivers: [] });
+  const driver = (driversData.drivers || []).find(d => d.id === lease.driverId);
+  if (!driver) return;
+  driver.deal = {
+    ...(driver.deal || {}),
+    type: lease.dealType,
+    rate: lease.rateDisplay,
+    deposit: `₹${Number(lease.securityDeposit || 0).toLocaleString('en-IN')} (Secured in Escrow)`,
+    frequency: lease.billingFrequency,
+    taxRule: lease.taxPercent ? `GST ${lease.taxPercent}%` : '',
+    startDate: lease.startDate,
+    agreementVersion: lease.agreementVersion,
+    agreementSigned: lease.agreementSigned === true,
+    depositReceipt: lease.depositReceipt,
+    depositStatus: lease.depositStatus,
+    leaseId: lease.id,
+    leaseStatus: lease.status,
+    lastAmendment: new Date().toISOString()
+  };
+  writeJson(DRIVERS_FILE, driversData);
+}
+
 // =========================================================================
 // 1. LEASES / BOOKINGS ENDPOINTS
 // =========================================================================
@@ -105,37 +129,38 @@ router.post('/leases', (req, res) => {
   const {
     customerName,
     customerPhone,
-    aadhaar = 'XXXX-XXXX-4421',
+    aadhaar = '',
     drivingLicence,
-    address = 'Sector 44, Gurgaon, Delhi NCR',
-    referenceName = 'Reference Contact',
-    referencePhone = '+91 99000 11223',
-    dealType = 'Fixed Lease', // 'Fixed Lease' | 'Revenue Share'
-    billingFrequency = 'Daily', // 'Daily' | 'Weekly' | 'Monthly'
-    rateAmount = 1000,
+    address = '',
+    referenceName = '',
+    referencePhone = '',
+    dealType = '', // 'Fixed Lease' | 'Revenue Share'
+    billingFrequency = '', // 'Daily' | 'Weekly' | 'Monthly'
+    rateAmount = 0,
     driverSharePercent = 75,
     sikharSharePercent = 25,
     rapidoDriverId = '',
     taxPercent = 5,
-    securityDeposit = 75000,
-    depositStatus = 'Held in Escrow',
+    securityDeposit = 0,
+    depositStatus = 'Pending',
     depositPaid,
     depositPending,
     depositReceiptRef = '',
-    isDepositConfirmed = true,
+    isDepositConfirmed = false,
+    agreementSigned = false,
     vehicleRegistration = '',
     vehicleModel = '',
-    vehicleType = 'CNG',
+    vehicleType = '',
     driverId = '',
     driverName = '',
     driverPhone = '',
     autoActivate = false
   } = req.body;
 
-  if (!customerName || !customerPhone || !vehicleRegistration) {
+  if (!customerName || !customerPhone || !vehicleRegistration || !dealType || !billingFrequency) {
     return res.status(400).json({
       success: false,
-      message: 'Customer Name, Mobile Phone, and Vehicle Asset selection are required.'
+      message: 'Customer Name, Mobile Phone, lease model, billing frequency, and Vehicle Asset selection are required.'
     });
   }
 
@@ -145,9 +170,9 @@ router.post('/leases', (req, res) => {
 
   const isRevShare = dealType.toLowerCase().includes('revenue');
 
-  const isConfirmed = isDepositConfirmed === true || depositStatus === 'Held in Escrow';
+  const isConfirmed = isDepositConfirmed === true;
   const depStatus = isConfirmed ? 'Held in Escrow' : 'Pending';
-  const numDeposit = Number(securityDeposit) || 75000;
+  const numDeposit = Number(securityDeposit) || 0;
   const paidAmt = isConfirmed ? numDeposit : (Number(depositPaid) || 0);
   const pendAmt = isConfirmed ? 0 : (depositPending !== undefined ? Number(depositPending) : numDeposit);
 
@@ -157,36 +182,36 @@ router.post('/leases', (req, res) => {
     customerName: customerName.trim(),
     customerPhone: customerPhone.trim(),
     customerId: `CUST-26-${Date.now().toString().slice(-5)}`,
-    driverId: driverId || `drv-${Date.now().toString().slice(-4)}`,
-    driverName: (driverName || customerName).trim(),
-    driverPhone: (driverPhone || customerPhone).trim(),
+    driverId: driverId || null,
+    driverName: driverName ? driverName.trim() : null,
+    driverPhone: driverPhone ? driverPhone.trim() : null,
     aadhaar,
     drivingLicence: drivingLicence || null,
     address,
     referenceName,
     referencePhone,
     vehicleRegistration: vehicleRegistration.trim().toUpperCase(),
-    vehicleModel: vehicleModel || 'Maruti WagonR Tour H3',
-    vehicleType: vehicleType || 'CNG',
+    vehicleModel: vehicleModel || '',
+    vehicleType: vehicleType || '',
     dealType: isRevShare ? 'Revenue Share' : 'Fixed Lease',
     billingFrequency,
-    rateAmount: isRevShare ? 0 : Number(rateAmount) || 1000,
+    rateAmount: isRevShare ? 0 : Number(rateAmount) || 0,
     rateDisplay: isRevShare ? `Driver ${driverSharePercent}% · Sikhar ${sikharSharePercent}%` : `₹${Number(rateAmount || 1000).toLocaleString('en-IN')} / ${billingFrequency.toLowerCase()}`,
-    taxPercent: Number(taxPercent) || 5,
-    driverSharePercent: isRevShare ? Number(driverSharePercent) || 75 : null,
-    sikharSharePercent: isRevShare ? Number(sikharSharePercent) || 25 : null,
-    rapidoDriverId: isRevShare ? (rapidoDriverId || `RAPIDO-${customerName.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}${Date.now().toString().slice(-4)}`) : null,
+    taxPercent: Number(taxPercent) || 0,
+    driverSharePercent: isRevShare ? Number(driverSharePercent) || 0 : null,
+    sikharSharePercent: isRevShare ? Number(sikharSharePercent) || 0 : null,
+    rapidoDriverId: isRevShare ? (rapidoDriverId || null) : null,
     securityDeposit: numDeposit,
     depositStatus: depStatus,
     depositPaid: paidAmt,
     depositPending: pendAmt,
     depositReceipt: isConfirmed ? (depositReceiptRef || `UTR-ESC-${Date.now().toString().slice(-4)}`) : null,
-    agreementVersion: 'v1.0 (Executed)',
-    agreementSigned: true,
-    signedDate: new Date().toISOString(),
-    startDate: new Date().toISOString(),
-    endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-    status: autoActivate ? 'Active' : 'Active',
+    agreementVersion: agreementSigned === true ? 'v1.0 (Executed)' : null,
+    agreementSigned: agreementSigned === true,
+    signedDate: agreementSigned === true ? new Date().toISOString() : null,
+    startDate: autoActivate && agreementSigned === true && isConfirmed ? new Date().toISOString() : null,
+    endDate: autoActivate && agreementSigned === true && isConfirmed ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null,
+    status: autoActivate && agreementSigned === true && isConfirmed ? 'Active' : 'Pending Activation',
     invoiceSchedule: isRevShare ? 'Rapido API Settlement Feed Sync' : `${billingFrequency} Debit on Billing Date`,
     lastInvoiceId: null,
     notes: isRevShare ? 'Rapido revenue share agreement.' : 'Fixed commercial fleet lease agreement.'
@@ -204,15 +229,34 @@ router.post('/leases', (req, res) => {
 
   // Sync with Drivers & Fleet data if needed
   const driversData = readJson(DRIVERS_FILE, { drivers: [] });
-  const matchedDriver = (driversData.drivers || []).find(d => d.id === newLease.driverId || d.name.toLowerCase() === newLease.driverName.toLowerCase());
+  const matchedDriver = newLease.driverId
+    ? (driversData.drivers || []).find(d => d.id === newLease.driverId)
+    : (driversData.drivers || []).find(d => d.name?.toLowerCase() === newLease.driverName?.toLowerCase());
   if (matchedDriver) {
-    matchedDriver.vehicle = {
-      registration: newLease.vehicleRegistration,
-      model: newLease.vehicleModel,
-      type: newLease.vehicleType,
-      status: 'Assigned 1:1'
+    matchedDriver.deal = {
+      type: newLease.dealType,
+      rate: newLease.rateDisplay,
+      deposit: `₹${newLease.securityDeposit.toLocaleString('en-IN')} (Secured in Escrow)`,
+      frequency: newLease.billingFrequency,
+      taxRule: newLease.taxPercent ? `GST ${newLease.taxPercent}%` : '',
+      startDate: newLease.startDate,
+      contractMonths: 0,
+      agreementVersion: newLease.agreementVersion,
+      agreementSigned: newLease.agreementSigned,
+      depositReceipt: newLease.depositReceipt,
+      depositStatus: newLease.depositStatus,
+      leaseId: newLease.id,
+      leaseStatus: newLease.status
     };
-    matchedDriver.status = 'On Duty';
+    if (newLease.vehicleRegistration) {
+      matchedDriver.vehicle = {
+        registration: newLease.vehicleRegistration,
+        model: newLease.vehicleModel,
+        type: newLease.vehicleType,
+        status: 'Assigned 1:1'
+      };
+      matchedDriver.status = 'On Duty';
+    }
     writeJson(DRIVERS_FILE, driversData);
   }
 
@@ -270,7 +314,9 @@ router.post('/leases', (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: `Lease ${newLease.leaseNumber} successfully executed and activated for ${newLease.customerName}.`,
+    message: newLease.status === 'Active'
+      ? `Lease ${newLease.leaseNumber} successfully activated for ${newLease.customerName}.`
+      : `Lease ${newLease.leaseNumber} saved as Pending Activation for ${newLease.customerName}.`,
     data: newLease
   });
 });
@@ -288,6 +334,7 @@ router.post('/leases/:id/sign', (req, res) => {
   data.leases[index].signedDate = new Date().toISOString();
   data.leases[index].agreementVersion = 'v1.0 (Digitally Signed)';
   writeJson(LEASES_FILE, data);
+  syncDriverFromLease(data.leases[index]);
 
   res.json({
     success: true,
@@ -299,16 +346,20 @@ router.post('/leases/:id/sign', (req, res) => {
 // POST /api/rentals/leases/:id/deposit - Confirm Escrow Deposit (PDF Step 05)
 router.post('/leases/:id/deposit', (req, res) => {
   const { id } = req.params;
-  const { amount = 75000, reference = `DEP-${Date.now().toString().slice(-6)}` } = req.body;
+  const { amount, reference = `DEP-${Date.now().toString().slice(-6)}` } = req.body;
   const data = readJson(LEASES_FILE, { leases: [] });
   const index = (data.leases || []).findIndex(l => l.id === id || l.leaseNumber === id);
   if (index === -1) {
     return res.status(404).json({ success: false, message: 'Lease not found.' });
   }
 
+  const depositAmount = Number(amount ?? data.leases[index].securityDeposit) || 0;
+  if (depositAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'A valid security deposit amount is required.' });
+  }
   data.leases[index].depositStatus = 'Held in Escrow';
-  data.leases[index].securityDeposit = Number(amount) || 75000;
-  data.leases[index].depositPaid = Number(amount) || 75000;
+  data.leases[index].securityDeposit = depositAmount;
+  data.leases[index].depositPaid = depositAmount;
   data.leases[index].depositPending = 0;
   data.leases[index].depositReceipt = reference;
 
@@ -317,10 +368,11 @@ router.post('/leases/:id/deposit', (req, res) => {
     data.summary.pendingEscrowDeposits = data.leases.filter(l => l.depositStatus === 'Pending').reduce((sum, l) => sum + (Number(l.depositPending || l.securityDeposit) || 0), 0);
   }
   writeJson(LEASES_FILE, data);
+  syncDriverFromLease(data.leases[index]);
 
   res.json({
     success: true,
-    message: `Security deposit of ₹${Number(amount).toLocaleString('en-IN')} confirmed and locked in escrow.`,
+    message: `Security deposit of ₹${depositAmount.toLocaleString('en-IN')} confirmed and locked in escrow.`,
     data: data.leases[index]
   });
 });
@@ -345,6 +397,7 @@ router.post('/leases/:id/activate', (req, res) => {
   lease.status = 'Active';
   lease.startDate = new Date().toISOString();
   writeJson(LEASES_FILE, data);
+  syncDriverFromLease(lease);
 
   res.json({
     success: true,

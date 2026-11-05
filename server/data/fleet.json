@@ -7,7 +7,7 @@
     "metrics": {
       "totalFleet": {
         "label": "TOTAL FLEET",
-        "value": 14,
+        "value": 16,
         "subline": "100% of fleet"
       },
       "onRoad": {
@@ -24,7 +24,7 @@
       },
       "readyToDeploy": {
         "label": "READY TO DEPLOY",
-        "value": 5,
+        "value": 6,
         "subline": "4.5% of fleet",
         "status": "blue"
       },
@@ -64,6 +64,104 @@
     }
   },
   "vehicles": [
+    {
+      "id": "QB1105104011",
+      "registration": "QB1105104011",
+      "model": "QA WagonR CNG",
+      "type": "CNG",
+      "connectorType": "Standard CNG Valve",
+      "driver": "QA Test Driver 1105104011",
+      "driverPhone": "+919900000001",
+      "driverStatus": "On Duty (Temporary Swap · 2d)",
+      "status": "Allocated",
+      "location": "QA Central Hub",
+      "hub": "QA Central Hub",
+      "since": "Allocated just now",
+      "duration": "2d Allocation",
+      "nextAction": "Operating normally",
+      "actionType": "NORMAL",
+      "odometer": "450 km",
+      "battery": "Full",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Nov 2026",
+      "permit": "Valid · 31 Dec 2026",
+      "insurance": "Valid · 31 Dec 2026",
+      "fitness": "Valid · 31 Dec 2027",
+      "puc": "Valid · 30 Jun 2027",
+      "chassis": "MAT612034NJB70528",
+      "lender": "QA Finance Lender",
+      "monthlyEmi": "₹18000",
+      "challansCount": 0,
+      "challansAmount": "₹0",
+      "dailyRentRate": "₹1100",
+      "notes": "QA-TEST second asset for assignment audit.",
+      "assignmentHistory": [
+        {
+          "driver": "QA Test Driver 1105104011",
+          "shiftType": "Temporary Duty (2 Days)",
+          "fromDate": "05/11/2026",
+          "toDate": "Scheduled 2d",
+          "handoverKm": "500 km",
+          "status": "Active",
+          "reason": "QA end-to-end duty test"
+        },
+        {
+          "driver": "In Yard Inventory",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "10 Oct 2026",
+          "toDate": "Present",
+          "handoverKm": "450 km",
+          "status": "Active"
+        }
+      ],
+      "allocatedTo": "QA Test Driver 1105104011",
+      "allocatedUntil": "2026-11-07T05:10:14.487Z",
+      "allocationType": "temporary"
+    },
+    {
+      "id": "QA1105104011",
+      "registration": "QA1105104011",
+      "model": "QA Tigor EV",
+      "type": "EV",
+      "connectorType": "CCS2",
+      "driver": "Unassigned",
+      "driverPhone": "—",
+      "driverStatus": "Available in Yard (Temporary Reserve)",
+      "status": "Ready to Deploy",
+      "location": "Sikhar Hub Central Yard",
+      "hub": "QA Central Hub",
+      "since": "Updated just now",
+      "duration": "0d 0h",
+      "nextAction": "Put on Road",
+      "actionType": "PUT_ON_ROAD",
+      "odometer": "120 km",
+      "battery": "100%",
+      "health": "Healthy",
+      "healthStatus": "good",
+      "service": "Next service · 30 Nov 2026",
+      "permit": "Valid · 31 Dec 2026",
+      "insurance": "Valid · 31 Dec 2026",
+      "fitness": "Valid · 31 Dec 2027",
+      "puc": "Valid · 30 Jun 2027",
+      "chassis": "MAT612034NJB80072",
+      "lender": "QA Finance Lender",
+      "monthlyEmi": "₹22000",
+      "challansCount": 0,
+      "challansAmount": "₹0",
+      "dailyRentRate": "₹1250",
+      "notes": "QA-TEST dummy asset for end-to-end audit. [Duty swap: QA Test Driver 1105104011 temporarily allocated QB1105104011 for 2 days. WagonR reserved in yard.] [Status change: Ready to Deploy → Ready to Deploy (SQL persistence smoke test) - 10:48:05 am] [Status change: Ready to Deploy → Ready to Deploy (SQL persistence smoke test fixed) - 10:48:52 am]",
+      "assignmentHistory": [
+        {
+          "driver": "In Yard Inventory",
+          "shiftType": "24-Hour Dedicated",
+          "fromDate": "10 Oct 2026",
+          "toDate": "Present",
+          "handoverKm": "120 km",
+          "status": "Active"
+        }
+      ]
+    },
     {
       "id": "GJ06SD1234",
       "registration": "GJ06SD1234",

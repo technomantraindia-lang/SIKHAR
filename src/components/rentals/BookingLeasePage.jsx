@@ -35,6 +35,7 @@ import {
   fetchFleetTowerApi,
   fetchAssignmentsApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 import CommercialLeaseAgreementPreviewModal from './CommercialLeaseAgreementPreviewModal';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 
@@ -139,10 +140,10 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     setCustomerPhone(drv.phone || '');
 
     const kyc = drv.kyc || {};
-    setAadhaar(kyc.aadhaar || '5421-9847-6712');
+    setAadhaar(kyc.aadhaar || '');
     setIsAadhaarVerified(kyc.aadhaarVerified !== false);
-    setDrivingLicence(kyc.drivingLicence || 'HR-2620210044551');
-    setAddress(kyc.address || drv.location || drv.city || 'Sector 31, Gurgaon, Haryana');
+    setDrivingLicence(kyc.drivingLicence || '');
+    setAddress(kyc.address || drv.location || drv.city || '');
 
     if (kyc.reference && kyc.reference.name) {
       setReferenceName(kyc.reference.name);
@@ -151,8 +152,8 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       setReferenceName('Emergency Contact / Alt');
       setReferencePhone(drv.altPhone);
     } else {
-      setReferenceName('Suresh Verma');
-      setReferencePhone('+91 98101 88990');
+      setReferenceName('');
+      setReferencePhone('');
     }
 
     // Auto-fetch assigned vehicle details (Vehicle Assignment Terminal / Driver Profile)
@@ -239,6 +240,23 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
     setIsEditingDetails(true);
   };
 
+  const resetLeaseWizard = () => {
+    handleClearDriverSelection();
+    setDriverSearchQuery('');
+    setDealType('');
+    setBillingFrequency('');
+    setRateAmount('');
+    setTaxPercent('');
+    setSecurityDeposit('');
+    setDriverSharePercent(75);
+    setSikharSharePercent(25);
+    setRapidoDriverId('');
+    setIsAgreementSigned(false);
+    setIsDepositConfirmed(false);
+    setDepositReceiptRef('');
+    setWizardStep(1);
+  };
+
   // Load backend data
   const loadData = useCallback(async () => {
     try {
@@ -290,7 +308,6 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
           handleSelectDriver(found, vehicles);
         } else {
           setCustomerName(prefillDriverName || '');
-          setDriverName(prefillDriverName || '');
           setSelectedDriverId(prefillDriverId);
         }
 
@@ -317,13 +334,6 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
       console.error(e);
     }
   }, [drivers, vehicles, handleSelectDriver]);
-
-  // When switching to new lease wizard, ensure first driver is populated if none selected
-  useEffect(() => {
-    if (activeTab === 'new' && !selectedDriverId && drivers.length > 0) {
-      handleSelectDriver(drivers[0], vehicles);
-    }
-  }, [activeTab, selectedDriverId, drivers, vehicles, handleSelectDriver]);
 
   // Direct lease activation handler for Pending Activation leases
   const handleDirectActivateLease = async (leaseId) => {
@@ -370,8 +380,16 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
 
   // Complete and submit lease creation
   const handleActivateLease = async () => {
+    if (!selectedDriverId || !customerName.trim() || !customerPhone.trim()) {
+      alert('Please select a registered driver and confirm the customer contact details.');
+      return;
+    }
     if (!selectedVehicleReg) {
       alert('Please select a vehicle asset from inventory.');
+      return;
+    }
+    if (!dealType || !billingFrequency || Number(rateAmount) <= 0 || Number(securityDeposit) <= 0) {
+      alert('Please complete the lease model, billing frequency, rate, and security deposit.');
       return;
     }
     if (!isAgreementSigned) {
@@ -391,20 +409,22 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
         referencePhone,
         dealType,
         billingFrequency,
-        rateAmount: Number(rateAmount) || 1000,
+        rateAmount: Number(rateAmount) || 0,
         driverSharePercent: Number(driverSharePercent) || 75,
         sikharSharePercent: Number(sikharSharePercent) || 25,
         rapidoDriverId,
-        taxPercent: Number(taxPercent) || 5,
-        securityDeposit: Number(securityDeposit) || 75000,
+        taxPercent: Number(taxPercent) || 0,
+        securityDeposit: Number(securityDeposit) || 0,
         depositStatus: isDepositConfirmed ? 'Held in Escrow' : 'Pending',
         depositPaid: isDepositConfirmed ? (Number(securityDeposit) || 75000) : 0,
-        depositPending: isDepositConfirmed ? 0 : (Number(securityDeposit) || 75000),
+        depositPending: isDepositConfirmed ? 0 : (Number(securityDeposit) || 0),
         depositReceiptRef: isDepositConfirmed ? depositReceiptRef : '',
         isDepositConfirmed,
+        agreementSigned: isAgreementSigned,
         vehicleRegistration: selectedVehicleReg,
-        vehicleModel: selectedVehicleObj ? selectedVehicleObj.model : 'Maruti WagonR Tour H3',
-        vehicleType: selectedVehicleObj ? selectedVehicleObj.type : 'CNG',
+        vehicleModel: selectedVehicleObj ? selectedVehicleObj.model : '',
+        vehicleType: selectedVehicleObj ? selectedVehicleObj.type : '',
+        driverId: selectedDriverId || '',
         driverName: customerName,
         driverPhone: customerPhone,
         autoActivate: true
@@ -510,6 +530,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               if (activeTab === 'new') {
                 setActiveTab('active');
               } else {
+                resetLeaseWizard();
                 setActiveTab('new');
                 setWizardStep(1);
               }
@@ -576,9 +597,9 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <FileText size={16} />
             </div>
           </div>
-          <div className="stat-card-val">{summary.totalLeases || leases.length}</div>
+          <div className="stat-card-val">{summary.totalLeases ?? leases.length}</div>
           <div className="stat-card-subline">
-            <span className="subline-highlight">{summary.activeLeases || 3} Active</span> · {summary.pendingActivation || 1} Pending Handover
+            <span className="subline-highlight">{summary.activeLeases ?? 0} Active</span> · {summary.pendingActivation ?? 0} Pending Handover
           </div>
         </div>
 
@@ -589,7 +610,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <Car size={16} />
             </div>
           </div>
-          <div className="stat-card-val">{summary.fixedLeases || 3}</div>
+          <div className="stat-card-val">{summary.fixedLeases ?? 0}</div>
           <div className="stat-card-subline">
             Fixed daily &amp; weekly recurring billing
           </div>
@@ -602,7 +623,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <TrendingUp size={16} />
             </div>
           </div>
-          <div className="stat-card-val">{summary.revenueShareLeases || 1}</div>
+          <div className="stat-card-val">{summary.revenueShareLeases ?? 0}</div>
           <div className="stat-card-subline">
             75% Driver Entitlement · 25% Sikhar Retained
           </div>
@@ -615,7 +636,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <Shield size={16} />
             </div>
           </div>
-          <div className="stat-card-val">₹{(summary.totalEscrowDeposits || 225000).toLocaleString('en-IN')}</div>
+          <div className="stat-card-val">₹{(summary.totalEscrowDeposits ?? 0).toLocaleString('en-IN')}</div>
           <div className="stat-card-subline">
             100% held in safe institutional escrow
           </div>
@@ -686,6 +707,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
               <button
                 className="btn primary"
                 onClick={() => {
+                  resetLeaseWizard();
                   setActiveTab('new');
                   setWizardStep(1);
                 }}
@@ -967,7 +989,6 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                               handleSelectDriver(dMatch, vehicles);
                             } else {
                               setCustomerName(asg.driverName || '');
-                              setDriverName(asg.driverName || '');
                               setCustomerPhone(asg.driverPhone || '');
                               setSelectedDriverId(asg.driverId);
                               if (asg.assignedVehicle) {
@@ -1607,7 +1628,8 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
 
                     <div className="form-field-group">
                       <label className="input-label">Billing Frequency *</label>
-                      <select
+                        <AdminOptionSelect
+                          group="billing_frequency"
                         className="styled-input-select"
                         value={billingFrequency}
                         onChange={(e) => setBillingFrequency(e.target.value)}
@@ -1615,7 +1637,7 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                         <option value="Daily">Daily Debit (Standard Commercial Lease)</option>
                         <option value="Weekly">Weekly Cycle</option>
                         <option value="Monthly">Monthly Cycle</option>
-                      </select>
+                        </AdminOptionSelect>
                     </div>
 
                     <div className="form-field-group">

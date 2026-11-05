@@ -20,6 +20,7 @@ import {
   fetchLeasesApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboard, onNavigate }) {
   const [loading, setLoading] = useState(true);
@@ -375,7 +376,8 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
             <div className="form-inputs-3col">
               <div className="form-field-group">
                 <label className="input-label">Billing Cycle</label>
-                <select
+              <AdminOptionSelect
+                group="billing_frequency"
                   className="styled-input-select"
                   value={billingPeriodType}
                   onChange={(e) => setBillingPeriodType(e.target.value)}
@@ -384,7 +386,7 @@ export default function GenerateInvoicePage({ onBackToInvoices, onBackToDashboar
                   <option value="Weekly">Weekly Cycle</option>
                   <option value="Monthly">Monthly Cycle</option>
                   <option value="Custom">Custom Duty</option>
-                </select>
+              </AdminOptionSelect>
               </div>
 
               <div className="form-field-group">

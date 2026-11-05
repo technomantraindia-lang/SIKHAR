@@ -23,6 +23,7 @@ import {
   addDriverDocumentApi,
   deleteDriverDocumentApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 
 const DOCUMENT_CATEGORIES = [
@@ -513,7 +514,8 @@ export default function DriverDocumentsModal({
                     <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', fontWeight: 700, marginBottom: '4px' }}>
                       DOCUMENT CLASSIFICATION *
                     </label>
-                    <select
+                    <AdminOptionSelect
+                      group="driver_document_type"
                       value={newDocType}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -535,7 +537,7 @@ export default function DriverDocumentsModal({
                       {DOCUMENT_CATEGORIES.map(cat => (
                         <option key={cat.value} value={cat.value}>{cat.label}</option>
                       ))}
-                    </select>
+                    </AdminOptionSelect>
                   </div>
 
                   {/* Document Title */}

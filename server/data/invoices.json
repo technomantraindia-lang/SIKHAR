@@ -1,13 +1,38 @@
 {
   "summary": {
-    "totalInvoices": 13,
-    "totalBilled": 13000,
-    "totalCollected": 6500,
+    "totalInvoices": 14,
+    "totalBilled": 14250,
+    "totalCollected": 7750,
     "totalPending": 6500,
     "overdueCount": 6,
-    "paidCount": 7
+    "paidCount": 8
   },
   "invoices": [
+    {
+      "id": "INV-26-414295",
+      "invoiceNumber": "INV-26-414295",
+      "customerName": "QA Test Customer 1105104011",
+      "customerId": "CUST-26-14249",
+      "driverId": "drv-18",
+      "driverName": "QA Test Driver 1105104011",
+      "driverPhone": "+919900000001",
+      "vehicleRegistration": "QA1105104011",
+      "vehicleModel": "QA Tigor EV",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
+      "period": "05 Nov 2026",
+      "baseAmount": 1190.48,
+      "gstPercent": 5,
+      "gstAmount": 59.52,
+      "totalAmount": 1250,
+      "amountPaid": 1250,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "QA Test UPI",
+      "paidDate": "2026-11-05T05:10:14.451Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "QA-PAY-1105104011"
+    },
     {
       "id": "INV-26-349220",
       "invoiceNumber": "INV-26-349220",

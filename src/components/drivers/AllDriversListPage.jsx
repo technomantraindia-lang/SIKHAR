@@ -497,7 +497,7 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
 
                       {/* Deal Type */}
                       <td>
-                        <span className="table-deal-text">{drv.deal?.type || 'Daily Rental'}</span>
+                        <span className="table-deal-text">{drv.deal?.type || 'No lease assigned'}</span>
                       </td>
 
                       {/* Action Chevron */}

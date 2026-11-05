@@ -2,10 +2,10 @@
 
 > Structural local index. Read current source before editing. Secrets are intentionally excluded.
 
-- Indexed source files: 66
-- Structural edges: 243
+- Indexed source files: 73
+- Structural edges: 268
 - Matched end-to-end flows: 0
-- Updated: 2026-11-04T03:21:41.432Z
+- Updated: 2026-11-05T03:34:00.270Z
 
 ## Routes
 - ROUTE GET / -> handler @ server/routes/assignmentRoutes.js
@@ -29,6 +29,7 @@
 - ROUTE POST /:id/wallet/topup -> handler @ server/routes/driverRoutes.js
 - ROUTE POST / -> handler @ server/routes/driverRoutes.js
 - ROUTE PUT /:id/vehicle -> handler @ server/routes/driverRoutes.js
+- ROUTE PUT /:id/lease -> handler @ server/routes/driverRoutes.js
 - ROUTE POST /:id/leave -> handler @ server/routes/driverRoutes.js
 - ROUTE PUT /:id/deal -> handler @ server/routes/driverRoutes.js
 - ROUTE GET /:id/documents -> handler @ server/routes/driverRoutes.js
@@ -43,11 +44,11 @@
 - ROUTE GET /:id/messages -> handler @ server/routes/escalationRoutes.js
 - ROUTE POST /:id/messages -> handler @ server/routes/escalationRoutes.js
 - ROUTE PUT /:id -> handler @ server/routes/escalationRoutes.js
-- ROUTE POST /:id/resolve -> handler @ server/routes/escalationRoutes.js
 
 ## Frontend API calls
 - API POST /${API_BASE}/auth/login <- src/services/api.js
 - API GET /${API_BASE}/dashboard <- src/services/api.js
+- API GET /${API_BASE}/finance/customer-soa/${encodeURIComponent(customerKey)} <- src/services/api.js
 - API GET /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)} <- src/services/api.js
 - API POST /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}/action <- src/services/api.js
 - API POST /${API_BASE}/fleet/vehicles <- src/services/api.js
@@ -58,10 +59,9 @@
 - API POST /${API_BASE}/drivers <- src/services/api.js
 - API DELETE /${API_BASE}/drivers/${encodeURIComponent(id)} <- src/services/api.js
 - API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/vehicle <- src/services/api.js
+- API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/lease <- src/services/api.js
 - API POST /${API_BASE}/drivers/${encodeURIComponent(driverId)}/leave <- src/services/api.js
 - API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/deal <- src/services/api.js
-- API GET /${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents <- src/services/api.js
-- API POST /${API_BASE}/drivers/${encodeURIComponent(driverId)}/documents <- src/services/api.js
 
 ## Dependency edges
 - IMPORT index.html -> src/main.jsx
@@ -80,6 +80,12 @@
 - IMPORT src/components/drivers/StatutoryCertificateViewerModal.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/escalations/EscalationChatSection.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/escalations/EscalationMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/escalations/EscalationChatSection.jsx
+- IMPORT src/components/finance/FinanceAssetFinancingPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/FinanceComingSoonPage.jsx -> src/components/common/Icons.jsx
+- IMPORT src/components/finance/FinanceCustomerSoaPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/FinancePayablesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/FinanceReceivablesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/FinanceStatementPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/fleet/FleetControlTower.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/fuel/FuelMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js
 - IMPORT src/components/landing/LandingPage.jsx -> src/components/common/Icons.jsx, src/components/landing/LandingPage.css
@@ -100,12 +106,6 @@
 - IMPORT src/components/vehicles/VehicleMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/wallet/WalletHealthPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/main.jsx -> src/index.css, src/App.jsx
-- IMPORT scripts/test_parser.js -> src/components/common/DocumentOcrScannerModal.jsx
-- IMPORT server.js -> server/routes/authRoutes.js, server/routes/dashboardRoutes.js, server/routes/fleetRoutes.js, server/routes/driverRoutes.js, server/routes/assignmentRoutes.js, server/routes/rentalRoutes.js, server/routes/escalationRoutes.js, server/routes/tripRoutes.js
-- IMPORT server/index.js -> server/routes/authRoutes.js, server/routes/dashboardRoutes.js, server/routes/fleetRoutes.js, server/routes/driverRoutes.js, server/routes/assignmentRoutes.js, server/routes/rentalRoutes.js, server/routes/escalationRoutes.js, server/routes/tripRoutes.js
-- REACT src/App.jsx: used by src/main.jsx · depends on src/components/layout/TopHeader.jsx, src/components/layout/Sidebar.jsx, src/components/dashboard/ExecutiveDashboard.jsx, src/components/fleet/FleetControlTower.jsx, src/components/drivers/DriverControlTower.jsx, src/components/vehicles/VehicleManager.jsx
-- REACT src/components/auth/AdminLogin.jsx: depends on src/services/api.js, src/components/common/Icons.jsx
-- REACT src/components/auth/AuthPage.jsx: depends on src/services/localStore.js
 
 ## Database references
 - DB vite.config.js -> vite
@@ -120,18 +120,18 @@
 - DB src/components/drivers/AddDriverPage.jsx -> react, tesseract, overwriting, filling, one, photo, in, Name, PAN, DL, the, Aadhaar, sidebar
 - DB src/components/drivers/AllDriversListPage.jsx -> react
 - DB src/components/drivers/DriverControlTower.jsx -> react
-- DB src/components/drivers/DriverDetailPage.jsx -> react, platform, form, API, the, vault, photo, status, vehicle, encrypted, server, secure, Spendable
+- DB src/components/drivers/DriverDetailPage.jsx -> react, platform, form, API, the, vault, photo, status, vehicle, encrypted, server, secure
 - DB src/components/drivers/DriverDocumentsModal.jsx -> react, API
 - DB src/components/drivers/FleetLiveLocationMap.jsx -> react, leaflet, real, connected
 - DB src/components/drivers/StatutoryCertificateViewerModal.jsx -> react
 - DB src/components/escalations/EscalationChatSection.jsx -> react, dispatch, from
 - DB src/components/escalations/EscalationMasterPage.jsx -> react, or, Registry
-- DB src/components/fleet/FleetControlTower.jsx -> react, Node
-- DB src/components/fuel/FuelMasterPage.jsx -> react, API, the
-- DB src/components/landing/LandingPage.jsx -> react, driver
-- DB src/components/layout/Sidebar.jsx -> react, Sections
-- DB src/components/layout/TopHeader.jsx -> react
-- DB src/components/maintenance/MaintenanceMasterPage.jsx -> react
+- DB src/components/finance/FinanceAssetFinancingPage.jsx -> react
+- DB src/components/finance/FinanceComingSoonPage.jsx -> react
+- DB src/components/finance/FinanceCustomerSoaPage.jsx -> react, the
+- DB src/components/finance/FinancePayablesPage.jsx -> react, maintenance, verified
+- DB src/components/finance/FinanceReceivablesPage.jsx -> react, invoice, the, Rental
+- DB src/components/finance/FinanceStatementPage.jsx -> react, date, connected
 
 ## Symbols
 - SYMBOL src/App.jsx: App, syncing, getInitialRoute, handlePathChange, openLogin, openLanding, navigateTo, handleHashChange, handleLoginSuccess, handleLogout
@@ -151,25 +151,25 @@
 - SYMBOL src/components/drivers/StatutoryCertificateViewerModal.jsx: AshokEmblem, SmartCardChip, SpecimenQrCode, StatutoryCertificateViewerModal, handleKeyDown, showNotice, handleCopy, handlePrint, handleDownloadSpecimen, handleUploadPhotoClick
 - SYMBOL src/components/escalations/EscalationChatSection.jsx: EscalationChatSection, handleTogglePlayVoice, handleStartRecording, handleStopRecording, handleCancelRecording, sendVoiceMessage, handleSendTextMessage
 - SYMBOL src/components/escalations/EscalationMasterPage.jsx: EscalationMasterPage, showToast, handleOcrExtracted, handleVehicleChange, handleOpenCreateModal, handleCreateSubmit, handleAddNote, handleResolveTicket, handleStatusChange, handleExport
+- SYMBOL src/components/finance/FinanceAssetFinancingPage.jsx: money, exportAssets, Stat, FinanceAssetFinancingPage, loadData, selectPeriod
+- SYMBOL src/components/finance/FinanceComingSoonPage.jsx: FinanceComingSoonPage
+- SYMBOL src/components/finance/FinanceCustomerSoaPage.jsx: money, dateLabel, exportLedger, Stat, FinanceCustomerSoaPage, loadStatement, loadPage, handleCustomerChange, sendEmail
+- SYMBOL src/components/finance/FinancePayablesPage.jsx: money, dateLabel, exportBills, Stat, FinancePayablesPage, loadData
+- SYMBOL src/components/finance/FinanceReceivablesPage.jsx: money, shortDate, exportCustomers, Stat, FinanceReceivablesPage, loadData, openSoa
+- SYMBOL src/components/finance/FinanceStatementPage.jsx: formatMoney, formatDate, percentageChange, changeValue, StatCard, EmptyState, buildCsv, StatementTable, FinanceStatementPage, applyPeriod
 - SYMBOL src/components/fleet/FleetControlTower.jsx: FleetControlTower, handleSearchSubmit, handleExecuteAction
 - SYMBOL src/components/fuel/FuelMasterPage.jsx: FuelMasterPage, showToast, handleFuelOcrExtracted, handleChargingVehicleChange, handleFuelVehicleChange, handleStartChargingSubmit, handleStopCharging, handleSettleCharging, handleLogFuelSubmit, handleVerifyFuelLog
 - SYMBOL src/components/landing/LandingPage.jsx: BrandMark, SocialIcon, PlatformCapabilitiesSection, ServiceDots, CoreServiceIcon, ServiceAssuranceIcon, CoreServicesSection, LandingPage, scrollTo
 - SYMBOL src/components/layout/Sidebar.jsx: Sidebar, handleItemClick
 - SYMBOL src/components/layout/TopHeader.jsx: TopHeader
 - SYMBOL src/components/maintenance/MaintenanceMasterPage.jsx: MaintenanceMasterPage, loadFleet, handleMaintenanceOcrExtracted, showToast, handleVehicleSelect, handleTabChange, handleCreateSubmit, handleApproveEstimateSubmit, handleQcSubmit, handleBillSubmit
-- SYMBOL src/components/rentals/BookingLeasePage.jsx: BookingLeasePage, handleOcrExtracted, showToast, handleClearDriverSelection, handleDirectActivateLease, handleSelectVehicle, handleDriverShareChange, handleConfirmLeaseDeposit, handleActivateLease
+- SYMBOL src/components/rentals/BookingLeasePage.jsx: BookingLeasePage, handleOcrExtracted, showToast, handleClearDriverSelection, resetLeaseWizard, handleDirectActivateLease, handleSelectVehicle, handleDriverShareChange, handleConfirmLeaseDeposit, handleActivateLease
 - SYMBOL src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx: CommercialLeaseAgreementPreviewModal, handlePrint
 - SYMBOL src/components/rentals/GenerateInvoicePage.jsx: GenerateInvoicePage, loadInitialData, handleDriverChange, handleLeaseChange, handleSubmitInvoice
 - SYMBOL src/components/rentals/InvoiceDetailPage.jsx: InvoiceDetailPage, showToast, handlePayFromWallet, handleDirectCollect, handleWaiveInvoice
 - SYMBOL src/components/rentals/InvoicesPage.jsx: InvoicesPage, showToast, handlePayFromWallet, handleDirectPayment, handleWaiveInvoice
 - SYMBOL src/components/trips/TripsMasterPage.jsx: TripsMasterPage, loadFleet, showToast, handleTabChange, handleVehicleSelect, handleLogTripSubmit, handleUpdateStatus, openEscalateModal, handleEscalateSubmit, handleSimulateImport
 - SYMBOL src/components/vehicles/AddVehiclePage.jsx: AddVehiclePage, handleChange, handleOcrExtracted, handleSubmit
-- SYMBOL src/components/vehicles/SpeedometerTelemetryCard.jsx: SpeedometerTelemetryCard
-- SYMBOL src/components/vehicles/VehicleAssignmentPage.jsx: VehicleAssignmentPage, showToast, getCalculatedEndDate, handleCreateAssignment, handleExecuteRevert, handleExecuteExtend
-- SYMBOL src/components/vehicles/VehicleDetailPage.jsx: VehicleDetailPage, showToast, handleAction
-- SYMBOL src/components/vehicles/VehicleManager.jsx: VehicleManager, getInitialView, getInitialId, handleSelectVehicle, handleOpenAddVehicle, handleOpenAssignment, handleBackToMaster, handleAddSuccess, handleNavigateToDriver
-- SYMBOL src/components/vehicles/VehicleMasterPage.jsx: VehicleMasterPage, showToast
-- SYMBOL src/components/wallet/WalletHealthPage.jsx: WalletHealthPage, showToast, handleOpenDriverWallet, handleOpenTopupModal, handleExecuteTopup
 
 ## Safe configuration variable names
 - CONFIG server/config/db.js: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT

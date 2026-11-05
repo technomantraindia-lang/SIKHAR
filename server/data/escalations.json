@@ -3,7 +3,7 @@
     "openTickets": 5,
     "p1Critical": 1,
     "slaBreached": 1,
-    "resolvedToday": 4,
+    "resolvedToday": 5,
     "avgResolution": "2h 18m"
   },
   "categories": [
@@ -81,6 +81,85 @@
     }
   ],
   "tickets": [
+    {
+      "id": "ESC-1027",
+      "driver": "QA Test Driver 1105104011",
+      "driverPhone": "+919900000001",
+      "vehicle": "QB1105104011",
+      "vehicleModel": "QA WagonR CNG",
+      "category": "QA Test Issue",
+      "priority": "P2",
+      "status": "Resolved",
+      "owner": "Mohit",
+      "team": "Fleet Operations",
+      "sla": "Resolved (Closed)",
+      "slaBreached": false,
+      "createdAt": "2026-11-05T05:10:14.655Z",
+      "location": "QA Hub",
+      "problem": "QA-TEST escalation flow.",
+      "impact": "QA validation only",
+      "source": "Admin Portal",
+      "evidence": [],
+      "journey": [
+        {
+          "step": 1,
+          "title": "Raise and triage",
+          "desc": "Ticket created in admin console. Auto-triaged to P2 for team Fleet Operations.",
+          "status": "completed",
+          "timestamp": "05 Nov, 10:40 AM",
+          "actor": "Admin"
+        },
+        {
+          "step": 2,
+          "title": "Assign and respond",
+          "desc": "Routed to Fleet Operations; assigned to Mohit. SLA timer started.",
+          "status": "completed",
+          "timestamp": "05 Nov, 10:40 AM",
+          "actor": "Mohit"
+        },
+        {
+          "step": 3,
+          "title": "Investigate and act",
+          "desc": "Investigation and operational resolution pending.",
+          "status": "completed",
+          "timestamp": "In Progress",
+          "actor": "Mohit"
+        },
+        {
+          "step": 4,
+          "title": "Resolve, confirm and close",
+          "desc": "Resolution recorded: QA issue resolved.. Driver confirmation: Verified ✓.",
+          "status": "completed",
+          "timestamp": "05 Nov, 10:40 AM",
+          "actor": "Mohit"
+        }
+      ],
+      "linkedRecords": {
+        "vehicle": "QB1105104011"
+      },
+      "timeline": [
+        {
+          "time": "05 Nov, 10:40 AM",
+          "user": "Admin",
+          "text": "Ticket marked as Resolved: \"QA issue resolved.\". Driver confirmed: Yes."
+        },
+        {
+          "time": "05 Nov, 10:40 AM",
+          "user": "QA Admin",
+          "text": "QA investigation note added."
+        },
+        {
+          "time": "05 Nov, 10:40 AM",
+          "user": "Admin",
+          "text": "Ticket ESC-1027 created for QA Test Driver 1105104011 (QB1105104011) under category \"QA Test Issue\"."
+        }
+      ],
+      "resolution": {
+        "note": "QA issue resolved.",
+        "resolvedAt": "05 Nov, 10:40 AM",
+        "driverConfirmed": true
+      }
+    },
     {
       "id": "ESC-1026",
       "driver": "chetan",

@@ -34,6 +34,7 @@ import {
   deductChallanWalletApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1092,7 +1093,8 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
 
                 <div className="field">
                   <label>Document / Compliance Type *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="compliance_document_type"
                     value={docForm.type}
                     onChange={(e) => setDocForm(prev => ({ ...prev, type: e.target.value }))}
                     required
@@ -1103,7 +1105,7 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
                     <option value="PUC">Pollution Under Control (PUC)</option>
                     <option value="RC">Vehicle Registration Certificate (RC)</option>
                     <option value="Driver DL">Driver Commercial Licence / PSV Badge</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 
@@ -1427,14 +1429,15 @@ export default function ComplianceMasterPage({ onNavigate, onBackToDashboard }) 
               <div className="grid2">
                 <div className="field">
                   <label>Payment Method *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="challan_payment_method"
                     value={payForm.paymentMethod}
                     onChange={(e) => setPayForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
                   >
                     <option value="Driver Wallet">Direct Driver Wallet Deduction</option>
                     <option value="Corporate NetBanking">Company NetBanking (Virtual Court)</option>
                     <option value="UPI / QR">Traffic Police POS / UPI QR</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">

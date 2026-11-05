@@ -7,6 +7,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, '../data/drivers.json');
+const LEASES_FILE = path.join(__dirname, '../data/leases.json');
 
 // Helper to read data safely
 function readDriversData() {
@@ -54,6 +55,39 @@ function unassignVehicleInFleet(driverName, reg) {
     }
   } catch (err) {
     console.warn('Could not unassign vehicle in fleet data:', err.message);
+  }
+}
+
+function syncVehicleAssignmentInFleet(driver, previousRegistration = '') {
+  try {
+    if (!fs.existsSync(FLEET_DATA_FILE)) return;
+    const fleetData = JSON.parse(fs.readFileSync(FLEET_DATA_FILE, 'utf8'));
+    const clean = value => String(value || '').toUpperCase().replace(/\s+/g, '');
+    const previous = clean(previousRegistration);
+    const current = clean(driver.vehicle?.registration);
+    let changed = false;
+
+    (fleetData.vehicles || []).forEach(vehicle => {
+      const registration = clean(vehicle.registration || vehicle.id);
+      if (previous && registration === previous && registration !== current) {
+        vehicle.driver = 'Unassigned';
+        vehicle.driverPhone = '-';
+        vehicle.driverStatus = 'Available in Yard';
+        vehicle.status = 'Ready to Deploy';
+        changed = true;
+      }
+      if (current && registration === current) {
+        vehicle.driver = driver.name;
+        vehicle.driverPhone = driver.phone;
+        vehicle.driverStatus = 'On Duty';
+        vehicle.status = 'On Road';
+        changed = true;
+      }
+    });
+
+    if (changed) fs.writeFileSync(FLEET_DATA_FILE, JSON.stringify(fleetData, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Could not sync vehicle assignment in fleet data:', err.message);
   }
 }
 
@@ -420,40 +454,41 @@ router.post('/', (req, res) => {
     name,
     phone,
     altPhone = '',
-    city = 'Gurgaon Operations Hub',
-    address = 'Delhi NCR',
+    city = '',
+    address = '',
     emergencyContact = '',
-    emergencyRelation = 'Family',
+    emergencyRelation = '',
     referenceName = '',
     referencePhone = '',
-    referenceRelation = 'Guarantor',
+    referenceRelation = '',
     referenceAddress = '',
     drivingLicence,
-    dlExpiry = '14 Nov 2030',
-    dlCategory = 'Commercial LMV',
+    dlExpiry = '',
+    dlCategory = '',
     aadhaar = '',
     panCard = '',
-    policeVerification = 'Verified (Clear)',
-    rentalModel = 'Fixed Daily Rental',
-    agreedRate = '₹1,000 / day',
-    securityDeposit = '₹75,000 (Secured in Escrow)',
-    contractMonths = 12,
-    billingFrequency = 'Daily Debit',
-    taxRule = 'GST 5% (Commercial Passenger Transport)',
-    shiftType = '24-Hour Primary Dedication',
+    policeVerification = 'Pending Review',
+    leaseAssigned = false,
+    rentalModel = '',
+    agreedRate = '',
+    securityDeposit = '',
+    contractMonths = 0,
+    billingFrequency = '',
+    taxRule = '',
+    shiftType = '',
     coDriver = '',
-    agreementVersion = 'v1.0 (Executed)',
-    agreementSigned = true,
-    depositReceipt = 'UTR-98218731',
-    depositStatus = 'Held in Escrow',
-    handoverOdometer = '45,210 km',
+    agreementVersion = '',
+    agreementSigned = false,
+    depositReceipt = '',
+    depositStatus = 'Unassigned',
+    handoverOdometer = '',
     vehicleRegistration = '',
     vehicleModel = 'WagonR H3 CNG',
     vehicleType = 'CNG',
     initialBalance = 0,
     photoUrl = '',
     dob = '',
-    gender = 'Male',
+    gender = '',
     fatherName = '',
     documents = []
   } = req.body;
@@ -464,6 +499,7 @@ router.post('/', (req, res) => {
 
   const data = readDriversData();
   const newId = `drv-${(data.drivers.length + 1).toString().padStart(2, '0')}`;
+  const hasLease = leaseAssigned === true;
 
   const assignedVehicle = vehicleRegistration && vehicleRegistration.trim() !== '' ? {
     registration: vehicleRegistration.trim().toUpperCase(),
@@ -484,9 +520,9 @@ router.post('/', (req, res) => {
     mobileVerified: true,
     status: assignedVehicle ? 'On Duty' : 'Ready',
     rating: 5.0,
-    shift: shiftType.includes('12-Hour') 
+    shift: hasLease && shiftType.includes('12-Hour') 
       ? (shiftType.includes('Night') ? 'Night Shift: 06:00 PM - 06:00 AM' : 'Day Shift: 06:00 AM - 06:00 PM')
-      : '07:00 AM - 07:00 PM (Active)',
+      : (hasLease ? '07:00 AM - 07:00 PM (Active)' : ''),
     shiftType: shiftType,
     coDriver: coDriver ? coDriver.trim() : null,
     location: city,
@@ -495,7 +531,7 @@ router.post('/', (req, res) => {
     todayTrips: 0,
     wallet: (() => {
       const parsedRate = parseInt((agreedRate || '1000').toString().replace(/[^0-9]/g, '')) || 1000;
-      const isCarAssigned = !!assignedVehicle;
+      const isCarAssigned = !!assignedVehicle && hasLease;
       const isZeroWallet = numInitial <= 0;
       const outstandingAmt = (isCarAssigned && isZeroWallet) ? parsedRate : 0;
 
@@ -560,7 +596,7 @@ router.post('/', (req, res) => {
       dlCategory: dlCategory.trim(),
       dlStatus: 'Valid',
       policeVerification: policeVerification.trim(),
-      emergencyContact: emergencyContact.trim() ? `${emergencyContact.trim()} (${emergencyRelation})` : '+91 98112 34567 (Family)',
+      emergencyContact: emergencyContact.trim() ? `${emergencyContact.trim()}${emergencyRelation ? ` (${emergencyRelation})` : ''}` : '',
       reference: referenceName.trim() ? {
         name: referenceName.trim(),
         phone: referencePhone.trim(),
@@ -640,21 +676,21 @@ router.post('/', (req, res) => {
         extractedData: d.extractedData || undefined
       }));
     })(),
-    deal: {
+    deal: hasLease ? {
       type: rentalModel,
       rate: agreedRate.startsWith('₹') ? agreedRate : `₹${agreedRate} / day`,
       deposit: securityDeposit.startsWith('₹') ? securityDeposit : `₹${securityDeposit} (Secured in Escrow)`,
       frequency: billingFrequency,
       taxRule: taxRule,
       startDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      contractMonths: Number(contractMonths) || 12,
+      contractMonths: Number(contractMonths) || 0,
       agreementVersion: agreementVersion,
       agreementSigned: agreementSigned,
       depositReceipt: depositReceipt,
       depositStatus: depositStatus,
       handoverOdometer: handoverOdometer,
       handoverStatus: 'Completed & QC Inspected'
-    },
+    } : null,
     attendance: {
       presentDays: 1,
       leaveDays: 0,
@@ -668,6 +704,7 @@ router.post('/', (req, res) => {
     data.summary.onDuty = (data.summary.onDuty || 0) + 1;
   }
   writeDriversData(data);
+  syncVehicleAssignmentInFleet(newDriver);
 
   res.status(201).json({
     success: true,
@@ -687,6 +724,8 @@ router.put('/:id/vehicle', (req, res) => {
     return res.status(404).json({ success: false, message: 'Driver not found.' });
   }
 
+  const previousRegistration = data.drivers[index].vehicle?.registration || '';
+
   if (vehicleRegistration && vehicleRegistration.trim() !== '') {
     data.drivers[index].vehicle = {
       registration: vehicleRegistration.trim().toUpperCase(),
@@ -701,8 +740,8 @@ router.put('/:id/vehicle', (req, res) => {
     if (!driver.wallet) {
       driver.wallet = { postedBalance: 0, spendableBalance: 0, activeHolds: 0, status: 'Zero Balance', recentTransactions: [] };
     }
-    const rentRate = parseInt((driver.deal?.rate || '1000').toString().replace(/[^0-9]/g, '')) || 1000;
-    if ((driver.wallet.spendableBalance || 0) <= 0) {
+    const rentRate = parseInt((driver.deal?.rate || '').toString().replace(/[^0-9]/g, '')) || 0;
+    if (driver.deal?.type && rentRate > 0 && (driver.wallet.spendableBalance || 0) <= 0) {
       driver.wallet.outstandingDues = (driver.wallet.outstandingDues || 0) + rentRate;
       driver.wallet.postedBalance = (driver.wallet.postedBalance || 0) - rentRate;
       driver.wallet.status = 'Pending Payment';
@@ -722,11 +761,66 @@ router.put('/:id/vehicle', (req, res) => {
   }
 
   writeDriversData(data);
+  syncVehicleAssignmentInFleet(data.drivers[index], previousRegistration);
 
   res.json({
     success: true,
     message: vehicleRegistration ? `Vehicle ${vehicleRegistration} assigned to ${data.drivers[index].name}` : `Vehicle unassigned for ${data.drivers[index].name}`,
     data: data.drivers[index]
+  });
+});
+
+// PUT /api/drivers/:id/lease - Assign or unassign the driver's commercial lease
+router.put('/:id/lease', (req, res) => {
+  const { id } = req.params;
+  const { assigned = false, deal = null } = req.body || {};
+  const data = readDriversData();
+  const index = (data.drivers || []).findIndex(d => d.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  const driver = data.drivers[index];
+  if (!assigned) {
+    driver.deal = null;
+    driver.shiftType = '';
+    driver.coDriver = null;
+    if (!driver.vehicle) driver.status = 'Ready';
+
+    try {
+      const leasesData = fs.existsSync(LEASES_FILE)
+        ? JSON.parse(fs.readFileSync(LEASES_FILE, 'utf8'))
+        : { summary: {}, leases: [] };
+      let changed = false;
+      (leasesData.leases || []).forEach(lease => {
+        if (lease.driverId === id && !['Unassigned', 'Cancelled'].includes(lease.status)) {
+          lease.status = 'Unassigned';
+          lease.unassignedAt = new Date().toISOString();
+          changed = true;
+        }
+      });
+      if (changed) fs.writeFileSync(LEASES_FILE, JSON.stringify(leasesData, null, 2), 'utf8');
+    } catch (err) {
+      console.warn('Could not update linked lease records:', err.message);
+    }
+  } else {
+    if (!deal || !deal.type || !deal.rate) {
+      return res.status(400).json({ success: false, message: 'A lease model and rate are required when assigning a lease.' });
+    }
+    driver.deal = {
+      ...(driver.deal || {}),
+      ...deal,
+      leaseStatus: deal.leaseStatus || 'Assigned',
+      lastAmendment: new Date().toISOString()
+    };
+  }
+
+  writeDriversData(data);
+  res.json({
+    success: true,
+    message: assigned ? `Lease assigned to ${driver.name}.` : `Lease unassigned for ${driver.name}.`,
+    data: driver
   });
 });
 
@@ -779,6 +873,27 @@ router.put('/:id/deal', (req, res) => {
   driver.deal.amendmentNotes = notes || 'Administrative rate adjustment';
 
   writeDriversData(data);
+
+  // Keep the linked lease record aligned with driver-level deal edits.
+  try {
+    if (fs.existsSync(LEASES_FILE)) {
+      const leasesData = JSON.parse(fs.readFileSync(LEASES_FILE, 'utf8'));
+      const linkedLease = (leasesData.leases || []).find(lease => lease.driverId === id && lease.status !== 'Unassigned');
+      if (linkedLease) {
+        if (rate) {
+          const amount = Number(String(rate).replace(/[^0-9.]/g, '')) || linkedLease.rateAmount || 0;
+          linkedLease.rateAmount = amount;
+          linkedLease.rateDisplay = `₹${amount.toLocaleString('en-IN')} / ${linkedLease.billingFrequency || 'day'}`;
+        }
+        if (frequency) linkedLease.billingFrequency = frequency;
+        if (taxRule) linkedLease.taxPercent = Number(String(taxRule).replace(/[^0-9.]/g, '')) || linkedLease.taxPercent;
+        linkedLease.updatedAt = new Date().toISOString();
+        fs.writeFileSync(LEASES_FILE, JSON.stringify(leasesData, null, 2), 'utf8');
+      }
+    }
+  } catch (err) {
+    console.warn('Could not sync driver deal edit to lease record:', err.message);
+  }
 
   res.json({
     success: true,

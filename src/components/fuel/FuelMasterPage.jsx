@@ -37,6 +37,7 @@ import {
   verifyFuelRecordApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function FuelMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1021,7 +1022,8 @@ export default function FuelMasterPage({ onNavigate, onBackToDashboard }) {
               <div className="grid2">
                 <div className="field">
                   <label>Charging Station *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="charging_station"
                     value={chargingForm.stationName}
                     onChange={(e) => setChargingForm(prev => ({ ...prev, stationName: e.target.value }))}
                     required
@@ -1031,12 +1033,13 @@ export default function FuelMasterPage({ onNavigate, onBackToDashboard }) {
                         {s.name} ({s.network})
                       </option>
                     ))}
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
                   <label>Connector Type *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="connector_type"
                     value={chargingForm.connectorType}
                     onChange={(e) => setChargingForm(prev => ({ ...prev, connectorType: e.target.value }))}
                   >
@@ -1044,7 +1047,7 @@ export default function FuelMasterPage({ onNavigate, onBackToDashboard }) {
                     <option value="CCS2 Fast (50kW)">CCS2 Fast (50kW)</option>
                     <option value="Type 2 AC (7.4kW)">Type 2 AC (7.4kW Depot Plug)</option>
                     <option value="GB/T DC (15kW)">GB/T DC (15kW)</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 
@@ -1234,14 +1237,15 @@ export default function FuelMasterPage({ onNavigate, onBackToDashboard }) {
 
                 <div className="field">
                   <label>Payment Mode *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="fuel_payment_method"
                     value={fuelForm.paymentMethod}
                     onChange={(e) => setFuelForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
                   >
                     <option value="Driver Wallet">Driver Wallet Deduction</option>
                     <option value="Fleet Card (HDFC)">Fleet Card (HDFC / IndianOil)</option>
                     <option value="Driver Cash Receipt">Driver Cash (Reimbursement)</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 

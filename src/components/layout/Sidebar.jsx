@@ -50,9 +50,21 @@ const MENU_SECTIONS = [
     ]
   },
   {
-    title: 'FINANCE & CONTROL',
+    title: 'FINANCE',
     items: [
-      { id: 'finance-overview', label: 'Finance Overview', icon: BarChart3, hasSubmenu: false },
+      { id: 'finance-pnl', label: 'P&L Statement', icon: BarChart3, hasSubmenu: false },
+      { id: 'finance-cash-flow', label: 'Cash Flow', icon: ArrowLeftRight, hasSubmenu: false },
+      { id: 'finance-accounts-receivable', label: 'Accounts Receivable', icon: Receipt, hasSubmenu: false },
+      { id: 'finance-customer-soa', label: 'Customer SOA', icon: FileText, hasSubmenu: false },
+      { id: 'finance-accounts-payable', label: 'Accounts Payable', icon: Receipt, hasSubmenu: false },
+      { id: 'finance-asset-financing', label: 'Asset EMI / Financing', icon: Wallet, hasSubmenu: false },
+      { id: 'finance-management-reports', label: 'Management Reports', icon: BarChart3, hasSubmenu: false },
+      { id: 'finance-reference-screens', label: 'Reference Screens', icon: FileText, hasSubmenu: false }
+    ]
+  },
+  {
+    title: 'ADMINISTRATION',
+    items: [
       { id: 'reports', label: 'Reports', icon: BarChart3, hasSubmenu: false },
       { id: 'settings', label: 'Settings', icon: Settings, hasSubmenu: false }
     ]

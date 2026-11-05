@@ -38,6 +38,7 @@ import {
   escalateTripApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1220,7 +1221,8 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
               <div className="grid2">
                 <div className="field">
                   <label>Booking Platform / Source *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="trip_source"
                     value={tripForm.source}
                     onChange={(e) => setTripForm({ ...tripForm, source: e.target.value })}
                   >
@@ -1228,7 +1230,7 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                     <option value="Uber">Uber</option>
                     <option value="Direct / Sikhar">Direct / Sikhar</option>
                     <option value="Manual">Manual Fleet Run</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
@@ -1301,13 +1303,14 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
 
               <div className="field">
                 <label>Commercial Deal Split Type *</label>
-                <select
+                <AdminOptionSelect
+                  group="trip_deal_type"
                   value={tripForm.splitType}
                   onChange={(e) => setTripForm({ ...tripForm, splitType: e.target.value })}
                 >
                   <option value="Revenue Share (75/25)">Revenue Share: 75% Driver Entitlement / 25% Sikhar Retained</option>
                   <option value="Fixed Lease (100% Driver)">Fixed Lease: 100% Driver Entitlement (Subscription Deal)</option>
-                </select>
+                </AdminOptionSelect>
               </div>
 
               {/* Calculated Split Preview Box */}
@@ -1424,7 +1427,8 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
               <div className="grid2">
                 <div className="field">
                   <label>Escalation Category *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="escalation_category"
                     value={escForm.category}
                     onChange={(e) => setEscForm({ ...escForm, category: e.target.value })}
                   >
@@ -1432,19 +1436,20 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                     <option value="Vehicle Breakdown">Vehicle Breakdown</option>
                     <option value="Driver Safety">Driver Safety / Incident</option>
                     <option value="Other">Other Operational Issue</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
                   <label>Priority SLA *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="escalation_priority"
                     value={escForm.priority}
                     onChange={(e) => setEscForm({ ...escForm, priority: e.target.value })}
                   >
                     <option value="P1">P1 — Critical (1 Hour SLA)</option>
                     <option value="P2">P2 — High (4 Hours SLA)</option>
                     <option value="P3">P3 — Normal (24 Hours SLA)</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 

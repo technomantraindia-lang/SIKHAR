@@ -16,7 +16,10 @@ import fuelRoutes from './routes/fuelRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import ocrRoutes from './routes/ocrRoutes.js';
 import rapidoRoutes from './routes/rapidoRoutes.js';
+import financeRoutes from './routes/financeRoutes.js';
+import optionsRoutes from './routes/optionsRoutes.js';
 import { testDbConnection, getDbStatus } from './config/db.js';
+import { hydrateOperationalDomains, operationalSnapshotStatus, operationalStorageMiddleware } from './config/operationalStore.js';
 
 // Catch unhandled errors so they show in logs instead of silent death
 process.on('uncaughtException', (err) => {
@@ -37,6 +40,9 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+// Persist every successful admin mutation to MySQL before returning the response.
+app.use(operationalStorageMiddleware());
+
 // API Health Check
 app.get('/api/health', (req, res) => {
   const dbInfo = getDbStatus();
@@ -49,7 +55,10 @@ app.get('/api/health', (req, res) => {
       host: dbInfo.host,
       connected: dbInfo.isConnected
     },
-    storageMode: dbInfo.isConnected ? 'MySQL Database Active' : 'Local Filesystem JSON (server/data/) Fallback',
+    storageMode: dbInfo.isConnected
+      ? 'MySQL primary: operational snapshots + finance ledger; JSON is a local cache'
+      : 'Local Filesystem JSON (server/data/) Fallback',
+    operationalStorage: operationalSnapshotStatus(),
     timestamp: new Date().toISOString()
   });
 });
@@ -74,6 +83,8 @@ app.use('/api/fuel', fuelRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/v1/fleet', rapidoRoutes);
+app.use('/api/finance', financeRoutes);
+app.use('/api/options', optionsRoutes);
 
 // Serve Frontend Vite Static Build (dist) if it exists
 const distPath = path.resolve(__dirname, '../dist');
@@ -101,7 +112,8 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
   // Run database connection test
   try {
-    await testDbConnection();
+    const dbResult = await testDbConnection();
+    if (dbResult.success && process.env.SKIP_OPERATIONAL_HYDRATION !== 'true') await hydrateOperationalDomains();
   } catch (err) {
     console.error('DB test error on startup:', err);
   }

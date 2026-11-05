@@ -15,6 +15,14 @@ import TripsMasterPage from './components/trips/TripsMasterPage';
 import MaintenanceMasterPage from './components/maintenance/MaintenanceMasterPage';
 import FuelMasterPage from './components/fuel/FuelMasterPage';
 import ComplianceMasterPage from './components/compliance/ComplianceMasterPage';
+import FinanceComingSoonPage from './components/finance/FinanceComingSoonPage';
+import FinanceStatementPage from './components/finance/FinanceStatementPage';
+import FinanceReceivablesPage from './components/finance/FinanceReceivablesPage';
+import FinanceCustomerSoaPage from './components/finance/FinanceCustomerSoaPage';
+import FinancePayablesPage from './components/finance/FinancePayablesPage';
+import FinanceAssetFinancingPage from './components/finance/FinanceAssetFinancingPage';
+import ManagementReportsPage from './components/finance/ManagementReportsPage';
+import ReferenceScreensPage from './components/finance/ReferenceScreensPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
 import LandingPage from './components/landing/LandingPage';
@@ -109,6 +117,9 @@ export default function App() {
     logoutAdminApi();
     setAdminUser(null);
   };
+
+  const isFinanceRoute = activeRoute.startsWith('finance-');
+  const isFinanceStatementRoute = activeRoute === 'finance-pnl' || activeRoute === 'finance-cash-flow';
 
   // Public entry experience: root is the product landing page, /login is always the admin gateway.
   if (publicPath === '/login') {
@@ -212,6 +223,47 @@ export default function App() {
           ) : activeRoute === 'compliance' ? (
             <ComplianceMasterPage
               onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : isFinanceStatementRoute ? (
+            <FinanceStatementPage
+              reportType={activeRoute === 'finance-cash-flow' ? 'cash-flow' : 'pnl'}
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-accounts-receivable' ? (
+            <FinanceReceivablesPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-customer-soa' ? (
+            <FinanceCustomerSoaPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-accounts-payable' ? (
+            <FinancePayablesPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-asset-financing' ? (
+            <FinanceAssetFinancingPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-management-reports' ? (
+            <ManagementReportsPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : activeRoute === 'finance-reference-screens' ? (
+            <ReferenceScreensPage
+              onNavigate={(target) => navigateTo(target)}
+              onBackToDashboard={() => navigateTo('dashboard')}
+            />
+          ) : isFinanceRoute ? (
+            <FinanceComingSoonPage
+              routeId={activeRoute}
               onBackToDashboard={() => navigateTo('dashboard')}
             />
           ) : (

@@ -1308,7 +1308,7 @@ export default function StatutoryCertificateViewerModal({
                       <div style={{ fontSize: '11px', color: '#64748b' }}>
                         <div>Date of Issue: <strong>15 Oct 2026</strong></div>
                         <div>Clearance Validity: <strong>12 Months</strong></div>
-                        <div>Fleet Guarantor on Record: <strong>{driver.kyc?.reference?.name || 'Suresh Verma'}</strong></div>
+                        <div>Fleet Guarantor on Record: <strong>{driver.kyc?.reference?.name || 'Not provided'}</strong></div>
                       </div>
 
                       <div style={{ textAlign: 'center' }}>
@@ -1352,22 +1352,22 @@ export default function StatutoryCertificateViewerModal({
                       </div>
                     </div>
                     <span style={{ padding: '4px 10px', borderRadius: '6px', background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontWeight: 800, fontSize: '11px' }}>
-                      LEGAL STATUS: EXECUTED & ACTIVE
+                      {driver.deal?.agreementSigned ? `LEGAL STATUS: ${driver.deal.leaseStatus || 'EXECUTED'}` : 'LEGAL STATUS: NOT ASSIGNED'}
                     </span>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '22px' }}>
                     <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Rental Model</span>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>Fixed Daily Rental</div>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{driver.deal?.type || 'Not assigned'}</div>
                     </div>
                     <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Daily Rate</span>
-                      <div style={{ fontSize: '15px', fontWeight: 900, color: '#0284c7', marginTop: '2px' }}>₹1,000 / day</div>
+                      <div style={{ fontSize: '15px', fontWeight: 900, color: '#0284c7', marginTop: '2px' }}>{driver.deal?.rate || '—'}</div>
                     </div>
                     <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Escrow Security</span>
-                      <div style={{ fontSize: '15px', fontWeight: 900, color: '#16a34a', marginTop: '2px' }}>₹75,000 (Secured)</div>
+                      <div style={{ fontSize: '15px', fontWeight: 900, color: '#16a34a', marginTop: '2px' }}>{driver.deal?.deposit || '—'}</div>
                     </div>
                     <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Agreement Tenure</span>

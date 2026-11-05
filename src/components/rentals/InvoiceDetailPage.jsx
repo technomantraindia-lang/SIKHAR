@@ -22,6 +22,7 @@ import {
   payInvoiceDirectApi,
   waiveInvoiceApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function InvoiceDetailPage({
   invoiceId,
@@ -464,7 +465,8 @@ export default function InvoiceDetailPage({
                     <form onSubmit={handleDirectCollect} className="inline-collect-form-box">
                       <div className="form-field-group">
                         <label className="input-label">Payment Channel</label>
-                        <select
+                        <AdminOptionSelect
+                          group="payment_method"
                           className="styled-input-select"
                           value={paymentMethod}
                           onChange={(e) => setPaymentMethod(e.target.value)}
@@ -473,7 +475,7 @@ export default function InvoiceDetailPage({
                           <option value="Cash">Cash Handover at Fleet Yard</option>
                           <option value="Bank Transfer">Bank Transfer (NEFT / IMPS)</option>
                           <option value="POS Card">POS Card Terminal</option>
-                        </select>
+                        </AdminOptionSelect>
                       </div>
 
                       <div className="form-field-group">

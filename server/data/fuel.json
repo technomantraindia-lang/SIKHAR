@@ -1,8 +1,8 @@
 {
   "kpis": {
-    "totalEnergyKwh": 42850,
-    "totalCngKg": 14280,
-    "totalCostInr": 486320,
+    "totalEnergyKwh": 42905,
+    "totalCngKg": 14292,
+    "totalCostInr": 485568,
     "evEfficiencyKmPerKwh": 7.8,
     "cngEfficiencyKmPerKg": 26.4,
     "activeSessionsCount": 3,
@@ -10,6 +10,28 @@
     "avgCostPerKm": 2.14
   },
   "chargingSessions": [
+    {
+      "id": "CHG-2026-00416",
+      "vehicle": "QA1105104011",
+      "driver": "QA Test Driver 1105104011",
+      "stationName": "QA Charging Bay",
+      "connectorType": "CCS2",
+      "status": "Settled",
+      "startTime": "2026-11-05T05:10:14.602Z",
+      "endTime": "2026-11-05T05:10:14.610Z",
+      "startSoC": 25,
+      "currentSoC": 85,
+      "targetSoC": 85,
+      "chargingRateKw": 0,
+      "energyDeliveredKwh": 18.4,
+      "tariffPerKwh": 18.5,
+      "walletHold": 800,
+      "currentCost": 340.4,
+      "notes": "QA-TEST charging. Settled: ₹340.4 deducted, ₹459.60 released.",
+      "settledAmount": 340.4,
+      "releasedReservation": 459.6,
+      "cdrReference": "CDR-518814"
+    },
     {
       "id": "CHG-2026-00412",
       "vehicle": "DL52GD6605",
@@ -43,7 +65,7 @@
       "targetSoC": 100,
       "chargingRateKw": 7.2,
       "energyDeliveredKwh": 12.4,
-      "tariffPerKwh": 12.0,
+      "tariffPerKwh": 12,
       "walletHold": 800,
       "currentCost": 148.8,
       "notes": "Depot top-up before deployment."
@@ -60,9 +82,9 @@
       "startSoC": 12,
       "currentSoC": 58,
       "targetSoC": 85,
-      "chargingRateKw": 44.0,
+      "chargingRateKw": 44,
       "energyDeliveredKwh": 14.1,
-      "tariffPerKwh": 19.0,
+      "tariffPerKwh": 19,
       "walletHold": 800,
       "currentCost": 267.9,
       "notes": "Mid-day boost charging session."
@@ -83,9 +105,9 @@
       "energyDeliveredKwh": 21.6,
       "tariffPerKwh": 17.5,
       "walletHold": 800,
-      "currentCost": 378.0,
-      "settledAmount": 378.0,
-      "releasedReservation": 422.0,
+      "currentCost": 378,
+      "settledAmount": 378,
+      "releasedReservation": 422,
       "cdrReference": "CDR-STATIQ-991204",
       "notes": "Settled automatically via CDR webhook. ₹422 hold refunded."
     },
@@ -113,6 +135,26 @@
     }
   ],
   "fuelLogs": [
+    {
+      "id": "CNG-2026-00895",
+      "vehicle": "QB1105104011",
+      "driver": "QA Test Driver 1105104011",
+      "fuelType": "CNG",
+      "stationName": "QA CNG Station",
+      "quantityKg": 8.5,
+      "ratePerKg": 82,
+      "totalAmount": 697,
+      "odometer": 900,
+      "previousOdometer": 700,
+      "distanceKm": 200,
+      "efficiency": 23.53,
+      "paymentMethod": "QA Test UPI",
+      "status": "Verified",
+      "loggedAt": "2026-11-05T05:10:14.620Z",
+      "slipNumber": "QA-SLIP-1105104011",
+      "verifiedBy": "QA Admin",
+      "notes": "QA verification passed."
+    },
     {
       "id": "CNG-2026-00891",
       "vehicle": "HR38AK1234",
@@ -200,9 +242,15 @@
       "name": "Tata Power EZ Charge - Cyber Hub",
       "network": "Tata Power",
       "location": "DLF Cyber City, Phase 2, Gurugram",
-      "coordinates": { "lat": 28.4952, "lng": 77.0891 },
+      "coordinates": {
+        "lat": 28.4952,
+        "lng": 77.0891
+      },
       "type": "EV Fast Charging",
-      "connectors": ["CCS2 (60kW) x4", "Type 2 (22kW) x2"],
+      "connectors": [
+        "CCS2 (60kW) x4",
+        "Type 2 (22kW) x2"
+      ],
       "tariff": "₹18.50 / kWh + GST",
       "status": "Available",
       "activePlugs": "3/6"
@@ -212,9 +260,15 @@
       "name": "Sikhar Fleet Central Depot",
       "network": "Sikhar Private Network",
       "location": "Plot 42, Sector 37 Industrial Area, Gurugram",
-      "coordinates": { "lat": 28.4419, "lng": 76.9934 },
+      "coordinates": {
+        "lat": 28.4419,
+        "lng": 76.9934
+      },
       "type": "EV Fleet Depot",
-      "connectors": ["Type 2 AC (7.4kW) x12", "CCS2 (30kW) x2"],
+      "connectors": [
+        "Type 2 AC (7.4kW) x12",
+        "CCS2 (30kW) x2"
+      ],
       "tariff": "₹12.00 / kWh (Internal Rate)",
       "status": "Available",
       "activePlugs": "8/14"
@@ -224,9 +278,14 @@
       "name": "Jio-bp pulse - Sector 44",
       "network": "Jio-bp",
       "location": "Near Huda City Centre Metro, Sector 44, Gurugram",
-      "coordinates": { "lat": 28.4595, "lng": 77.0726 },
+      "coordinates": {
+        "lat": 28.4595,
+        "lng": 77.0726
+      },
       "type": "EV Fast Charging",
-      "connectors": ["CCS2 (50kW) x4"],
+      "connectors": [
+        "CCS2 (50kW) x4"
+      ],
       "tariff": "₹19.00 / kWh",
       "status": "Busy",
       "activePlugs": "4/4"
@@ -236,9 +295,15 @@
       "name": "Statiq Charging Station - Noida 62",
       "network": "Statiq",
       "location": "Institutional Area, Sector 62, Noida",
-      "coordinates": { "lat": 28.628, "lng": 77.3649 },
+      "coordinates": {
+        "lat": 28.628,
+        "lng": 77.3649
+      },
       "type": "EV Fast Charging",
-      "connectors": ["CCS2 (60kW) x2", "GB/T (15kW) x2"],
+      "connectors": [
+        "CCS2 (60kW) x2",
+        "GB/T (15kW) x2"
+      ],
       "tariff": "₹17.50 / kWh",
       "status": "Available",
       "activePlugs": "1/4"
@@ -248,9 +313,14 @@
       "name": "IGL CNG Station - Sector 29",
       "network": "Indraprastha Gas Limited",
       "location": "Leisure Valley Road, Sector 29, Gurugram",
-      "coordinates": { "lat": 28.4682, "lng": 77.0631 },
+      "coordinates": {
+        "lat": 28.4682,
+        "lng": 77.0631
+      },
       "type": "CNG Dispenser",
-      "connectors": ["CNG High-Flow Dispenser x8"],
+      "connectors": [
+        "CNG High-Flow Dispenser x8"
+      ],
       "tariff": "₹89.50 / kg",
       "status": "Available",
       "activePlugs": "8/8"

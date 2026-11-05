@@ -26,6 +26,7 @@ import {
   releaseVehicleApi,
   fetchFleetTowerApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1260,7 +1261,8 @@ export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackT
               <div className="grid2">
                 <div className="field">
                   <label>Service Type *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="maintenance_service_type"
                     value={createForm.serviceType}
                     onChange={(e) => setCreateForm({ ...createForm, serviceType: e.target.value })}
                   >
@@ -1270,19 +1272,20 @@ export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackT
                     <option value="Battery / Electrical Inspection">Battery / Electrical Inspection</option>
                     <option value="Tyres / Wheel Alignment">Tyres / Wheel Alignment</option>
                     <option value="Bodywork & Accidental Repair">Bodywork &amp; Accidental Repair</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
                   <label>Priority Level *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="maintenance_priority"
                     value={createForm.priority}
                     onChange={(e) => setCreateForm({ ...createForm, priority: e.target.value })}
                   >
                     <option value="Normal">Normal (Standard Service)</option>
                     <option value="High">High (Immediate Turnaround)</option>
                     <option value="Critical">Critical (Breakdown / Off-Road)</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 
@@ -1403,14 +1406,15 @@ export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackT
 
               <div className="field">
                 <label>Approving Officer *</label>
-                <select
+                <AdminOptionSelect
+                  group="maintenance_approver"
                   value={estimateForm.approvedBy}
                   onChange={(e) => setEstimateForm({ ...estimateForm, approvedBy: e.target.value })}
                 >
                   <option value="Operations Manager">Operations Manager</option>
                   <option value="Founder / Executive Admin">Founder / Executive Admin</option>
                   <option value="Workshop Fleet Supervisor">Workshop Fleet Supervisor</option>
-                </select>
+                </AdminOptionSelect>
               </div>
 
               <div className="field">
@@ -1479,13 +1483,14 @@ export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackT
               <div className="grid2">
                 <div className="field">
                   <label>Road Test Outcome *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="maintenance_qc_outcome"
                     value={qcForm.testDrivePassed ? 'Passed' : 'Failed'}
                     onChange={(e) => setQcForm({ ...qcForm, testDrivePassed: e.target.value === 'Passed' })}
                   >
                     <option value="Passed">Passed — Roadworthy &amp; Cleared</option>
                     <option value="Failed">Failed — Return to Workshop for Rework</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
@@ -1645,14 +1650,15 @@ export default function MaintenanceMasterPage({ onNavigate: _onNavigate, onBackT
               <div className="grid2">
                 <div className="field">
                   <label>Payment Method *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="maintenance_payment_method"
                     value={paymentForm.method}
                     onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
                   >
                     <option value="Bank Transfer / NEFT">Bank Transfer / NEFT</option>
                     <option value="UPI / IMPS">UPI / IMPS</option>
                     <option value="Corporate Debit Card">Corporate Debit Card</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">

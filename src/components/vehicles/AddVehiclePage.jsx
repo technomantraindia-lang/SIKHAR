@@ -10,6 +10,7 @@ import {
 } from '../common/Icons';
 import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import { createVehicleApi } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function AddVehiclePage({ onBack, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -213,7 +214,8 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
 
             <div className="form-group">
               <label>Vehicle Model *</label>
-              <select
+              <AdminOptionSelect
+                group="vehicle_model"
                 className="terminal-select"
                 value={formData.model}
                 onChange={(e) => handleChange('model', e.target.value)}
@@ -223,7 +225,7 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                 <option value="MG ZS EV EXCITE">MG ZS EV Excite</option>
                 <option value="WAGONR H3 CNG">Maruti WagonR H3 CNG (Commercial Fleet)</option>
                 <option value="MARUTI DZIRE TOUR S CNG">Maruti Dzire Tour S CNG</option>
-              </select>
+              </AdminOptionSelect>
             </div>
 
             <div className="form-group">
@@ -248,7 +250,8 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
 
             <div className="form-group">
               <label>Connector / Fuel Interface *</label>
-              <select
+              <AdminOptionSelect
+                group="connector_type"
                 className="terminal-select"
                 value={formData.connectorType}
                 onChange={(e) => handleChange('connectorType', e.target.value)}
@@ -265,7 +268,7 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                     <option value="High-Flow NGV1 Commercial Nozzle">High-Flow NGV1 Commercial Nozzle</option>
                   </>
                 )}
-              </select>
+              </AdminOptionSelect>
             </div>
 
             <div className="form-group full-width">
@@ -295,7 +298,8 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
           <div className="av-form-grid">
             <div className="form-group">
               <label>Assigned Operations Yard / Hub *</label>
-              <select
+              <AdminOptionSelect
+                group="fleet_hub"
                 className="terminal-select"
                 value={formData.hub}
                 onChange={(e) => handleChange('hub', e.target.value)}
@@ -304,12 +308,13 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                 <option value="ABC Motors Gurgaon Workshop Hub">ABC Motors Gurgaon Workshop Hub (Sec 29)</option>
                 <option value="Sikhar Noida Sector 62 Charging Hub">Sikhar Noida Sector 62 Charging Hub</option>
                 <option value="Aerocity Logistics & Transit Yard">Aerocity Logistics &amp; Transit Yard</option>
-              </select>
+              </AdminOptionSelect>
             </div>
 
             <div className="form-group">
               <label>Initial Operational Status *</label>
-              <select
+              <AdminOptionSelect
+                group="vehicle_status"
                 className="terminal-select"
                 value={formData.status}
                 onChange={(e) => handleChange('status', e.target.value)}
@@ -317,7 +322,7 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                 <option value="Ready to Deploy">Ready to Deploy (Available in Yard)</option>
                 <option value="At Workshop">At Workshop (Pre-induction Inspection)</option>
                 <option value="On Road">On Road (Direct Deployment)</option>
-              </select>
+              </AdminOptionSelect>
             </div>
 
             <div className="form-group">
@@ -356,7 +361,8 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
           <div className="av-form-grid">
             <div className="form-group">
               <label>Lender / Financing Institution *</label>
-              <select
+              <AdminOptionSelect
+                group="financing_lender"
                 className="terminal-select"
                 value={formData.lender}
                 onChange={(e) => handleChange('lender', e.target.value)}
@@ -365,7 +371,7 @@ export default function AddVehiclePage({ onBack, onSuccess }) {
                 <option value="Astronova Capital">Astronova Capital (EV Asset Leasing)</option>
                 <option value="HDFC Bank Commercial Assets">HDFC Bank Commercial Assets</option>
                 <option value="Tata Capital Fleet Finance">Tata Capital Fleet Finance</option>
-              </select>
+              </AdminOptionSelect>
             </div>
 
             <div className="form-group">

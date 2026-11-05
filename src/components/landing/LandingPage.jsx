@@ -89,7 +89,7 @@ const governancePillars = [
     accent: 'cyan',
     hudTitle: 'INSTITUTIONAL KYC AUDIT',
     hudItems: [
-      { label: 'UIDAI Aadhaar OCR & Address Parsing', state: 'Verified & Encrypted' },
+      { label: 'UIDAI Aadhaar & Address Parsing', state: 'Verified & Encrypted' },
       { label: 'Sarathi Commercial DL Authentication', state: 'Active Transport Badge' },
       { label: 'Police Clearance Certificate (PCC)', state: 'Commissioner Record Clear' }
     ],

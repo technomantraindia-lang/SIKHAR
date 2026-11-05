@@ -26,6 +26,7 @@ import {
   waiveInvoiceApi,
   fetchDriversApi
 } from '../../services/api';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -487,7 +488,8 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
 
               <div className="form-field-group">
                 <label className="input-label">Payment Channel *</label>
-                <select
+                <AdminOptionSelect
+                  group="payment_method"
                   className="styled-input-select"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
@@ -496,7 +498,7 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
                   <option value="Cash">Cash Handover at Yard</option>
                   <option value="Bank Transfer">Bank Transfer / NEFT / IMPS</option>
                   <option value="POS Card Terminal">Card Swiped on POS Terminal</option>
-                </select>
+                </AdminOptionSelect>
               </div>
 
               <div className="form-field-group">

@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalDrivers": 17,
+    "totalDrivers": 18,
     "activeContracts": 57,
     "onDuty": 9,
     "onLeave": 1,
@@ -55,6 +55,167 @@
     }
   ],
   "drivers": [
+    {
+      "id": "drv-18",
+      "name": "QA Test Driver 1105104011",
+      "phone": "+919900000001",
+      "altPhone": "",
+      "city": "QA Delhi",
+      "photo": "",
+      "mobileVerified": true,
+      "status": "On Duty",
+      "rating": 5,
+      "shift": "",
+      "shiftType": "",
+      "coDriver": null,
+      "location": "QA Delhi",
+      "vehicle": {
+        "registration": "QB1105104011",
+        "model": "QA WagonR CNG",
+        "type": "CNG",
+        "status": "Temporary Duty (2 Days)"
+      },
+      "todayGross": "₹0",
+      "todayTrips": 0,
+      "wallet": {
+        "postedBalance": 4000,
+        "activeHolds": 0,
+        "spendableBalance": 4000,
+        "outstandingDues": 0,
+        "status": "Healthy",
+        "autoTopup": false,
+        "lastTopup": "05 Nov 2026, 10:40 AM · ₹1,500",
+        "recentTransactions": [
+          {
+            "id": "WTX-4219",
+            "date": "05 Nov 2026, 10:40 AM",
+            "type": "Wallet Top-up",
+            "amount": "+₹1,500",
+            "method": "QA Test UPI (QA-TOPUP-1105104011)",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-4143",
+            "date": "05 Nov 2026, 10:00 AM",
+            "type": "Initial Deposit",
+            "amount": "+₹2,500.00",
+            "method": "Initial Credit",
+            "status": "Success"
+          }
+        ]
+      },
+      "kyc": {
+        "dob": "",
+        "gender": "Other",
+        "fatherName": "QA Parent",
+        "aadhaar": "999988887777",
+        "aadhaarVerified": true,
+        "panCard": "QATEST1234A",
+        "panVerified": true,
+        "drivingLicence": "QA-DL-1105104011",
+        "dlExpiry": "2032-12-31",
+        "dlCategory": "Commercial LMV",
+        "dlStatus": "Valid",
+        "policeVerification": "Verified (Clear)",
+        "emergencyContact": "",
+        "reference": null,
+        "address": "QA Test Address"
+      },
+      "documents": [
+        {
+          "id": "doc-adh-drv-18",
+          "type": "Aadhaar Card",
+          "category": "aadhaar",
+          "title": "UIDAI Aadhaar Biometric Card",
+          "docNumber": "999988887777",
+          "issueDate": "2020-01-01",
+          "expiryDate": "Lifetime / Valid",
+          "verified": true,
+          "uploadedAt": "2026-11-05T05:10:14.144Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "fileSize": "",
+          "status": "Verified",
+          "notes": "",
+          "source": "Driver onboarding OCR upload"
+        },
+        {
+          "id": "doc-dl-drv-18",
+          "type": "Driving Licence",
+          "category": "dl",
+          "title": "Commercial Motor Vehicle Driving Licence (LMV-TR)",
+          "docNumber": "QA-DL-1105104011",
+          "issueDate": "2025-07-08",
+          "expiryDate": "2032-12-31",
+          "verified": true,
+          "uploadedAt": "2026-11-05T05:10:14.144Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "fileSize": "",
+          "status": "Verified",
+          "notes": "",
+          "source": "Driver onboarding OCR upload"
+        },
+        {
+          "id": "doc-pan-drv-18",
+          "type": "PAN Card",
+          "category": "pan",
+          "title": "Income Tax Permanent Account Number (PAN)",
+          "docNumber": "QATEST1234A",
+          "issueDate": "2020-01-01",
+          "expiryDate": "Lifetime / Valid",
+          "verified": true,
+          "uploadedAt": "2026-11-05T05:10:14.144Z",
+          "uploadedBy": "Admin Authority",
+          "fileUrl": "",
+          "fileSize": "",
+          "status": "Verified",
+          "notes": "",
+          "source": "Driver onboarding OCR upload"
+        }
+      ],
+      "deal": {
+        "type": "Fixed Lease",
+        "rate": "₹1,250 / daily",
+        "deposit": "₹50,000 (Secured in Escrow)",
+        "frequency": "Daily",
+        "taxRule": "GST 5%",
+        "startDate": "2026-11-05T05:10:14.393Z",
+        "contractMonths": 0,
+        "agreementVersion": "v1.0 (Digitally Signed)",
+        "agreementSigned": true,
+        "depositReceipt": "QA-DEP-1105104011",
+        "depositStatus": "Held in Escrow",
+        "leaseId": "ORD-26-414249",
+        "leaseStatus": "Active",
+        "lastAmendment": "2026-11-05T05:10:14.414Z"
+      },
+      "attendance": {
+        "presentDays": 1,
+        "leaveDays": 0,
+        "punctuality": "100%"
+      },
+      "temporaryAssignment": {
+        "assignmentId": "ASG-2026-6564",
+        "isTemporary": true,
+        "originalVehicle": {
+          "registration": "QA1105104011",
+          "model": "QA Tigor EV",
+          "type": "EV",
+          "status": "Assigned 1:1"
+        },
+        "assignedVehicle": {
+          "registration": "QB1105104011",
+          "model": "QA WagonR CNG",
+          "type": "CNG"
+        },
+        "durationDays": 2,
+        "startDate": "2026-11-05T05:10:14.487Z",
+        "endDate": "2026-11-07T05:10:14.487Z",
+        "reason": "QA end-to-end duty test",
+        "status": "Active"
+      }
+    },
     {
       "id": "drv-17",
       "name": "parekh dhruv",

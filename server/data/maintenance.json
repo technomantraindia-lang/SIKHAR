@@ -1,25 +1,128 @@
 {
   "kpis": {
-    "serviceDue": 7,
-    "openJobCards": 4,
-    "atWorkshop": 5,
-    "billsPending": 3,
-    "paymentsDue": 48650,
-    "readyToDeploy": 3
+    "serviceDue": 2,
+    "openJobCards": 2,
+    "atWorkshop": 2,
+    "billsPending": 1,
+    "paymentsDue": 17228,
+    "readyToDeploy": 2
   },
   "stages": [
-    { "index": 1, "key": "service-due", "name": "Service Due", "desc": "Identify service requirement" },
-    { "index": 2, "key": "job-card", "name": "Job Card", "desc": "Scope, complaint & approval" },
-    { "index": 3, "key": "workshop", "name": "Workshop Check-in", "desc": "Vehicle condition & check-in" },
-    { "index": 4, "key": "estimate", "name": "Estimate & Approval", "desc": "Approve parts + labour" },
-    { "index": 5, "key": "work", "name": "Work In Progress", "desc": "Execute repair & parts tracking" },
-    { "index": 6, "key": "qc", "name": "QC & Test Drive", "desc": "Quality check & road test" },
-    { "index": 7, "key": "bill", "name": "Final Bill Verification", "desc": "3-way match vendor invoice" },
-    { "index": 8, "key": "payment", "name": "Vendor Payment", "desc": "Record payment & UTR" },
-    { "index": 9, "key": "closure", "name": "Job Card Closure", "desc": "Update history & next service" },
-    { "index": 10, "key": "ready", "name": "Ready to Deploy", "desc": "Released back to operations" }
+    {
+      "index": 1,
+      "key": "service-due",
+      "name": "Service Due",
+      "desc": "Identify service requirement"
+    },
+    {
+      "index": 2,
+      "key": "job-card",
+      "name": "Job Card",
+      "desc": "Scope, complaint & approval"
+    },
+    {
+      "index": 3,
+      "key": "workshop",
+      "name": "Workshop Check-in",
+      "desc": "Vehicle condition & check-in"
+    },
+    {
+      "index": 4,
+      "key": "estimate",
+      "name": "Estimate & Approval",
+      "desc": "Approve parts + labour"
+    },
+    {
+      "index": 5,
+      "key": "work",
+      "name": "Work In Progress",
+      "desc": "Execute repair & parts tracking"
+    },
+    {
+      "index": 6,
+      "key": "qc",
+      "name": "QC & Test Drive",
+      "desc": "Quality check & road test"
+    },
+    {
+      "index": 7,
+      "key": "bill",
+      "name": "Final Bill Verification",
+      "desc": "3-way match vendor invoice"
+    },
+    {
+      "index": 8,
+      "key": "payment",
+      "name": "Vendor Payment",
+      "desc": "Record payment & UTR"
+    },
+    {
+      "index": 9,
+      "key": "closure",
+      "name": "Job Card Closure",
+      "desc": "Update history & next service"
+    },
+    {
+      "index": 10,
+      "key": "ready",
+      "name": "Ready to Deploy",
+      "desc": "Released back to operations"
+    }
   ],
   "jobCards": [
+    {
+      "id": "JC-2026-00108",
+      "vehicle": "QA1105104011",
+      "vehicleModel": "QA Tigor EV",
+      "driver": "QA Test Driver 1105104011",
+      "driverPhone": "+919900000001",
+      "stageIndex": 10,
+      "stageKey": "ready",
+      "stageName": "Ready to Deploy",
+      "status": "Ready to Deploy",
+      "serviceType": "QA Test Service",
+      "priority": "High",
+      "workshop": "QA Workshop",
+      "odometer": "650 km",
+      "reportedDate": "05 Nov 2026",
+      "expectedCompletion": "Within 48 Hours",
+      "complaint": "QA-TEST maintenance flow.",
+      "checklist": {
+        "keysReceived": true,
+        "odometerVerified": true,
+        "batteryLevel": "80%",
+        "testDriveDone": true,
+        "qcPassed": true,
+        "billVerified": true,
+        "paymentDone": true
+      },
+      "estimate": {
+        "labour": 2000,
+        "parts": 3000,
+        "gst": 900,
+        "total": 5900,
+        "status": "Approved",
+        "approvedBy": "QA Admin",
+        "note": "QA estimate approval."
+      },
+      "bill": {
+        "invoiceNo": "QA-VND-1105104011",
+        "invoiceDate": "2026-11-05",
+        "billedAmount": 5900,
+        "variance": 0,
+        "matched": true
+      },
+      "payment": {
+        "method": "QA Test UPI",
+        "utr": "QA-UTR-1105104011",
+        "amount": 5900,
+        "date": "05 Nov 2026"
+      },
+      "nextService": "10000 km / 2027-03-01",
+      "notes": "Job card initialized from maintenance terminal. · QA workshop check-in · QC & road test passed (QA road test passed.). · Job Card closed and vehicle certified Ready to Deploy (QA closure passed.). Driver assignment preserved.",
+      "technician": "QA Technician",
+      "completedOdo": "700 km"
+    },
     {
       "id": "JC-2026-00125",
       "vehicle": "DL52GD6605",

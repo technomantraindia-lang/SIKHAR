@@ -35,6 +35,7 @@ import {
   fetchFleetTowerApi
 } from '../../services/api';
 import EscalationChatSection from './EscalationChatSection';
+import AdminOptionSelect from '../common/AdminOptionSelect';
 
 export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -1708,7 +1709,8 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
               <div className="grid2">
                 <div className="field">
                   <label>Escalation Category *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="escalation_category"
                     value={createForm.category}
                     onChange={(e) => {
                       const cat = e.target.value;
@@ -1729,19 +1731,20 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
                     <option value="Maintenance">Maintenance</option>
                     <option value="Compliance">Compliance</option>
                     <option value="Other">Other</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
 
                 <div className="field">
                   <label>Priority Level *</label>
-                  <select
+                  <AdminOptionSelect
+                    group="escalation_priority"
                     value={createForm.priority}
                     onChange={(e) => setCreateForm({ ...createForm, priority: e.target.value })}
                   >
                     <option value="P1">P1 — Critical (1 Hour SLA)</option>
                     <option value="P2">P2 — High (4 Hours SLA)</option>
                     <option value="P3">P3 — Normal (24 Hours SLA)</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 
@@ -1786,7 +1789,8 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
                 </div>
                 <div className="field">
                   <label>Assign Team</label>
-                  <select
+                  <AdminOptionSelect
+                    group="escalation_team"
                     value={createForm.team}
                     onChange={(e) => setCreateForm({ ...createForm, team: e.target.value })}
                   >
@@ -1794,7 +1798,7 @@ export default function EscalationMasterPage({ onNavigate, onBackToDashboard }) 
                     <option value="Finance">Finance</option>
                     <option value="Maintenance">Maintenance</option>
                     <option value="Driver Support">Driver Support</option>
-                  </select>
+                  </AdminOptionSelect>
                 </div>
               </div>
 
