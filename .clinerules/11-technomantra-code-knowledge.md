@@ -2,10 +2,10 @@
 
 > Structural local index. Read current source before editing. Secrets are intentionally excluded.
 
-- Indexed source files: 73
-- Structural edges: 268
+- Indexed source files: 78
+- Structural edges: 281
 - Matched end-to-end flows: 0
-- Updated: 2026-11-05T03:34:00.270Z
+- Updated: 2026-11-13T05:30:47.972Z
 
 ## Routes
 - ROUTE GET / -> handler @ server/routes/assignmentRoutes.js
@@ -25,6 +25,7 @@
 - ROUTE GET / -> handler @ server/routes/driverRoutes.js
 - ROUTE GET /wallet-health -> handler @ server/routes/driverRoutes.js
 - ROUTE GET /:id -> handler @ server/routes/driverRoutes.js
+- ROUTE PUT /:id -> handler @ server/routes/driverRoutes.js
 - ROUTE PUT /:id/status -> handler @ server/routes/driverRoutes.js
 - ROUTE POST /:id/wallet/topup -> handler @ server/routes/driverRoutes.js
 - ROUTE POST / -> handler @ server/routes/driverRoutes.js
@@ -43,75 +44,75 @@
 - ROUTE POST /:id/notes -> handler @ server/routes/escalationRoutes.js
 - ROUTE GET /:id/messages -> handler @ server/routes/escalationRoutes.js
 - ROUTE POST /:id/messages -> handler @ server/routes/escalationRoutes.js
-- ROUTE PUT /:id -> handler @ server/routes/escalationRoutes.js
 
 ## Frontend API calls
+- API GET /${API_BASE}/options <- src/services/api.js
+- API POST /${API_BASE}/options <- src/services/api.js
 - API POST /${API_BASE}/auth/login <- src/services/api.js
 - API GET /${API_BASE}/dashboard <- src/services/api.js
 - API GET /${API_BASE}/finance/customer-soa/${encodeURIComponent(customerKey)} <- src/services/api.js
 - API GET /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)} <- src/services/api.js
 - API POST /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}/action <- src/services/api.js
 - API POST /${API_BASE}/fleet/vehicles <- src/services/api.js
+- API PUT /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)} <- src/services/api.js
 - API PUT /${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}/status <- src/services/api.js
 - API GET /${API_BASE}/drivers/${encodeURIComponent(id)} <- src/services/api.js
+- API PUT /${API_BASE}/drivers/${encodeURIComponent(id)} <- src/services/api.js
 - API PUT /${API_BASE}/drivers/${encodeURIComponent(id)}/status <- src/services/api.js
 - API POST /${API_BASE}/drivers/${encodeURIComponent(id)}/wallet/topup <- src/services/api.js
 - API POST /${API_BASE}/drivers <- src/services/api.js
 - API DELETE /${API_BASE}/drivers/${encodeURIComponent(id)} <- src/services/api.js
-- API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/vehicle <- src/services/api.js
-- API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/lease <- src/services/api.js
-- API POST /${API_BASE}/drivers/${encodeURIComponent(driverId)}/leave <- src/services/api.js
-- API PUT /${API_BASE}/drivers/${encodeURIComponent(driverId)}/deal <- src/services/api.js
 
 ## Dependency edges
 - IMPORT index.html -> src/main.jsx
 - IMPORT src/App.jsx -> src/components/layout/TopHeader.jsx, src/components/layout/Sidebar.jsx, src/components/dashboard/ExecutiveDashboard.jsx, src/components/fleet/FleetControlTower.jsx, src/components/drivers/DriverControlTower.jsx, src/components/vehicles/VehicleManager.jsx, src/components/rentals/BookingLeasePage.jsx, src/components/rentals/InvoicesPage.jsx
 - IMPORT src/components/auth/AdminLogin.jsx -> src/services/api.js, src/components/common/Icons.jsx
 - IMPORT src/components/auth/AuthPage.jsx -> src/services/localStore.js
+- IMPORT src/components/common/AdminOptionSelect.jsx -> src/services/api.js
 - IMPORT src/components/common/DocumentOcrScannerModal.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/compliance/ComplianceMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/compliance/ComplianceMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
 - IMPORT src/components/dashboard/ExecutiveDashboard.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/drivers/AddDriverPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/DocumentOcrScannerModal.jsx
+- IMPORT src/components/drivers/AddDriverPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx, src/components/common/DocumentOcrScannerModal.jsx
 - IMPORT src/components/drivers/AllDriversListPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/drivers/DriverControlTower.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/drivers/DriverDetailPage.jsx, src/components/drivers/FleetLiveLocationMap.jsx, src/components/drivers/AddDriverPage.jsx, src/components/drivers/AllDriversListPage.jsx
-- IMPORT src/components/drivers/DriverDetailPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/DocumentOcrScannerModal.jsx, src/components/drivers/StatutoryCertificateViewerModal.jsx
-- IMPORT src/components/drivers/DriverDocumentsModal.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/DocumentOcrScannerModal.jsx
+- IMPORT src/components/drivers/DriverDetailPage.jsx -> src/components/common/Icons.jsx, src/components/common/AdminOptionSelect.jsx, src/services/api.js, src/components/common/DocumentOcrScannerModal.jsx, src/components/drivers/StatutoryCertificateViewerModal.jsx
+- IMPORT src/components/drivers/DriverDocumentsModal.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx, src/components/common/DocumentOcrScannerModal.jsx
 - IMPORT src/components/drivers/FleetLiveLocationMap.jsx -> src/components/common/Icons.jsx
 - IMPORT src/components/drivers/StatutoryCertificateViewerModal.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/escalations/EscalationChatSection.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/escalations/EscalationMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/escalations/EscalationChatSection.jsx
+- IMPORT src/components/escalations/EscalationMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/escalations/EscalationChatSection.jsx, src/components/common/AdminOptionSelect.jsx
 - IMPORT src/components/finance/FinanceAssetFinancingPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/finance/FinanceComingSoonPage.jsx -> src/components/common/Icons.jsx
 - IMPORT src/components/finance/FinanceCustomerSoaPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/finance/FinancePayablesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/finance/FinanceReceivablesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
 - IMPORT src/components/finance/FinanceStatementPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/ManagementReportsPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/finance/ReferenceScreensPage.jsx -> src/components/common/Icons.jsx
 - IMPORT src/components/fleet/FleetControlTower.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/fuel/FuelMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js
+- IMPORT src/components/fuel/FuelMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
 - IMPORT src/components/landing/LandingPage.jsx -> src/components/common/Icons.jsx, src/components/landing/LandingPage.css
 - IMPORT src/components/layout/Sidebar.jsx -> src/components/common/Icons.jsx
 - IMPORT src/components/layout/TopHeader.jsx -> src/components/common/Icons.jsx
-- IMPORT src/components/maintenance/MaintenanceMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js
-- IMPORT src/components/rentals/BookingLeasePage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx, src/components/common/DocumentOcrScannerModal.jsx
+- IMPORT src/components/maintenance/MaintenanceMasterPage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
+- IMPORT src/components/rentals/BookingLeasePage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx, src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx, src/components/common/DocumentOcrScannerModal.jsx
 - IMPORT src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx -> src/components/common/Icons.jsx
-- IMPORT src/components/rentals/GenerateInvoicePage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/rentals/InvoiceDetailPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/rentals/InvoicesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/trips/TripsMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/vehicles/AddVehiclePage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js
+- IMPORT src/components/rentals/GenerateInvoicePage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
+- IMPORT src/components/rentals/InvoiceDetailPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
+- IMPORT src/components/rentals/InvoicesPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
+- IMPORT src/components/trips/TripsMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
+- IMPORT src/components/vehicles/AddVehiclePage.jsx -> src/components/common/Icons.jsx, src/components/common/DocumentOcrScannerModal.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
 - IMPORT src/components/vehicles/SpeedometerTelemetryCard.jsx -> src/components/common/Icons.jsx
-- IMPORT src/components/vehicles/VehicleAssignmentPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
+- IMPORT src/components/vehicles/VehicleAssignmentPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/common/AdminOptionSelect.jsx
 - IMPORT src/components/vehicles/VehicleDetailPage.jsx -> src/components/common/Icons.jsx, src/services/api.js, src/components/vehicles/SpeedometerTelemetryCard.jsx
 - IMPORT src/components/vehicles/VehicleManager.jsx -> src/components/vehicles/VehicleMasterPage.jsx, src/components/vehicles/VehicleDetailPage.jsx, src/components/vehicles/AddVehiclePage.jsx, src/components/vehicles/VehicleAssignmentPage.jsx
-- IMPORT src/components/vehicles/VehicleMasterPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/components/wallet/WalletHealthPage.jsx -> src/components/common/Icons.jsx, src/services/api.js
-- IMPORT src/main.jsx -> src/index.css, src/App.jsx
 
 ## Database references
 - DB vite.config.js -> vite
 - DB src/App.jsx -> react, URL
 - DB src/components/auth/AdminLogin.jsx -> react
 - DB src/components/auth/AuthPage.jsx -> react
+- DB src/components/common/AdminOptionSelect.jsx -> react
 - DB src/components/common/DocumentOcrScannerModal.jsx -> react, tesseract, Aadhaar, PAN, DL, video, Document, image, Text
 - DB src/components/common/Icons.jsx -> react
 - DB src/components/compliance/ComplianceMasterPage.jsx -> react, backend, Wallet, driver, wallet, policy
@@ -131,12 +132,12 @@
 - DB src/components/finance/FinanceCustomerSoaPage.jsx -> react, the
 - DB src/components/finance/FinancePayablesPage.jsx -> react, maintenance, verified
 - DB src/components/finance/FinanceReceivablesPage.jsx -> react, invoice, the, Rental
-- DB src/components/finance/FinanceStatementPage.jsx -> react, date, connected
 
 ## Symbols
 - SYMBOL src/App.jsx: App, syncing, getInitialRoute, handlePathChange, openLogin, openLanding, navigateTo, handleHashChange, handleLoginSuccess, handleLogout
 - SYMBOL src/components/auth/AdminLogin.jsx: AdminLogin, handleAdminSubmit, handleFillCredentials
 - SYMBOL src/components/auth/AuthPage.jsx: AuthPage, handleLoginSubmit, handleRegisterSubmit, setDemoAccount
+- SYMBOL src/components/common/AdminOptionSelect.jsx: AdminOptionSelect, handleChange
 - SYMBOL src/components/common/DocumentOcrScannerModal.jsx: preprocessImageForOcr, cleanIndianOcrAddress, parseIndianDocumentOcr, DocumentOcrScannerModal, clean, startCamera, stopCamera, handleSnapPhoto, handleFileChange, handleRotateSelectedImage
 - SYMBOL src/components/common/Icons.jsx: createIcon, Icon
 - SYMBOL src/components/compliance/ComplianceMasterPage.jsx: ComplianceMasterPage, showToast, handleDocVehicleChange, handleChallanVehicleChange, handleAddDocSubmit, openRenewModal, handleRenewSubmit, handleLogChallanSubmit, handlePayChallanSubmit, handleDeductWallet
@@ -144,9 +145,9 @@
 - SYMBOL src/components/dashboard/ModuleViewer.jsx: ModuleViewer
 - SYMBOL src/components/drivers/AddDriverPage.jsx: AddDriverPage, loadFleet, normalizeOcrDocType, normalizeAadhaarValue, normalizePanValue, normalizeDlValue, normalizePhoneValue, sanitizeDriverOcr, _handleSingleDocFileSelect, _handleSaveSingleDocImage
 - SYMBOL src/components/drivers/AllDriversListPage.jsx: AllDriversListPage, showToast, handleDeleteDriver
-- SYMBOL src/components/drivers/DriverControlTower.jsx: DriverControlTower, triggerToast, handleSelectDriver, handleBackToTower, handleOpenAllDrivers, handleOpenAddDriver
-- SYMBOL src/components/drivers/DriverDetailPage.jsx: DriverDetailPage, const, openCertificateViewer, handleDeleteDriverConfirm, handleOcrExtracted, handleApproveLeave, showToast, scrollToDocVault, handleCopyDocNumber, handleAddDocumentSubmit
-- SYMBOL src/components/drivers/DriverDocumentsModal.jsx: DriverDocumentsModal, showToast, handleOcrExtracted, handleCreateDocument, handleDeleteDocument
+- SYMBOL src/components/drivers/DriverControlTower.jsx: DriverControlTower, triggerToast, handleSelectDriver, handleBackToTower, handleOpenAllDrivers, handleOpenAddDriver, handleOpenEditDriver
+- SYMBOL src/components/drivers/DriverDetailPage.jsx: DriverDetailPage, const, hasUploadedDocumentImage, openCertificateViewer, handleDeleteDriverConfirm, handleOcrExtracted, handleApproveLeave, showToast, scrollToDocVault, handleCopyDocNumber
+- SYMBOL src/components/drivers/DriverDocumentsModal.jsx: DriverDocumentsModal, hasUploadedDocumentImage, showToast, handleOcrExtracted, handleCreateDocument, handleDeleteDocument
 - SYMBOL src/components/drivers/FleetLiveLocationMap.jsx: FleetLiveLocationMap, handleZoomIn, handleZoomOut
 - SYMBOL src/components/drivers/StatutoryCertificateViewerModal.jsx: AshokEmblem, SmartCardChip, SpecimenQrCode, StatutoryCertificateViewerModal, handleKeyDown, showNotice, handleCopy, handlePrint, handleDownloadSpecimen, handleUploadPhotoClick
 - SYMBOL src/components/escalations/EscalationChatSection.jsx: EscalationChatSection, handleTogglePlayVoice, handleStartRecording, handleStopRecording, handleCancelRecording, sendVoiceMessage, handleSendTextMessage
@@ -157,19 +158,18 @@
 - SYMBOL src/components/finance/FinancePayablesPage.jsx: money, dateLabel, exportBills, Stat, FinancePayablesPage, loadData
 - SYMBOL src/components/finance/FinanceReceivablesPage.jsx: money, shortDate, exportCustomers, Stat, FinanceReceivablesPage, loadData, openSoa
 - SYMBOL src/components/finance/FinanceStatementPage.jsx: formatMoney, formatDate, percentageChange, changeValue, StatCard, EmptyState, buildCsv, StatementTable, FinanceStatementPage, applyPeriod
+- SYMBOL src/components/finance/ManagementReportsPage.jsx: money, percent, dateLabel, csvCell, exportManagementPack, KpiCard, ReportCard, ManagementReportsPage, numberValue, applyPeriod
+- SYMBOL src/components/finance/ReferenceScreensPage.jsx: ReferenceCard, ReferenceScreensPage
 - SYMBOL src/components/fleet/FleetControlTower.jsx: FleetControlTower, handleSearchSubmit, handleExecuteAction
 - SYMBOL src/components/fuel/FuelMasterPage.jsx: FuelMasterPage, showToast, handleFuelOcrExtracted, handleChargingVehicleChange, handleFuelVehicleChange, handleStartChargingSubmit, handleStopCharging, handleSettleCharging, handleLogFuelSubmit, handleVerifyFuelLog
-- SYMBOL src/components/landing/LandingPage.jsx: BrandMark, SocialIcon, PlatformCapabilitiesSection, ServiceDots, CoreServiceIcon, ServiceAssuranceIcon, CoreServicesSection, LandingPage, scrollTo
+- SYMBOL src/components/landing/LandingPage.jsx: BrandMark, SocialIcon, PlatformCapabilitiesSection, ProcessStepIcon, ProcessAssuranceIcon, ProcessSection, ServiceDots, CoreServiceIcon, ServiceAssuranceIcon, CoreServicesSection
 - SYMBOL src/components/layout/Sidebar.jsx: Sidebar, handleItemClick
 - SYMBOL src/components/layout/TopHeader.jsx: TopHeader
 - SYMBOL src/components/maintenance/MaintenanceMasterPage.jsx: MaintenanceMasterPage, loadFleet, handleMaintenanceOcrExtracted, showToast, handleVehicleSelect, handleTabChange, handleCreateSubmit, handleApproveEstimateSubmit, handleQcSubmit, handleBillSubmit
-- SYMBOL src/components/rentals/BookingLeasePage.jsx: BookingLeasePage, handleOcrExtracted, showToast, handleClearDriverSelection, resetLeaseWizard, handleDirectActivateLease, handleSelectVehicle, handleDriverShareChange, handleConfirmLeaseDeposit, handleActivateLease
+- SYMBOL src/components/rentals/BookingLeasePage.jsx: BookingLeasePage, numericInputValue, handleToggleDepositConfirmation, clearLeaseDraft, handleOcrExtracted, showToast, handleClearDriverSelection, resetLeaseWizard, handleDirectActivateLease, handleSelectVehicle
 - SYMBOL src/components/rentals/CommercialLeaseAgreementPreviewModal.jsx: CommercialLeaseAgreementPreviewModal, handlePrint
 - SYMBOL src/components/rentals/GenerateInvoicePage.jsx: GenerateInvoicePage, loadInitialData, handleDriverChange, handleLeaseChange, handleSubmitInvoice
 - SYMBOL src/components/rentals/InvoiceDetailPage.jsx: InvoiceDetailPage, showToast, handlePayFromWallet, handleDirectCollect, handleWaiveInvoice
-- SYMBOL src/components/rentals/InvoicesPage.jsx: InvoicesPage, showToast, handlePayFromWallet, handleDirectPayment, handleWaiveInvoice
-- SYMBOL src/components/trips/TripsMasterPage.jsx: TripsMasterPage, loadFleet, showToast, handleTabChange, handleVehicleSelect, handleLogTripSubmit, handleUpdateStatus, openEscalateModal, handleEscalateSubmit, handleSimulateImport
-- SYMBOL src/components/vehicles/AddVehiclePage.jsx: AddVehiclePage, handleChange, handleOcrExtracted, handleSubmit
 
 ## Safe configuration variable names
 - CONFIG server/config/db.js: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT

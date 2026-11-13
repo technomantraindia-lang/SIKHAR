@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
 import { loginAdminApi } from '../../services/api';
-import { Lock, Eye, EyeOff, AlertTriangle, ArrowRight, Zap, CheckCircle2 } from '../common/Icons';
+import { Lock, Eye, EyeOff, AlertTriangle, ArrowRight } from '../common/Icons';
 
 export default function AdminLogin({ onLoginSuccess, onBackToHome }) {
-  const [email, setEmail] = useState('admin@sikharfleet.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [autoFilled, setAutoFilled] = useState(false);
 
-  const handleAdminSubmit = async (e) => {
-    e.preventDefault();
+  const handleAdminSubmit = async (event) => {
+    event.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const result = await loginAdminApi(email, password);
+      const result = await loginAdminApi(email.trim(), password, rememberMe);
       onLoginSuccess(result.user);
     } catch (err) {
       setError(err.message || 'Invalid administrative credentials. Please verify your email and password.');
@@ -26,29 +25,24 @@ export default function AdminLogin({ onLoginSuccess, onBackToHome }) {
     }
   };
 
-  const handleFillCredentials = () => {
-    setEmail('admin@sikharfleet.com');
-    setPassword('admin123');
-    setError('');
-    setAutoFilled(true);
-    setTimeout(() => setAutoFilled(false), 2500);
+  const handleFieldChange = (setter) => (event) => {
+    setter(event.target.value);
+    if (error) setError('');
   };
 
   return (
     <div className="corp-split-login-container">
-      {/* Left Column: Authentic Photography Showcase */}
       <div className="login-image-column">
         <div className="login-image-overlay" />
         <img
           src="/images/sidebar_car_twilight.jpg"
-          alt="Sikhar Fleet Vehicle on Mountain Highway"
+          alt="Sikhar Fleet vehicle on a highway"
           className="login-backdrop-photo"
         />
 
-        {/* Brand Stamp on Image */}
         <div className="login-image-top-brand">
           <div className="brand-delta-emblem">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 3L2 21H22L12 3Z" fill="url(#login-delta-grad)" />
               <path d="M12 7.5L5.5 19H18.5L12 7.5Z" fill="#060c1d" />
               <defs>
@@ -66,7 +60,6 @@ export default function AdminLogin({ onLoginSuccess, onBackToHome }) {
           </div>
         </div>
 
-        {/* Minimal Bottom Caption */}
         <div className="login-image-bottom-caption">
           <div className="caption-pill">COMMERCIAL MOBILITY TERMINAL</div>
           <p className="caption-text">
@@ -75,164 +68,111 @@ export default function AdminLogin({ onLoginSuccess, onBackToHome }) {
         </div>
       </div>
 
-      {/* Right Column: Clean, Authentic Login Panel */}
       <div className="login-form-column">
         <div className="login-form-wrapper">
-          {/* Header */}
-          <div className="login-form-header" style={{ marginBottom: '24px' }}>
+          <div className="login-form-header">
             <div className="mobile-only-logo">
               <span className="brand-txt-white">SIKHAR </span>
               <span className="brand-txt-cyan">FLEET</span>
             </div>
-            <h1 className="login-heading" style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px' }}>Sign In</h1>
-            <p className="login-subheading" style={{ margin: '0 0 12px', color: '#94a3b8', fontSize: '13px' }}>
-              Administrative Workstation & Telematics Gateway
-            </p>
-
-            {/* Quick Access Credentials Banner */}
-            <div style={{
-              background: 'rgba(2, 132, 199, 0.1)',
-              border: '1px solid rgba(2, 132, 199, 0.3)',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              marginTop: '10px',
-              fontSize: '12px',
-              color: '#38bdf8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px'
-            }}>
-              <span><strong>Admin Login:</strong> admin@sikharfleet.com • Pass: admin123</span>
-              <button
-                type="button"
-                onClick={handleFillCredentials}
-                style={{
-                  background: autoFilled ? '#10b981' : '#0284c7',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'background 0.2s ease'
-                }}
-              >
-                {autoFilled ? (
-                  <>
-                    <CheckCircle2 size={12} color="#ffffff" />
-                    <span>Filled!</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap size={12} color="#ffffff" />
-                    <span>Auto-Fill</span>
-                  </>
-                )}
-              </button>
+            <h1 className="login-heading">Sign In</h1>
+            <p className="login-subheading">Sign in to open the Sikhar Fleet Admin Panel.</p>
+            <div className="login-security-note">
+              <span className="login-security-dot" aria-hidden="true" />
+              <span>Authorized administrator access only</span>
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
-            <div className="login-error-alert">
+            <div className="login-error-alert" role="alert" aria-live="polite">
               <AlertTriangle size={15} />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleAdminSubmit} className="login-auth-form">
             <div className="form-input-group">
               <label htmlFor="admin-email-field">Workplace Email</label>
               <div className="input-with-icon">
-                <svg className="field-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="field-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <rect width="20" height="16" x="2" y="4" rx="2" />
                   <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                 </svg>
                 <input
                   id="admin-email-field"
+                  name="email"
                   type="email"
                   required
                   placeholder="name@sikharfleet.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleFieldChange(setEmail)}
                   autoComplete="email"
                   className="auth-text-input"
+                  aria-invalid={Boolean(error)}
                 />
               </div>
             </div>
 
             <div className="form-input-group">
-              <div className="password-label-row">
-                <label htmlFor="admin-pass-field">Password</label>
-              </div>
+              <label htmlFor="admin-pass-field">Password</label>
               <div className="input-with-icon">
                 <Lock size={16} className="field-icon-svg" />
                 <input
                   id="admin-pass-field"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••••••"
+                  minLength={6}
+                  placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handleFieldChange(setPassword)}
                   autoComplete="current-password"
                   className="auth-text-input"
+                  aria-invalid={Boolean(error)}
                 />
                 <button
                   type="button"
                   className="btn-password-visibility"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((visible) => !visible)}
                   title={showPassword ? 'Hide password' : 'Show password'}
-                  aria-label="Toggle password visibility"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <div className="form-options-row">
-              <label className="checkbox-custom-label">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span>Remember this workstation</span>
-              </label>
-            </div>
+            <label className="checkbox-custom-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
+              <span>Remember this workstation</span>
+            </label>
 
-            <button
-              type="submit"
-              className="btn-login-submit"
-              disabled={loading}
-            >
+            <button type="submit" className="btn-login-submit" disabled={loading}>
               {loading ? (
                 <span className="submit-loading-state">
                   <span className="loading-spinner-circle" />
-                  <span>Signing In...</span>
+                  <span>Authorizing...</span>
                 </span>
               ) : (
                 <span className="submit-normal-state">
-                  <span>Sign In</span>
+                  <span>Open Admin Panel</span>
                   <ArrowRight size={16} />
                 </span>
               )}
             </button>
           </form>
 
-          {/* Security & Copyright Footer */}
           <div className="login-form-footer">
             {onBackToHome && (
               <button type="button" className="login-back-home-btn" onClick={onBackToHome}>
-                <span>←</span> Back to Sikhar Fleet
+                <span aria-hidden="true">←</span> Back to Sikhar Fleet
               </button>
             )}
-            <span>© 2026 Sikhar Fleet Private Limited • Central Hub Terminal</span>
+            <span>© 2026 Sikhar Fleet Private Limited · Central Hub Terminal</span>
           </div>
         </div>
       </div>

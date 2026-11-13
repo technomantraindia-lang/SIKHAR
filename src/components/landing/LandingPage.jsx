@@ -14,6 +14,8 @@ import {
   Gauge
 } from '../common/Icons';
 import bannerImage from '../../assets/image copy 3.png';
+import whySikharRoadImage from '../../assets/why-sikhar-fleet-road.png';
+import ourProcessRoadImage from '../../assets/our-process-road.png';
 import './LandingPage.css';
 
 function BrandMark({ compact = false }) {
@@ -161,6 +163,22 @@ const serviceAssurances = [
   { label: 'Sustainable Mobility', icon: 'leaf' },
 ];
 
+const whySikharCards = [
+  { title: 'Higher Fleet Utilization', description: 'Get more trips, better uptime, and higher ROI.', icon: 'utilization' },
+  { title: 'Automated Operations', description: 'Reduce manual work and eliminate operational delays.', icon: 'automation' },
+  { title: 'Regulatory Compliance', description: 'Stay 100% compliant with RTO, MoRTH, and platform policies.', icon: 'compliance' },
+  { title: 'Multi-Platform Integration', description: 'Seamless operations with Rapido, Uber, Ola and more.', icon: 'integration' },
+  { title: 'Revenue Transparency', description: 'Track earnings, settlements, and revenue share in real time.', icon: 'revenue' },
+  { title: 'Scalable & Future Ready', description: 'A flexible and robust platform built for long-term growth.', icon: 'scale' },
+];
+
+const whySikharStats = [
+  { value: '500+', label: 'Active Vehicles', icon: 'car' },
+  { value: '10K+', label: 'Trips Monthly', icon: 'trips' },
+  { value: '₹12L+', label: 'Monthly Revenue', icon: 'revenue' },
+  { value: '98%', label: 'Compliance Rate', icon: 'compliance' },
+];
+
 const platformCapabilities = [
   { title: <>Real-Time<br />Tracking</>, description: 'Live location, trip visibility, and route insights.', icon: MapPin },
   { title: <>Operational<br />Analytics</>, description: 'Performance, utilization, and revenue insights.', icon: Gauge },
@@ -168,6 +186,20 @@ const platformCapabilities = [
   { title: <>Partner<br />Integration</>, description: 'Seamless data sync with Rapido, Uber, Ola, etc.', icon: Compass },
   { title: <>Fleet<br />Management</>, description: 'Vehicles, allocation, maintenance, and usage.', icon: Car },
   { title: <>Revenue &amp;<br />Reconciliation</>, description: 'Trip earnings import, revenue share, and settlement.', icon: IndianRupee },
+];
+
+const processSteps = [
+  { number: '01', title: 'Onboarding & Setup', description: 'Add your fleet, depots, and team.', icon: 'onboarding' },
+  { number: '02', title: 'Driver & Vehicle Verification', description: 'Complete 6-Gate KYC, document, and fitness checks.', icon: 'verification' },
+  { number: '03', title: 'Integration & Configuration', description: 'Enable FASTag, AIS-140, and partner integrations (Rapido / Uber / Ola).', icon: 'integration' },
+  { number: '04', title: 'Go Live & Operate', description: 'Start trips, track operations, monitor revenue, and scale with ease.', icon: 'live' },
+];
+
+const processAssurances = [
+  { title: 'Quick Setup', description: 'Get started in days, not weeks.', icon: 'clock' },
+  { title: 'End-to-End Support', description: 'From onboarding to daily operations.', icon: 'layers' },
+  { title: 'Compliant & Secure', description: 'Built for Indian regulatory needs.', icon: 'shield' },
+  { title: 'Scale Anytime', description: 'Add vehicles, partners, and depots as you grow.', icon: 'chart' },
 ];
 
 function SocialIcon({ type }) {
@@ -213,6 +245,60 @@ function PlatformCapabilitiesSection({ onOpenLogin }) {
   );
 }
 
+function ProcessStepIcon({ type }) {
+  if (type === 'onboarding') return <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="12" y="7" width="24" height="34" rx="3" /><path d="M18 7v-2h12v2M18 17h12M18 24h12M18 31h7" /><path d="m14 17 2 2 3-4M14 24l2 2 3-4M14 31l2 2 3-4" /></svg>;
+  if (type === 'verification') return <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="11" width="34" height="26" rx="3" /><circle cx="17" cy="21" r="4" /><path d="M12 31c1-4 9-4 10 0M26 19h9M26 25h9M26 31h6" /></svg>;
+  if (type === 'integration') return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="7" /><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4" /><path d="m24 17 2 3 4 .5-3 2.5.8 4-3.8-2-3.8 2 .8-4-3-2.5 4-.5 2-3Z" /></svg>;
+  return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 31 25 14l7 7 8-8" /><path d="M32 13h8v8" /><path d="M8 38h32" /></svg>;
+}
+
+function ProcessAssuranceIcon({ type }) {
+  if (type === 'clock') return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="25" r="13" /><path d="M24 18v8l5 3M18 7h12M24 7v5" /></svg>;
+  if (type === 'layers') return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="m24 7 16 8-16 8-16-8 16-8Z" /><path d="m8 23 16 8 16-8M8 31l16 8 16-8" /></svg>;
+  if (type === 'shield') return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6 38 12v11c0 10-6 16-14 20-8-4-14-10-14-20V12l14-6Z" /><path d="m17 24 5 5 10-11" /></svg>;
+  return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 38V26M18 38V20M28 38V14M38 38V7" /><path d="m8 19 10-8 10 4 12-9" /></svg>;
+}
+
+function ProcessSection({ onOpenLogin }) {
+  return (
+    <section className="process-section" id="process">
+      <div className="process-background" style={{ backgroundImage: `url(${ourProcessRoadImage})` }} aria-hidden="true" />
+      <div className="process-wash" aria-hidden="true" />
+      <div className="process-inner">
+        <div className="process-heading">
+          <div className="process-eyebrow"><span>—</span> OUR PROCESS <span>—</span></div>
+          <h2>From Onboarding to Operations</h2>
+          <p>A simple, structured journey to get your fleet up and running, quickly and compliantly.</p>
+        </div>
+        <div className="process-steps">
+          {processSteps.map((step) => (
+            <button type="button" className="process-step-card" key={step.number} onClick={onOpenLogin}>
+              <span className="process-number">{step.number}</span>
+              <span className="process-step-icon"><ProcessStepIcon type={step.icon} /></span>
+              <strong>{step.title}</strong>
+              <span>{step.description}</span>
+            </button>
+          ))}
+        </div>
+        <div className="process-route-markers" aria-hidden="true">
+          {processSteps.map((step) => <span className="process-route-marker" key={step.number}><span>{step.number}</span></span>)}
+        </div>
+        <div className="process-assurance-strip">
+          {processAssurances.map((item, index) => (
+            <React.Fragment key={item.title}>
+              {index > 0 && <span className="process-assurance-divider" />}
+              <div className="process-assurance-item">
+                <span className="process-assurance-icon"><ProcessAssuranceIcon type={item.icon} /></span>
+                <div><strong>{item.title}</strong><small>{item.description}</small></div>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ServiceDots() {
   return <span className="core-services-dots" aria-hidden="true">{Array.from({ length: 9 }).map((_, i) => <i key={i} />)}</span>;
 }
@@ -232,6 +318,12 @@ function CoreServiceIcon({ type, featured = false }) {
         <path d="m5 35 31 18 31-18M5 27l31 18 31-18" stroke={featured ? '#00bfff' : '#8ac8ff'} strokeWidth="1.4" />
       </svg>
       <svg viewBox="0 0 72 72" className="core-service-line-icon" aria-hidden="true">
+        {type === 'utilization' && <><path d="M16 54V39M29 54V29M42 54V20M55 54V12" /><path d="m14 27 13-10 12 5 17-14" /></>}
+        {type === 'automation' && <><circle cx="36" cy="36" r="10" /><path d="M36 12v7M36 53v7M12 36h7M53 36h7M19 19l5 5M48 48l5 5M53 19l-5 5M24 48l-5 5" /><circle cx="36" cy="36" r="3" /></>}
+        {type === 'compliance' && <><path d="M36 10 55 17v15c0 13-8 23-19 29C25 55 17 45 17 32V17l19-7Z" /><path d="m27 36 6 6 12-14" /></>}
+        {type === 'integration' && <><path d="m36 12 24 12-24 12-24-12 24-12Z" /><path d="m12 36 24 12 24-12M12 48l24 12 24-12" /></>}
+        {type === 'revenue' && <text x="36" y="51" textAnchor="middle" fontSize="40" fontWeight="700" fill="currentColor">₹</text>}
+        {type === 'scale' && <><circle cx="29" cy="27" r="8" /><circle cx="48" cy="30" r="6" /><path d="M14 54c0-10 7-17 15-17s15 7 15 17M43 42c8-4 15 1 16 10" /></>}
         {type === 'people' && <><circle cx="36" cy="20" r="8" /><path d="M22 40c0-7 6-12 14-12s14 5 14 12v3H22v-3Z" /><path d="M21 27c-5 0-9 3-9 8v3h8M51 27c5 0 9 3 9 8v3h-8M28 11c-4-1-8 2-8 7 0 2 1 4 3 5M44 11c4-1 8 2 8 7 0 2-1 4-3 5" /></>}
         {type === 'bolt' && <path d="M42 8 25 34h12l-5 28 18-34H38l4-20Z" fill="currentColor" stroke="none" />}
         {type === 'calendar' && <><rect x="18" y="16" width="36" height="38" rx="5" /><path d="M26 12v9M46 12v9M18 27h36M28 40l6 6 11-13" /></>}
@@ -243,6 +335,10 @@ function CoreServiceIcon({ type, featured = false }) {
 }
 
 function ServiceAssuranceIcon({ type }) {
+  if (type === 'car') return <Car size={42} strokeWidth={1.8} />;
+  if (type === 'trips') return <MapPin size={42} strokeWidth={1.8} />;
+  if (type === 'revenue') return <IndianRupee size={42} strokeWidth={1.8} />;
+  if (type === 'compliance') return <Shield size={42} strokeWidth={1.8} />;
   if (type === 'shield') return <Shield size={40} strokeWidth={1.8} />;
   if (type === 'chart') return <span className="core-assurance-chart"><span /><span /><span /></span>;
   if (type === 'leaf') return <svg viewBox="0 0 44 44" aria-hidden="true"><path d="M35 8C20 8 11 15 11 27c0 5 3 9 8 9 12 0 16-11 16-28Z" /><path d="M7 38c6-10 12-16 22-22" /></svg>;
@@ -266,7 +362,7 @@ function CoreServicesSection({ onOpenLogin }) {
           {coreServices.map((service) => (
             <button key={service.icon} type="button" className="core-service-card" onClick={onOpenLogin}>
               <span className="core-service-glow" />
-              <CoreServiceIcon type={service.icon} />
+              <CoreServiceIcon type={service.icon} featured={service.featured} />
               <span className="core-service-copy"><strong>{service.title}</strong><span>{service.description}</span></span>
               <span className="core-service-arrow"><ArrowRight size={25} strokeWidth={2.6} /></span>
             </button>
@@ -274,6 +370,42 @@ function CoreServicesSection({ onOpenLogin }) {
         </div>
         <div className="core-assurance-bar" aria-label="Sikhar Fleet benefits">
           {serviceAssurances.map((assurance, index) => <React.Fragment key={assurance.label}>{index > 0 && <span className="core-assurance-divider" />}<div className="core-assurance-item"><span className="core-assurance-icon"><ServiceAssuranceIcon type={assurance.icon} /></span><strong>{assurance.label}</strong></div></React.Fragment>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WhySikharSection({ onOpenLogin }) {
+  return (
+    <section className="why-sikhar-section" id="why-sikhar">
+      <div className="core-services-orb core-services-orb-left" />
+      <div className="core-services-orb core-services-orb-right" />
+      <div className="core-services-curve core-services-curve-top" />
+      <div className="core-services-curve core-services-curve-bottom" />
+      <div className="why-sikhar-inner">
+        <div className="why-sikhar-heading">
+          <div className="why-sikhar-eyebrow"><span>—</span> WHY SIKHAR FLEET <span>—</span></div>
+          <h2>Delivering Real <span>Business Impact</span></h2>
+          <p>A powerful fleet ecosystem that drives efficiency, control, and higher returns.</p>
+        </div>
+        <div className="why-sikhar-layout">
+          <div className="why-sikhar-image-wrap">
+            <img src={whySikharRoadImage} alt="Sikhar Fleet vehicle driving through a city at sunset" />
+          </div>
+        <div className="why-sikhar-cards">
+          {whySikharCards.map((service) => (
+            <button key={service.icon} type="button" className="why-sikhar-card" onClick={onOpenLogin}>
+                <span className="core-service-glow" />
+                <CoreServiceIcon type={service.icon} />
+                <span className="core-service-copy"><strong>{service.title}</strong><span>{service.description}</span></span>
+                <span className="core-service-arrow"><ArrowRight size={25} strokeWidth={2.6} /></span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="why-sikhar-stats" aria-label="Sikhar Fleet impact metrics">
+          {whySikharStats.map((assurance, index) => <React.Fragment key={assurance.label}>{index > 0 && <span className="why-sikhar-stat-divider" />}<div className="why-sikhar-stat"><span className="why-sikhar-stat-icon"><ServiceAssuranceIcon type={assurance.icon} /></span><div><strong>{assurance.value}</strong><small>{assurance.label}</small></div></div></React.Fragment>)}
         </div>
       </div>
     </section>
@@ -399,7 +531,12 @@ export default function LandingPage({ onOpenLogin }) {
         <PlatformCapabilitiesSection onOpenLogin={onOpenLogin} />
 
         {/* ========================================================================= */}
-        {/* 4. MULTI-CATEGORY FLEET ARCHITECTURE */}
+        {/* 5. ONBOARDING TO OPERATIONS PROCESS */}
+        {/* ========================================================================= */}
+        <ProcessSection onOpenLogin={onOpenLogin} />
+
+        {/* ========================================================================= */}
+        {/* 6. MULTI-CATEGORY FLEET ARCHITECTURE */}
         {/* ========================================================================= */}
         <section className="clean-section clean-fleet-section" id="fleet-segments">
           <div className="clean-section-header">
@@ -587,7 +724,12 @@ export default function LandingPage({ onOpenLogin }) {
         </section>
 
         {/* ========================================================================= */}
-        {/* 5. STRATEGIC NCR REGIONAL COVERAGE */}
+        {/* 5. WHY SIKHAR FLEET - BUSINESS IMPACT */}
+        {/* ========================================================================= */}
+        <WhySikharSection onOpenLogin={onOpenLogin} />
+
+        {/* ========================================================================= */}
+        {/* 6. STRATEGIC NCR REGIONAL COVERAGE */}
         {/* ========================================================================= */}
         <section className="clean-section clean-hubs-section" id="hubs">
           <div className="clean-hubs-card">
@@ -653,20 +795,24 @@ export default function LandingPage({ onOpenLogin }) {
         {/* ========================================================================= */}
         <section className="clean-cta-section">
           <div className="clean-cta-box">
-            <div className="cta-copy">
-              <h2>Ready to streamline your fleet operations?</h2>
-              <p>
-                Sign in to the Sikhar Fleet Administrative Command Portal to access live fleet telemetry, driver verification vaults, and automated billing.
-              </p>
+            <div className="clean-cta-inner">
+              <div className="cta-copy">
+                <div className="cta-eyebrow"><span>—</span> LET&apos;S BUILD A SUSTAINABLE TOMORROW <span>—</span></div>
+                <h2>
+                  <span>Let&apos;s Build a</span>
+                  <strong>Smarter Business Together</strong>
+                </h2>
+                <p>Get expert consultation and find the right solution for your business needs.</p>
+              </div>
+              <button
+                type="button"
+                className="clean-cta-btn"
+                onClick={() => scrollTo('hubs')}
+              >
+                <span>Contact Us</span>
+                <ArrowRight size={16} />
+              </button>
             </div>
-            <button
-              type="button"
-              className="clean-cta-btn"
-              onClick={onOpenLogin}
-            >
-              <span>Sign In</span>
-              <ArrowRight size={15} />
-            </button>
           </div>
         </section>
       </main>

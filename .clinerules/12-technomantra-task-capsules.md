@@ -13,12 +13,12 @@ This workspace uses task capsules so developers can run parallel development wit
 ## Active capsule snapshot
 The extension refreshes this file automatically. Prefer its concise state over old chat history when resuming.
 
-- Capsule ID: tm-cap-8ea7f4bac481b491ff06d0c3
+- Capsule ID: tm-cap-04278cbc8ca428a91c06bb1a
 - Isolation: task-capsule-v411
 - Workspace ID: tm-ws-804b969c581b33fe4b55bb1b
-- Window ID: tm-win-ca0e1ae7624ebfb4cde3288a
+- Window ID: tm-win-49f3f0570b37d942b412a8f2
 - Project: SIKHAR Nodejs app
-- Framework: react
+- Framework: 
 - Developer mode: smart
 - Model mode: eco
 - Active file: README.md
@@ -27,7 +27,6 @@ The extension refreshes this file automatically. Prefer its concise state over o
 - Next action: Inspect current prompt and workspace evidence before editing.
 
 ## Touched files in this capsule
-- README.md
 
 ## Recent files in this workspace/window
 - README.md

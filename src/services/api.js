@@ -20,7 +20,7 @@ export async function createAdminOptionApi(group, value) {
   return data.data;
 }
 
-export async function loginAdminApi(email, password) {
+export async function loginAdminApi(email, password, rememberMe = true) {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: {
@@ -34,10 +34,13 @@ export async function loginAdminApi(email, password) {
       throw new Error(data.message || 'Authentication rejected by security gateway.');
     }
 
-    // Persist session token and profile
-    if (data.token) {
+    // Persist the session only when the user selected "Remember this workstation".
+    if (data.token && rememberMe) {
       localStorage.setItem('sikhar_admin_token', data.token);
       localStorage.setItem('sikhar_admin_user', JSON.stringify(data.user));
+    } else {
+      localStorage.removeItem('sikhar_admin_token');
+      localStorage.removeItem('sikhar_admin_user');
     }
     return data;
 }

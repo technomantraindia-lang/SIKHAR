@@ -54,13 +54,14 @@ export default function App() {
   }, []);
 
   const openLogin = () => {
-    window.history.pushState({}, '', '/login');
-    setPublicPath('/login');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Use a clean browser URL so the login page is opened even when the
+    // landing page was reached through an old dashboard hash.
+    window.location.assign('/login');
   };
 
   const openLanding = () => {
     window.history.pushState({}, '', '/');
+    setActiveRoute('dashboard');
     setPublicPath('/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -96,6 +97,14 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [activeRoute]);
 
+  // A logged-out visitor must always see the public home URL. Clear a stale
+  // dashboard hash left behind by a previous authenticated session.
+  useEffect(() => {
+    if (!adminUser && (publicPath === '/' || publicPath === '') && window.location.hash) {
+      window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    }
+  }, [adminUser, publicPath]);
+
   // Ensure the authenticated workspace hash matches the current route.
   // The public homepage and /login must remain clean browser URLs.
   useEffect(() => {
@@ -108,6 +117,7 @@ export default function App() {
 
   const handleLoginSuccess = (user) => {
     setAdminUser(user);
+    setActiveRoute('dashboard');
     window.history.replaceState({}, '', '/');
     setPublicPath('/');
     navigateTo('dashboard');
@@ -115,6 +125,10 @@ export default function App() {
 
   const handleLogout = () => {
     logoutAdminApi();
+    localStorage.removeItem('sikhar_active_route');
+    window.history.replaceState({}, '', '/');
+    setActiveRoute('dashboard');
+    setPublicPath('/');
     setAdminUser(null);
   };
 
@@ -128,7 +142,7 @@ export default function App() {
 
   // Keep the public homepage reachable at the clean root URL, even when an old session is cached.
   if (adminUser && (publicPath === '/' || publicPath === '') && !window.location.hash) {
-    return <LandingPage onOpenLogin={() => navigateTo('dashboard')} />;
+    return <LandingPage onOpenLogin={openLogin} />;
   }
 
   if (!adminUser) {
