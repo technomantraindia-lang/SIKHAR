@@ -1,0 +1,33 @@
+{
+  "kpis": {},
+  "trips": [
+    {
+      "id": "RD123456_STAGING",
+      "rapidoOrderId": "RD123456_STAGING",
+      "platform": "Rapido / Zaptric Fleet",
+      "environment": "staging",
+      "driverPhone": "9999999999",
+      "status": "started",
+      "pickupLocation": {
+        "lat": "12.91195",
+        "lng": "77.64711"
+      },
+      "dropLocation": {
+        "lat": "12.91195",
+        "lng": "77.64711"
+      },
+      "estimatedDistance": 4000,
+      "distanceKm": "4.00",
+      "estimatedTimeToDrop": "1732528675",
+      "grossFare": 0,
+      "tripFare": 0,
+      "captainEarnings": 0,
+      "waitingCharges": 0,
+      "parkingCharges": 0,
+      "nightCharges": 0,
+      "tollCharges": 0,
+      "reason": null,
+      "updatedAt": "2026-11-17T04:01:45.776Z"
+    }
+  ]
+}

@@ -24,34 +24,6 @@
       "createdAt": "2026-11-05T06:31:17.045Z"
     },
     {
-      "id": "ASG-2026-6564",
-      "driverId": "drv-18",
-      "driverName": "QA Test Driver 1105104011",
-      "driverPhone": "+919900000001",
-      "originalVehicle": {
-        "registration": "QA1105104011",
-        "model": "QA Tigor EV",
-        "type": "EV",
-        "status": "Assigned 1:1"
-      },
-      "assignedVehicle": {
-        "registration": "QB1105104011",
-        "model": "QA WagonR CNG",
-        "type": "CNG",
-        "startOdometer": "500 km"
-      },
-      "assignmentType": "temporary",
-      "durationDays": 2,
-      "startDate": "2026-11-05T05:10:14.487Z",
-      "endDate": "2026-11-07T05:10:14.487Z",
-      "reason": "QA end-to-end duty test",
-      "notes": "",
-      "oldVehicleAction": "yard_reserve",
-      "status": "Active",
-      "assignedBy": "QA Admin",
-      "createdAt": "2026-11-05T05:10:14.509Z"
-    },
-    {
       "id": "ASG-2026-7815",
       "driverId": "drv-11",
       "driverName": "chetan",
@@ -81,6 +53,36 @@
     }
   ],
   "history": [
+    {
+      "id": "ASG-2026-6564",
+      "driverId": "drv-18",
+      "driverName": "QA Test Driver 1105104011",
+      "driverPhone": "+919900000001",
+      "originalVehicle": {
+        "registration": "QA1105104011",
+        "model": "QA Tigor EV",
+        "type": "EV",
+        "status": "Assigned 1:1"
+      },
+      "assignedVehicle": {
+        "registration": "QB1105104011",
+        "model": "QA WagonR CNG",
+        "type": "CNG",
+        "startOdometer": "500 km"
+      },
+      "assignmentType": "temporary",
+      "durationDays": 2,
+      "startDate": "2026-11-05T05:10:14.487Z",
+      "endDate": "2026-11-07T05:10:14.487Z",
+      "reason": "QA end-to-end duty test",
+      "notes": "",
+      "oldVehicleAction": "yard_reserve",
+      "status": "Completed",
+      "assignedBy": "QA Admin",
+      "createdAt": "2026-11-05T05:10:14.509Z",
+      "completedAt": "2026-11-17T04:21:49.864Z",
+      "completionReason": "Time expired: Scheduled 2-day temporary allocation concluded automatically."
+    },
     {
       "id": "ASG-2026-8648",
       "driverId": "drv-01",

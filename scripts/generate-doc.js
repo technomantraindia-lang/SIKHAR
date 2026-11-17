@@ -15,7 +15,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 
-console.log('Generating Rapido Integration Details Word Document...');
+console.log('Generating Rapido / Zaptric Integration Details Word Document...');
 
 const primaryColor = '0284C7';
 const darkNavy = '0F172A';
@@ -137,7 +137,7 @@ const doc = new Document({
         new Paragraph({
           children: [
             new TextRun({
-              text: 'RAPIDO - SIKHAR FLEET API INTEGRATION SPECIFICATION',
+              text: 'RAPIDO / ZAPTRIC - SIKHAR FLEET API INTEGRATION SPECIFICATION',
               bold: true,
               size: 32,
               color: primaryColor,
@@ -150,7 +150,7 @@ const doc = new Document({
         new Paragraph({
           children: [
             new TextRun({
-              text: 'Technical Whitelisting Parameters, Credentials & cURL Contracts (v1.0)',
+              text: 'Environment-Specific Callback Endpoints, Credentials & cURL Contracts (v2.0)',
               italics: true,
               size: 22,
               color: '64748B',
@@ -168,9 +168,10 @@ const doc = new Document({
           [
             ['Fleet Name', 'Sikhar Fleet Technologies Pvt. Ltd.', 'Registered Commercial Passenger Fleet Entity'],
             ['Primary Hostname', 'https://sikharfleet.com', 'Production HTTPS Gateway with SSL/TLS 1.3'],
-            ['Server IP for Whitelisting', '147.93.101.51', 'Single Dedicated IP Address to whitelist on Rapido Firewall'],
-            ['Fleet Callback Endpoint', 'PUT https://sikharfleet.com/api/v1/fleet/on_order_status/{orderId}', 'Active endpoint handling real-time ride status transitions'],
-            ['Authentication Header', 'apiKey: {{client-api-key}}', 'Alphanumeric 32-character key format']
+            ['Server IP for Whitelisting', '147.93.101.51', 'Single Dedicated IP Address to whitelist on firewall'],
+            ['Production Callback Endpoint', 'PUT https://sikharfleet.com/api/v1/fleet/on_order_status', 'Dedicated Production endpoint for real-time order status updates'],
+            ['Staging Callback Endpoint', 'PUT https://sikharfleet.com/api/v1/fleet/staging/on_order_status', 'Dedicated Staging/QA endpoint for integration testing & sandbox'],
+            ['Authentication Header', 'apiKey: {{client-api-key}}', 'Passed as header "apiKey" or "x-api-key"']
           ]
         ),
         new Paragraph({ spacing: { after: 200 } }),
@@ -178,27 +179,27 @@ const doc = new Document({
         // Section 2: Environment API Keys
         createHeading('2. API Keys & Environment Configuration', HeadingLevel.HEADING_2),
         createStyledTable(
-          ['Environment', 'Target Endpoint', 'Configured API Key'],
+          ['Environment', 'Target Endpoint URL', 'Configured API Key', 'Status'],
           [
-            ['Production', 'https://sikharfleet.com/api/v1/fleet/on_order_status/{orderId}', 'AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3'],
-            ['Staging / Pre-Prod', 'https://sikharfleet.com/api/v1/fleet/on_order_status/{orderId}', 'STAGE_9CGUxCY9v8Q4tEsSrG3cF0XRPX3']
+            ['Production', 'https://sikharfleet.com/api/v1/fleet/on_order_status', 'AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3', 'LIVE & ACTIVE'],
+            ['Staging / Pre-Prod', 'https://sikharfleet.com/api/v1/fleet/staging/on_order_status', 'STAGE_9CGUxCY9v8Q4tEsSrG3cF0XRPX3', 'LIVE & ACTIVE']
           ]
         ),
         new Paragraph({ spacing: { after: 200 } }),
 
         // Section 3: Data Dictionary
-        createHeading('3. Order Status Callback Data Contract (Rapido -> Sikhar)', HeadingLevel.HEADING_2),
-        createParagraph('Whenever an order status changes on the Rapido platform, Rapido triggers a PUT request to the Fleet Callback Endpoint with the following payload structure:'),
+        createHeading('3. Order Status Callback Data Contract (Partner -> Sikhar Fleet)', HeadingLevel.HEADING_2),
+        createParagraph('Whenever an order status changes on the platform, trigger a PUT request to the appropriate Environment Callback Endpoint with the following payload structure:'),
         createStyledTable(
           ['Parameter', 'Type', 'Mandatory', 'Description / Example'],
           [
-            ['phone', 'String', 'Yes', 'Registered mobile number of driver (e.g. "9428424115")'],
+            ['phone', 'String', 'Yes', 'Registered mobile number of driver (e.g. "9999999999")'],
+            ['orderId', 'String', 'Yes', 'Unique identifier for the order (e.g. "RD123456")'],
+            ['status', 'String', 'Yes', 'Status: started, accepted, arrived, dropped, customerCancelled, riderCancelled, aborted, reassigned, completed'],
             ['pickupLocation', 'Object', 'Yes', 'Latitude and Longitude: {"lat": "12.91195", "lng": "77.64711"}'],
             ['dropLocation', 'Object', 'Yes', 'Latitude and Longitude: {"lat": "12.91195", "lng": "77.64711"}'],
-            ['estimatedDistance', 'Integer', 'Yes', 'Estimated distance to destination in meters (e.g. 4000)'],
+            ['estimatedDistance', 'Integer', 'Yes', 'Estimated distance in meters (e.g. 4000)'],
             ['estimatedTimeToDrop', 'String', 'Yes', 'Epoch timestamp of expected drop time (e.g. "1732528675")'],
-            ['status', 'String', 'Yes', 'Status: accepted, arrived, started, dropped, customerCancelled, riderCancelled, aborted, reassigned, completed'],
-            ['orderId', 'String', 'Yes', 'Unique identifier for the order (e.g. "RD123456")'],
             ['tripFare', 'Double', 'No', 'Gross trip fare in INR (sent on dropped and completed events)'],
             ['reason', 'String', 'No', 'Reason for cancellation, abort, or driver reassignment']
           ]
@@ -224,65 +225,76 @@ const doc = new Document({
 
         createParagraph('A. Staging Environment - Order Status Update (Ride Started):', true),
         ...createCodeBlock([
-          'curl --location --request PUT \\',
-          '  "https://gateway-stage.rapido.bike/api/v1/fleet/on_order_status/RD123456" \\',
-          '  --header "apiKey: STAGE_9CGUxCY9v8Q4tEsSrG3cF0XRPX3" \\',
-          '  --header "Content-Type: application/json" \\',
-          '  --data \'{',
-          '    "phone": "9428424115",',
-          '    "pickupLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "dropLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "estimatedDistance": 4000,',
-          '    "estimatedTimeToDrop": "1732528675",',
-          '    "status": "started",',
-          '    "orderId": "RD123456",',
-          '    "tripFare": 250.98,',
-          '    "reason": "vehicle issue"',
-          '  }\''
+          'curl --location --request PUT \'https://sikharfleet.com/api/v1/fleet/staging/on_order_status\' \\',
+          '--header \'apiKey: STAGE_9CGUxCY9v8Q4tEsSrG3cF0XRPX3\' \\',
+          '--header \'Content-Type: application/json\' \\',
+          '--data \'{',
+          '  "phone": "9999999999",',
+          '  "orderId": "RD123456",',
+          '  "status": "started",',
+          '  "pickupLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "dropLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "estimatedDistance": 4000,',
+          '  "estimatedTimeToDrop": "1732528675"',
+          '}\''
         ]),
         new Paragraph({ spacing: { after: 150 } }),
 
         createParagraph('B. Production Environment - Order Status Update (Ride Started):', true),
         ...createCodeBlock([
-          'curl --location --request PUT \\',
-          '  "https://gateway.rapido.bike/api/v1/fleet/on_order_status/RD123456" \\',
-          '  --header "apiKey: AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3" \\',
-          '  --header "Content-Type: application/json" \\',
-          '  --data \'{',
-          '    "phone": "9428424115",',
-          '    "pickupLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "dropLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "estimatedDistance": 4000,',
-          '    "estimatedTimeToDrop": "1732528675",',
-          '    "status": "started",',
-          '    "orderId": "RD123456",',
-          '    "tripFare": 250.98,',
-          '    "reason": "vehicle issue"',
-          '  }\''
+          'curl --location --request PUT \'https://sikharfleet.com/api/v1/fleet/on_order_status\' \\',
+          '--header \'apiKey: AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3\' \\',
+          '--header \'Content-Type: application/json\' \\',
+          '--data \'{',
+          '  "phone": "9999999999",',
+          '  "orderId": "RD123456",',
+          '  "status": "started",',
+          '  "pickupLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "dropLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "estimatedDistance": 4000,',
+          '  "estimatedTimeToDrop": "1732528675"',
+          '}\''
         ]),
         new Paragraph({ spacing: { after: 150 } }),
 
         createParagraph('C. Production Environment - Final Completed Order with Earnings Breakdown:', true),
         ...createCodeBlock([
-          'curl --location --request PUT \\',
-          '  "https://gateway.rapido.bike/api/v1/fleet/on_order_status/RD123456" \\',
-          '  --header "apiKey: AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3" \\',
-          '  --header "Content-Type: application/json" \\',
-          '  --data \'{',
-          '    "phone": "9428424115",',
-          '    "pickupLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "dropLocation": { "lat": "12.91195", "lng": "77.64711" },',
-          '    "estimatedDistance": 4000,',
-          '    "estimatedTimeToDrop": "1732528675",',
-          '    "status": "completed",',
-          '    "orderId": "RD123456",',
-          '    "tripFare": 250.98,',
-          '    "captainEarnings": 42.938,',
-          '    "waitingCharges": 8.05,',
-          '    "parkingCharges": 7.01,',
-          '    "nightCharges": 9.02,',
-          '    "tollCharges": 5.02',
-          '  }\''
+          'curl --location --request PUT \'https://sikharfleet.com/api/v1/fleet/on_order_status\' \\',
+          '--header \'apiKey: AGVvQ0JAWYCIThN7N4JFRbJcm9oDOSc3\' \\',
+          '--header \'Content-Type: application/json\' \\',
+          '--data \'{',
+          '  "phone": "9999999999",',
+          '  "orderId": "RD123456",',
+          '  "status": "completed",',
+          '  "pickupLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "dropLocation": {',
+          '    "lat": "12.91195",',
+          '    "lng": "77.64711"',
+          '  },',
+          '  "estimatedDistance": 4000,',
+          '  "estimatedTimeToDrop": "1732528675",',
+          '  "tripFare": 250.98,',
+          '  "captainEarnings": 42.938,',
+          '  "waitingCharges": 8.05,',
+          '  "parkingCharges": 7.01,',
+          '  "nightCharges": 9.02,',
+          '  "tollCharges": 5.02',
+          '}\''
         ]),
         new Paragraph({ spacing: { after: 200 } }),
 
@@ -317,4 +329,3 @@ Packer.toBuffer(doc).then(buffer => {
     console.warn('Could not copy to desktop directly:', err.message);
   }
 });
-

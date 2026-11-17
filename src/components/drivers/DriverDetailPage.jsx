@@ -50,6 +50,17 @@ const AVAILABLE_CARS = [
   { reg: 'UP16HT7788', model: 'Tigor EV Fleet', type: 'EV' }
 ];
 
+function formatTripLocation(loc) {
+  if (!loc) return '—';
+  if (typeof loc === 'string') return loc;
+  if (typeof loc === 'object') {
+    if (loc.lat && loc.lng) return `${loc.lat}, ${loc.lng}`;
+    const vals = Object.values(loc).filter(Boolean);
+    return vals.length ? vals.join(', ') : 'GPS Pin';
+  }
+  return String(loc);
+}
+
 const DOC_CATEGORIES_CONFIG = [
   { value: 'dl', label: 'Commercial Driving Licence (LMV-TR)', defaultTitle: 'Commercial Smart Driving Licence (LMV-TR)' },
   { value: 'aadhaar', label: 'UIDAI Aadhaar Biometric Card', defaultTitle: 'UIDAI Aadhaar Biometric Card' },
@@ -1068,7 +1079,7 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                     <tr key={trip.id}>
                       <td><strong>#{trip.id}</strong></td>
                       <td>{trip.startTime || trip.endTime || '—'}</td>
-                      <td>{trip.pickupLocation || '—'} → {trip.dropLocation || '—'}</td>
+                      <td>{formatTripLocation(trip.pickupLocation)} → {formatTripLocation(trip.dropLocation)}</td>
                       <td>{Number(trip.distanceKm || 0).toLocaleString('en-IN')} km</td>
                       <td className="text-green font-bold">₹{Number(trip.grossFare || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td><span className={`pill ${trip.status === 'Completed' ? 'green' : 'orange'}`}>{trip.status || 'Recorded'}</span></td>

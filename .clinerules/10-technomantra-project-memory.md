@@ -6,7 +6,7 @@
 - Technology: React, Vite, Express, MySQL, Node.js/npm
 - Active file at refresh: None
 - Local code graph: 78 files · 281 edges · 0 matched flows
-- Refreshed: 2026-11-13T05:30:47.989Z
+- Refreshed: 2026-11-16T03:58:38.958Z
 
 ## Framework Intelligence (V4.7.8)
 - Profiles: react, node

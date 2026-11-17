@@ -88,6 +88,7 @@ app.use('/api/fuel', fuelRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/v1/fleet', rapidoRoutes);
+app.use('/staging/api/v1/fleet', rapidoRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/options', optionsRoutes);
 

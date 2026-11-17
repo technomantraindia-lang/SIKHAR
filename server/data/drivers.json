@@ -78,14 +78,22 @@
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 500,
+        "postedBalance": 1000,
         "activeHolds": 0,
-        "spendableBalance": 500,
+        "spendableBalance": 1000,
         "outstandingDues": 0,
-        "status": "Low Balance",
+        "status": "Healthy",
         "autoTopup": false,
-        "lastTopup": "05 Nov 2026, 12:19 PM · ₹900",
+        "lastTopup": "13 Nov 2026, 06:02 AM · ₹500",
         "recentTransactions": [
+          {
+            "id": "WTX-9234",
+            "date": "13 Nov 2026, 06:02 AM",
+            "type": "Wallet Top-up",
+            "amount": "+₹500",
+            "method": "UPI (UPI-49746935)",
+            "status": "Success"
+          },
           {
             "id": "WTX-INV-1507",
             "date": "05 Nov 2026, 12:19 PM",

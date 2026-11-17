@@ -2,8 +2,9 @@
   RewriteEngine On
   RewriteBase /
 
-  # Forward /api requests to PHP UNIX socket gateway
+  # Forward /api and /staging requests to PHP UNIX socket gateway
   RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
+  RewriteRule ^staging(/.*)?$ /api/index.php [L,QSA]
 
   # Existing files and directories serve directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]

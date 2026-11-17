@@ -5,7 +5,7 @@
 - Indexed source files: 78
 - Structural edges: 281
 - Matched end-to-end flows: 0
-- Updated: 2026-11-13T05:30:47.972Z
+- Updated: 2026-11-16T03:58:38.750Z
 
 ## Routes
 - ROUTE GET / -> handler @ server/routes/assignmentRoutes.js
@@ -135,7 +135,7 @@
 
 ## Symbols
 - SYMBOL src/App.jsx: App, syncing, getInitialRoute, handlePathChange, openLogin, openLanding, navigateTo, handleHashChange, handleLoginSuccess, handleLogout
-- SYMBOL src/components/auth/AdminLogin.jsx: AdminLogin, handleAdminSubmit, handleFillCredentials
+- SYMBOL src/components/auth/AdminLogin.jsx: AdminLogin, handleAdminSubmit, handleFieldChange
 - SYMBOL src/components/auth/AuthPage.jsx: AuthPage, handleLoginSubmit, handleRegisterSubmit, setDemoAccount
 - SYMBOL src/components/common/AdminOptionSelect.jsx: AdminOptionSelect, handleChange
 - SYMBOL src/components/common/DocumentOcrScannerModal.jsx: preprocessImageForOcr, cleanIndianOcrAddress, parseIndianDocumentOcr, DocumentOcrScannerModal, clean, startCamera, stopCamera, handleSnapPhoto, handleFileChange, handleRotateSelectedImage

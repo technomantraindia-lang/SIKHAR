@@ -40,6 +40,17 @@ import {
 } from '../../services/api';
 import AdminOptionSelect from '../common/AdminOptionSelect';
 
+function formatTripLocation(loc) {
+  if (!loc) return '—';
+  if (typeof loc === 'string') return loc;
+  if (typeof loc === 'object') {
+    if (loc.lat && loc.lng) return `${loc.lat}, ${loc.lng}`;
+    const vals = Object.values(loc).filter(Boolean);
+    return vals.length ? vals.join(', ') : 'GPS Pin';
+  }
+  return String(loc);
+}
+
 export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -697,14 +708,14 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '12px' }}>
                       <span style={{ color: '#16a34a', fontSize: '10px', marginTop: '2px' }}>●</span>
                       <span style={{ fontWeight: 650, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {trip.pickupLocation}
+                        {formatTripLocation(trip.pickupLocation)}
                       </span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '12px' }}>
                       <span style={{ color: '#ef3340', fontSize: '10px', marginTop: '2px' }}>●</span>
                       <span style={{ color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {trip.dropLocation}
+                        {formatTripLocation(trip.dropLocation)}
                       </span>
                     </div>
                   </div>
@@ -858,11 +869,11 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                       <td style={{ maxWidth: '280px' }}>
                         <div style={{ fontSize: '11.5px', fontWeight: 650, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span style={{ color: '#16a34a', marginRight: '4px' }}>●</span>
-                          {trip.pickupLocation}
+                          {formatTripLocation(trip.pickupLocation)}
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
                           <span style={{ color: '#ef3340', marginRight: '4px' }}>●</span>
-                          {trip.dropLocation}
+                          {formatTripLocation(trip.dropLocation)}
                         </div>
                       </td>
 
@@ -1006,7 +1017,7 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                   <MapPin size={16} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
                     <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Pickup Location</div>
-                    <div style={{ fontWeight: 650, fontSize: '12.5px', color: '#0f172a' }}>{selectedTrip.pickupLocation}</div>
+                    <div style={{ fontWeight: 650, fontSize: '12.5px', color: '#0f172a' }}>{formatTripLocation(selectedTrip.pickupLocation)}</div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>Start: {selectedTrip.startTime}</div>
                   </div>
                 </div>
@@ -1015,7 +1026,7 @@ export default function TripsMasterPage({ onNavigate, onBackToDashboard }) {
                   <MapPin size={16} color="#ef3340" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
                     <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Drop Location</div>
-                    <div style={{ fontWeight: 650, fontSize: '12.5px', color: '#0f172a' }}>{selectedTrip.dropLocation}</div>
+                    <div style={{ fontWeight: 650, fontSize: '12.5px', color: '#0f172a' }}>{formatTripLocation(selectedTrip.dropLocation)}</div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>End: {selectedTrip.endTime}</div>
                   </div>
                 </div>
