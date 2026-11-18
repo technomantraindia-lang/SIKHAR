@@ -43,6 +43,7 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
   const [collectModal, setCollectModal] = useState(null); // invoice object for manual UPI/Cash payment
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [paymentRef, setPaymentRef] = useState('');
+  const [collectAmount, setCollectAmount] = useState('');
   const [isPaying, setIsPaying] = useState(false);
 
   const showToast = (msg) => {
@@ -90,17 +91,38 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
     }
   };
 
-  // Collect via UPI / Cash
+  // Open collect modal with remaining due amount as default
+  const handleOpenCollect = (invoice) => {
+    setCollectModal(invoice);
+    const due = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
+    setCollectAmount(String(due));
+    setPaymentRef(`UTR-${Date.now().toString().slice(-6)}`);
+    setPaymentMethod('UPI');
+  };
+
+  // Collect via UPI / Cash (Supports full and partial collections)
   const handleDirectPayment = async (e) => {
     e.preventDefault();
     if (!collectModal) return;
+    const due = Number(collectModal.balanceDue !== undefined ? collectModal.balanceDue : (collectModal.totalAmount - (collectModal.amountPaid || 0)));
+    const numericAmount = parseFloat(collectAmount);
+    if (!numericAmount || numericAmount <= 0) {
+      alert('Please enter a valid collection amount greater than ₹0.');
+      return;
+    }
+    if (numericAmount > due) {
+      alert(`Collection amount (₹${numericAmount.toLocaleString('en-IN')}) cannot exceed the outstanding balance due of ₹${due.toLocaleString('en-IN')}.`);
+      return;
+    }
+
     try {
       setIsPaying(true);
       const ref = paymentRef || `${paymentMethod}-${Date.now().toString().slice(-6)}`;
-      const res = await payInvoiceDirectApi(collectModal.id, paymentMethod, ref);
+      const res = await payInvoiceDirectApi(collectModal.id, paymentMethod, ref, numericAmount);
       showToast(`✅ ${res.message || 'Payment successfully recorded!'}`);
       setCollectModal(null);
       setPaymentRef('');
+      setCollectAmount('');
       loadData();
     } catch (err) {
       alert(err.message || 'Failed to record payment.');
@@ -265,7 +287,7 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
               className={`pill-filter-btn ${statusFilter === 'pending' ? 'active' : ''}`}
               onClick={() => setStatusFilter('pending')}
             >
-              Pending Dues ({invoices.filter(i => i.status === 'Pending').length})
+              Pending Dues ({invoices.filter(i => i.status !== 'Paid' && i.status !== 'Waived').length})
             </button>
             <button
               className={`pill-filter-btn ${statusFilter === 'paid' ? 'active' : ''}`}
@@ -386,14 +408,22 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
                         ₹{inv.totalAmount?.toLocaleString('en-IN')}
                       </strong>
                       {!isPaid && !isWaived && (
-                        <div className="sub-cell-text" style={{ color: '#ea580c' }}>
-                          Due: ₹{inv.balanceDue?.toLocaleString('en-IN')}
+                        <div className="sub-cell-text" style={{ color: '#ea580c', fontWeight: 600 }}>
+                          Due: ₹{(inv.balanceDue !== undefined ? inv.balanceDue : inv.totalAmount)?.toLocaleString('en-IN')}
+                        </div>
+                      )}
+                      {inv.amountPaid > 0 && (
+                        <div className="sub-cell-text" style={{ color: '#047857', fontWeight: 600 }}>
+                          Paid: ₹{inv.amountPaid?.toLocaleString('en-IN')}
                         </div>
                       )}
                     </td>
                     <td>
-                      <span className={`status-pill ${isPaid ? 'good' : isWaived ? 'blue' : 'warn'}`}>
-                        {inv.status}
+                      <span
+                        className={`status-pill ${isPaid ? 'good' : isWaived ? 'blue' : 'warn'}`}
+                        style={(inv.status === 'Partially Paid' || (inv.amountPaid > 0 && inv.balanceDue > 0)) ? { background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' } : {}}
+                      >
+                        {(inv.status === 'Partially Paid' || (inv.amountPaid > 0 && inv.balanceDue > 0)) ? 'Partially Paid' : inv.status}
                       </span>
                       {inv.paymentMethod && (
                         <div className="sub-cell-text" style={{ fontSize: '11px', marginTop: '2px' }}>
@@ -416,8 +446,8 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
                             </button>
                             <button
                               className="btn-action-pill outline-collect"
-                              onClick={() => setCollectModal(inv)}
-                              title="Record payment via UPI or Cash"
+                              onClick={() => handleOpenCollect(inv)}
+                              title="Record payment via UPI or Cash (Partial or Full)"
                             >
                               <span>Collect</span>
                             </button>
@@ -457,83 +487,174 @@ export default function InvoicesPage({ onNavigate, onBackToDashboard }) {
       )}
 
       {/* ========================================================
-         MODAL: MANUAL COLLECT (UPI / CASH)
+         MODAL: MANUAL COLLECT (UPI / CASH / PARTIAL PAYMENT)
          ======================================================== */}
-      {collectModal && (
-        <div className="clean-modal-backdrop">
-          <div className="clean-modal-dialog">
-            <div className="clean-modal-header">
-              <div className="modal-title-wrap">
-                <CreditCard size={18} color="#0284c7" />
-                <h3>Collect Payment · {collectModal.invoiceNumber}</h3>
-              </div>
-              <button className="modal-close-btn" onClick={() => setCollectModal(null)}>✕</button>
+                {collectModal && (() => {
+                  const currentDue = Number(collectModal.balanceDue !== undefined ? collectModal.balanceDue : (collectModal.totalAmount - (collectModal.amountPaid || 0)));
+                  const numericAmount = parseFloat(collectAmount) || 0;
+                  const remainingAfter = Math.max(0, Math.round((currentDue - numericAmount) * 100) / 100);
+                  const isInvalidAmount = !numericAmount || numericAmount <= 0 || numericAmount > currentDue;
+
+                  return (
+                    <div className="clean-modal-backdrop">
+                      <div className="clean-modal-dialog">
+                        <div className="clean-modal-header">
+                          <div className="modal-title-wrap">
+                            <CreditCard size={18} color="#0284c7" />
+                            <h3>Collect Payment · {collectModal.invoiceNumber}</h3>
+                          </div>
+                          <button className="modal-close-btn" onClick={() => setCollectModal(null)}>✕</button>
+                        </div>
+
+                            <form onSubmit={handleDirectPayment} className="clean-modal-body">
+                              <div className="revert-summary-box">
+                                <div className="summary-row">
+                                  <span>Customer:</span>
+                                  <strong>{collectModal.customerName}</strong>
+                                </div>
+                                <div className="summary-row">
+                                  <span>Vehicle:</span>
+                                  <strong>{collectModal.vehicleRegistration} ({collectModal.vehicleModel || 'Car'})</strong>
+                                </div>
+                                <div className="summary-row">
+                                  <span>Total Invoice Value:</span>
+                                  <strong>₹{collectModal.totalAmount?.toLocaleString('en-IN')}</strong>
+                                </div>
+                                {(collectModal.amountPaid || 0) > 0 && (
+                                  <div className="summary-row">
+                                    <span>Already Collected:</span>
+                                    <strong style={{ color: '#047857' }}>₹{collectModal.amountPaid?.toLocaleString('en-IN')}</strong>
+                                  </div>
+                                )}
+                                <div className="summary-row">
+                                  <span>Outstanding Invoice Balance:</span>
+                                  <strong style={{ color: '#ea580c', fontSize: '15px' }}>₹{currentDue.toLocaleString('en-IN')}</strong>
+                                </div>
+                              </div>
+
+                                {/* Amount to Collect Input with Quick Preset Chips & Live Breakdown */}
+                                <div className="form-field-group">
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                    <label className="input-label" style={{ margin: 0, fontWeight: 700 }}>Amount to Collect (₹) *</label>
+                                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                      Max Due: ₹{currentDue.toLocaleString('en-IN')}
+                                    </span>
+                                  </div>
+                                  <div className="collect-amount-input-wrap">
+                                    <span className="collect-amount-prefix">₹</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max={currentDue}
+                                      step="1"
+                                      className="styled-input-text collect-amount-input"
+                                      placeholder={`Enter amount e.g. ${Math.min(500, currentDue)}`}
+                                      value={collectAmount}
+                                      onChange={(e) => setCollectAmount(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+
+                                  {/* Preset Quick Chips */}
+                                  <div className="collect-quick-buttons">
+                                    <button
+                                      type="button"
+                                      className={`collect-chip-btn ${numericAmount === currentDue ? 'active' : ''}`}
+                                      onClick={() => setCollectAmount(String(currentDue))}
+                                    >
+                                      💰 Full Balance (₹{currentDue.toLocaleString('en-IN')})
+                                    </button>
+                                    {currentDue >= 200 && (
+                                      <button
+                                        type="button"
+                                        className={`collect-chip-btn ${numericAmount === Math.round(currentDue / 2) ? 'active' : ''}`}
+                                        onClick={() => setCollectAmount(String(Math.round(currentDue / 2)))}
+                                      >
+                                        ⚡ Half (₹{Math.round(currentDue / 2).toLocaleString('en-IN')})
+                                      </button>
+                                    )}
+                                    {currentDue > 500 && numericAmount !== 500 && Math.round(currentDue / 2) !== 500 && (
+                                      <button
+                                        type="button"
+                                        className={`collect-chip-btn ${numericAmount === 500 ? 'active' : ''}`}
+                                        onClick={() => setCollectAmount('500')}
+                                      >
+                                        ₹500 Part Payment
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Real-time Calculation Breakdown Card */}
+                                  <div className="collect-calculation-card">
+                                    <div className="calc-stat-row">
+                                      <span>💵 Collecting Now:</span>
+                                      <strong style={{ color: '#047857', fontSize: '13.5px' }}>₹{(numericAmount || 0).toLocaleString('en-IN')}</strong>
+                                    </div>
+                                    <div className="calc-stat-row">
+                                      <span>⏳ Remaining Due on Invoice:</span>
+                                      <strong style={{ color: remainingAfter > 0 ? '#ea580c' : '#047857', fontSize: '13.5px' }}>
+                                        ₹{remainingAfter.toLocaleString('en-IN')}
+                                      </strong>
+                                    </div>
+                                    <div className={`calc-outcome-notice ${remainingAfter === 0 ? 'full-settled' : 'partial-balance'}`}>
+                                      {remainingAfter === 0 ? (
+                                        <span>✓ <strong>Full Settlement:</strong> Invoice will be marked as Fully Paid &amp; Settled.</span>
+                                      ) : (
+                                        <span>ℹ️ <strong>Partial Payment:</strong> ₹{(numericAmount || 0).toLocaleString('en-IN')} will be collected and credited. The remaining <strong>₹{remainingAfter.toLocaleString('en-IN')}</strong> will remain shown as balance due on the invoice.</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                  <div className="form-field-group">
+                                    <label className="input-label">Payment Channel *</label>
+                                    <AdminOptionSelect
+                                      group="payment_method"
+                                      className="styled-input-select"
+                                      value={paymentMethod}
+                                      onChange={(e) => setPaymentMethod(e.target.value)}
+                                    >
+                                      <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
+                                      <option value="Cash">Cash Handover at Yard</option>
+                                      <option value="Bank Transfer">Bank Transfer / NEFT / IMPS</option>
+                                      <option value="POS Card Terminal">Card Swiped on POS Terminal</option>
+                                    </AdminOptionSelect>
+                                  </div>
+
+                                <div className="form-field-group">
+                                  <label className="input-label">Payment Transaction Reference (UTR / Receipt ID) *</label>
+                                  <input
+                                    type="text"
+                                    className="styled-input-text font-mono"
+                                    placeholder="e.g. UTR-98218731"
+                                    value={paymentRef}
+                                    onChange={(e) => setPaymentRef(e.target.value)}
+                                    required
+                                  />
+                                </div>
+
+                            <div className="clean-modal-footer" style={{ padding: '16px 0 0 0', border: 'none', background: 'transparent' }}>
+                              <button
+                                type="button"
+                                className="btn secondary"
+                                onClick={() => setCollectModal(null)}
+                                disabled={isPaying}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="btn primary"
+                                disabled={isPaying || isInvalidAmount}
+                              >
+                                {isPaying ? 'Recording Collection...' : `Confirm Collection of ₹${(numericAmount || 0).toLocaleString('en-IN')}`}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                    </div>
+              );
+      })()}
             </div>
-
-            <form onSubmit={handleDirectPayment} className="clean-modal-body">
-              <div className="revert-summary-box">
-                <div className="summary-row">
-                  <span>Customer:</span>
-                  <strong>{collectModal.customerName}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Vehicle:</span>
-                  <strong>{collectModal.vehicleRegistration}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Outstanding Invoice Balance:</span>
-                  <strong style={{ color: '#ea580c' }}>₹{collectModal.balanceDue?.toLocaleString('en-IN')}</strong>
-                </div>
-              </div>
-
-              <div className="form-field-group">
-                <label className="input-label">Payment Channel *</label>
-                <AdminOptionSelect
-                  group="payment_method"
-                  className="styled-input-select"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                >
-                  <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
-                  <option value="Cash">Cash Handover at Yard</option>
-                  <option value="Bank Transfer">Bank Transfer / NEFT / IMPS</option>
-                  <option value="POS Card Terminal">Card Swiped on POS Terminal</option>
-                </AdminOptionSelect>
-              </div>
-
-              <div className="form-field-group">
-                <label className="input-label">Payment Transaction Reference (UTR / Receipt ID) *</label>
-                <input
-                  type="text"
-                  className="styled-input-text font-mono"
-                  placeholder="e.g. UTR-98218731"
-                  value={paymentRef}
-                  onChange={(e) => setPaymentRef(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="clean-modal-footer" style={{ padding: '16px 0 0 0', border: 'none', background: 'transparent' }}>
-                <button
-                  type="button"
-                  className="btn secondary"
-                  onClick={() => setCollectModal(null)}
-                  disabled={isPaying}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn primary"
-                  disabled={isPaying}
-                >
-                  {isPaying ? 'Recording...' : `Confirm Receipt of ₹${collectModal.balanceDue?.toLocaleString('en-IN')}`}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+            );
 }

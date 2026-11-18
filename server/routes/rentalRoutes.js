@@ -410,6 +410,22 @@ router.post('/leases/:id/activate', (req, res) => {
 // 2. INVOICES & RECURRING BILLING ENDPOINTS (FLOW 2)
 // =========================================================================
 
+function recalculateInvoiceSummaries(invoicesData) {
+  const invs = invoicesData.invoices || [];
+  invoicesData.summary = invoicesData.summary || {};
+  invoicesData.summary.totalInvoices = invs.length;
+  invoicesData.summary.totalBilled = Math.round(invs.reduce((sum, i) => sum + (Number(i.totalAmount) || 0), 0) * 100) / 100;
+  invoicesData.summary.totalCollected = Math.round(invs.reduce((sum, i) => sum + (Number(i.amountPaid) || 0), 0) * 100) / 100;
+  invoicesData.summary.totalPending = Math.round(invs.reduce((sum, i) => {
+    if (i.status === 'Waived') return sum;
+    const due = Number(i.balanceDue !== undefined ? i.balanceDue : (i.totalAmount - (i.amountPaid || 0)));
+    return sum + Math.max(0, due);
+  }, 0) * 100) / 100;
+  invoicesData.summary.paidCount = invs.filter(i => i.status === 'Paid').length;
+  invoicesData.summary.overdueCount = invs.filter(i => i.status !== 'Paid' && i.status !== 'Waived').length;
+  invoicesData.summary.partialCount = invs.filter(i => i.status === 'Partially Paid' || (i.amountPaid > 0 && i.balanceDue > 0)).length;
+}
+
 // GET /api/rentals/invoices - List invoices with filters
 router.get('/invoices', (req, res) => {
   const { status, search } = req.query;
@@ -417,7 +433,14 @@ router.get('/invoices', (req, res) => {
   let list = data.invoices || [];
 
   if (status && status !== 'all') {
-    list = list.filter(i => i.status.toLowerCase() === status.toLowerCase());
+    const s = status.toLowerCase();
+    if (s === 'pending') {
+      list = list.filter(i => i.status?.toLowerCase() === 'pending' || i.status?.toLowerCase() === 'partially paid' || (Number(i.balanceDue) > 0 && i.status?.toLowerCase() !== 'waived'));
+    } else if (s === 'paid') {
+      list = list.filter(i => i.status?.toLowerCase() === 'paid');
+    } else {
+      list = list.filter(i => i.status?.toLowerCase() === s);
+    }
   }
 
   if (search && search.trim() !== '') {
@@ -513,6 +536,7 @@ router.post('/invoices', (req, res) => {
 // POST /api/rentals/invoices/:id/pay-wallet - Pay Invoice from Driver Spendable Wallet
 router.post('/invoices/:id/pay-wallet', (req, res) => {
   const { id } = req.params;
+  const { amount } = req.body || {};
   const invoicesData = readJson(INVOICES_FILE, { summary: {}, invoices: [] });
   const index = (invoicesData.invoices || []).findIndex(i => i.id === id || i.invoiceNumber === id);
   if (index === -1) {
@@ -520,9 +544,11 @@ router.post('/invoices/:id/pay-wallet', (req, res) => {
   }
 
   const invoice = invoicesData.invoices[index];
-  if (invoice.status === 'Paid') {
-    return res.status(400).json({ success: false, message: 'Invoice is already paid.' });
+  if (invoice.status === 'Paid' && (invoice.balanceDue === 0 || invoice.balanceDue === undefined)) {
+    return res.status(400).json({ success: false, message: 'Invoice is already fully paid.' });
   }
+
+  const currentDue = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
 
   // Load Driver Wallet to check and deduct spendable balance
   const driversData = readJson(DRIVERS_FILE, { drivers: [] });
@@ -535,19 +561,34 @@ router.post('/invoices/:id/pay-wallet', (req, res) => {
   const driver = driverIndex !== -1 ? driversData.drivers[driverIndex] : null;
   const spendable = driver?.wallet?.spendableBalance || 0;
 
-  if (spendable < invoice.balanceDue) {
+  if (spendable <= 0) {
     return res.status(400).json({
       success: false,
-      message: `Insufficient spendable wallet funds. Driver has ₹${spendable.toLocaleString('en-IN')}, but invoice requires ₹${invoice.balanceDue.toLocaleString('en-IN')}. Please top up wallet first.`
+      message: `Driver spendable wallet has ₹0. Please top up the wallet or collect payment via UPI/Cash.`
+    });
+  }
+
+  const requestedAmount = amount !== undefined && amount !== null && amount !== '' ? Number(amount) : null;
+  const deductAmount = (requestedAmount !== null && !isNaN(requestedAmount) && requestedAmount > 0)
+    ? Math.min(requestedAmount, currentDue)
+    : Math.min(spendable, currentDue);
+
+  if (spendable < deductAmount) {
+    return res.status(400).json({
+      success: false,
+      message: `Insufficient spendable wallet funds. Driver has ₹${spendable.toLocaleString('en-IN')}, but required amount is ₹${deductAmount.toLocaleString('en-IN')}.`
     });
   }
 
   // Deduct from driver wallet
   const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const txnId = `WTX-INV-${Date.now().toString().slice(-4)}`;
+  const receiptNumber = `RCP-${Date.now().toString().slice(-6)}`;
+  const isFull = deductAmount >= currentDue;
 
-  driver.wallet.spendableBalance -= invoice.balanceDue;
-  driver.wallet.postedBalance -= invoice.balanceDue;
+  driver.wallet.spendableBalance = Math.max(0, driver.wallet.spendableBalance - deductAmount);
+  driver.wallet.postedBalance = Math.max(0, driver.wallet.postedBalance - deductAmount);
+  driver.wallet.outstandingDues = Math.max(0, (driver.wallet.outstandingDues || 0) - deductAmount);
   if (driver.wallet.spendableBalance <= 500 && driver.wallet.spendableBalance > 0) {
     driver.wallet.status = 'Low Balance';
   }
@@ -556,41 +597,54 @@ router.post('/invoices/:id/pay-wallet', (req, res) => {
     id: txnId,
     date: dateStr,
     type: 'Invoice Auto-Debit',
-    amount: `-₹${invoice.balanceDue.toLocaleString('en-IN')}.00`,
-    method: `Invoice Paid: ${invoice.invoiceNumber} [${invoice.vehicleRegistration}]`,
+    amount: `-₹${deductAmount.toLocaleString('en-IN')}.00`,
+    method: `${isFull ? 'Full Settlement' : 'Partial Payment'}: ${invoice.invoiceNumber} [${invoice.vehicleRegistration}]`,
     status: 'Settled'
   };
 
   driver.wallet.recentTransactions = [debitTxn, ...(driver.wallet.recentTransactions || [])];
   writeJson(DRIVERS_FILE, driversData);
 
-  // Update invoice status
-  invoice.amountPaid = invoice.totalAmount;
-  invoice.balanceDue = 0;
-  invoice.status = 'Paid';
+  // Update invoice status & partial tracking
+  invoice.amountPaid = Math.round(((invoice.amountPaid || 0) + deductAmount) * 100) / 100;
+  invoice.balanceDue = Math.max(0, Math.round((invoice.totalAmount - invoice.amountPaid) * 100) / 100);
+  invoice.status = invoice.balanceDue <= 0 ? 'Paid' : 'Partially Paid';
   invoice.paymentMethod = 'Driver Spendable Wallet';
   invoice.paidDate = new Date().toISOString();
   invoice.receiptReference = txnId;
+  invoice.lastReceiptNumber = receiptNumber;
+  invoice.lastCollectedAmount = deductAmount;
 
-  // Recalculate invoice summaries
-  invoicesData.summary.totalCollected = (invoicesData.summary.totalCollected || 0) + invoice.totalAmount;
-  invoicesData.summary.totalPending = Math.max(0, (invoicesData.summary.totalPending || 0) - invoice.totalAmount);
-  invoicesData.summary.paidCount = invoicesData.invoices.filter(i => i.status === 'Paid').length;
-  invoicesData.summary.overdueCount = invoicesData.invoices.filter(i => i.status !== 'Paid').length;
+  const paymentRecord = {
+    receiptNumber,
+    date: new Date().toISOString(),
+    amount: deductAmount,
+    paymentMethod: 'Driver Spendable Wallet',
+    reference: txnId,
+    balanceRemaining: invoice.balanceDue,
+    status: isFull ? 'Full Settlement' : 'Partial Payment',
+    collectedBy: 'Automated Wallet Debit'
+  };
+  invoice.paymentHistory = invoice.paymentHistory || [];
+  invoice.paymentHistory.push(paymentRecord);
 
+  recalculateInvoiceSummaries(invoicesData);
   writeJson(INVOICES_FILE, invoicesData);
 
   res.json({
     success: true,
-    message: `Invoice ${invoice.invoiceNumber} of ₹${invoice.totalAmount.toLocaleString('en-IN')} paid directly from ${driver.name}'s wallet. Remaining spendable balance: ₹${driver.wallet.spendableBalance.toLocaleString('en-IN')}.`,
+    message: isFull
+      ? `Full invoice payment of ₹${deductAmount.toLocaleString('en-IN')} paid directly from ${driver.name}'s wallet. Remaining spendable balance: ₹${driver.wallet.spendableBalance.toLocaleString('en-IN')}.`
+      : `Partial payment of ₹${deductAmount.toLocaleString('en-IN')} deducted from ${driver.name}'s wallet (Receipt #${receiptNumber}). Remaining invoice balance due: ₹${invoice.balanceDue.toLocaleString('en-IN')}. Remaining wallet balance: ₹${driver.wallet.spendableBalance.toLocaleString('en-IN')}.`,
+    receipt: paymentRecord,
     data: invoice
   });
 });
 
-// POST /api/rentals/invoices/:id/pay-direct - Pay Invoice via External UPI / Cash
+// POST /api/rentals/invoices/:id/pay-direct - Pay / Collect Invoice via External UPI / Cash
 router.post('/invoices/:id/pay-direct', (req, res) => {
   const { id } = req.params;
-  const { paymentMethod = 'UPI', reference = `UPI-${Date.now().toString().slice(-6)}` } = req.body;
+  const { paymentMethod = 'UPI', reference = `UPI-${Date.now().toString().slice(-6)}`, amount } = req.body;
 
   const invoicesData = readJson(INVOICES_FILE, { summary: {}, invoices: [] });
   const index = (invoicesData.invoices || []).findIndex(i => i.id === id || i.invoiceNumber === id);
@@ -599,28 +653,78 @@ router.post('/invoices/:id/pay-direct', (req, res) => {
   }
 
   const invoice = invoicesData.invoices[index];
-  if (invoice.status === 'Paid') {
-    return res.status(400).json({ success: false, message: 'Invoice is already paid.' });
+  if (invoice.status === 'Paid' && (invoice.balanceDue === 0 || invoice.balanceDue === undefined)) {
+    return res.status(400).json({ success: false, message: 'Invoice is already fully paid.' });
   }
 
-  invoice.amountPaid = invoice.totalAmount;
-  invoice.balanceDue = 0;
-  invoice.status = 'Paid';
+  const currentDue = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
+  const requestedAmount = amount !== undefined && amount !== null && amount !== '' ? Number(amount) : null;
+  const collectAmount = (requestedAmount !== null && !isNaN(requestedAmount) && requestedAmount > 0)
+    ? Math.round(requestedAmount * 100) / 100
+    : currentDue;
+
+  if (collectAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Collection amount must be greater than ₹0.' });
+  }
+  if (collectAmount > currentDue) {
+    return res.status(400).json({
+      success: false,
+      message: `Collection amount (₹${collectAmount.toLocaleString('en-IN')}) cannot exceed outstanding balance due (₹${currentDue.toLocaleString('en-IN')}).`
+    });
+  }
+
+  const receiptNumber = `RCP-${Date.now().toString().slice(-6)}`;
+  const isFull = collectAmount >= currentDue;
+
+  invoice.amountPaid = Math.round(((invoice.amountPaid || 0) + collectAmount) * 100) / 100;
+  invoice.balanceDue = Math.max(0, Math.round((invoice.totalAmount - invoice.amountPaid) * 100) / 100);
+  invoice.status = invoice.balanceDue <= 0 ? 'Paid' : 'Partially Paid';
   invoice.paymentMethod = paymentMethod;
   invoice.paidDate = new Date().toISOString();
   invoice.receiptReference = reference;
+  invoice.lastReceiptNumber = receiptNumber;
+  invoice.lastCollectedAmount = collectAmount;
 
-  // Update summaries
-  invoicesData.summary.totalCollected = (invoicesData.summary.totalCollected || 0) + invoice.totalAmount;
-  invoicesData.summary.totalPending = Math.max(0, (invoicesData.summary.totalPending || 0) - invoice.totalAmount);
-  invoicesData.summary.paidCount = invoicesData.invoices.filter(i => i.status === 'Paid').length;
-  invoicesData.summary.overdueCount = invoicesData.invoices.filter(i => i.status !== 'Paid').length;
+  // Track comprehensive payment receipt history
+  const paymentRecord = {
+    receiptNumber,
+    date: new Date().toISOString(),
+    amount: collectAmount,
+    paymentMethod,
+    reference,
+    balanceRemaining: invoice.balanceDue,
+    status: isFull ? 'Full Settlement' : 'Partial Payment',
+    collectedBy: 'Finance / Admin Desk'
+  };
+  invoice.paymentHistory = invoice.paymentHistory || [];
+  invoice.paymentHistory.push(paymentRecord);
 
+  recalculateInvoiceSummaries(invoicesData);
   writeJson(INVOICES_FILE, invoicesData);
+
+  // Update driver wallet outstanding dues if applicable
+  try {
+    const driversData = readJson(DRIVERS_FILE, { drivers: [] });
+    const dIdx = (driversData.drivers || []).findIndex(d =>
+      d.id === invoice.driverId ||
+      d.name?.toLowerCase() === invoice.driverName?.toLowerCase() ||
+      d.phone === invoice.driverPhone
+    );
+    if (dIdx !== -1 && driversData.drivers[dIdx].wallet) {
+      const drv = driversData.drivers[dIdx];
+      drv.wallet.outstandingDues = Math.max(0, (drv.wallet.outstandingDues || 0) - collectAmount);
+      writeJson(DRIVERS_FILE, driversData);
+    }
+  } catch (e) {
+    console.warn('Could not update driver wallet dues on direct payment:', e.message);
+  }
 
   res.json({
     success: true,
-    message: `Invoice ${invoice.invoiceNumber} marked Paid via ${paymentMethod} (${reference}).`,
+    message: isFull
+      ? `Full payment of ₹${collectAmount.toLocaleString('en-IN')} received. Invoice ${invoice.invoiceNumber} is fully settled.`
+      : `Partial payment of ₹${collectAmount.toLocaleString('en-IN')} collected (Receipt #${receiptNumber}). Remaining balance due: ₹${invoice.balanceDue.toLocaleString('en-IN')}.`,
+    receipt: paymentRecord,
     data: invoice
   });
 });
@@ -645,7 +749,7 @@ router.post('/invoices/:id/waive', (req, res) => {
   invoice.notes = `Waived: ${reason}`;
   invoice.balanceDue = 0;
 
-  invoicesData.summary.totalPending = Math.max(0, (invoicesData.summary.totalPending || 0) - invoice.totalAmount);
+  recalculateInvoiceSummaries(invoicesData);
   writeJson(INVOICES_FILE, invoicesData);
 
   res.json({

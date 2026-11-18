@@ -1007,7 +1007,8 @@
             "method": "UPI Auto-pay",
             "status": "Success"
           }
-        ]
+        ],
+        "outstandingDues": 0
       },
       "kyc": {
         "aadhaar": "5421-9847-6712",

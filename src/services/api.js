@@ -776,11 +776,16 @@ export async function createInvoiceApi(payload) {
   }
 }
 
-export async function payInvoiceWalletApi(id) {
+export async function payInvoiceWalletApi(id, amount = null) {
   try {
+    const payload = {};
+    if (amount !== null && amount !== undefined && amount !== '') {
+      payload.amount = Number(amount);
+    }
     const response = await fetch(`${API_BASE}/rentals/invoices/${encodeURIComponent(id)}/pay-wallet`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
     const data = await response.json();
     if (!response.ok) {
@@ -793,12 +798,16 @@ export async function payInvoiceWalletApi(id) {
   }
 }
 
-export async function payInvoiceDirectApi(id, paymentMethod = 'UPI', reference = '') {
+export async function payInvoiceDirectApi(id, paymentMethod = 'UPI', reference = '', amount = null) {
   try {
+    const payload = { paymentMethod, reference };
+    if (amount !== null && amount !== undefined && amount !== '') {
+      payload.amount = Number(amount);
+    }
     const response = await fetch(`${API_BASE}/rentals/invoices/${encodeURIComponent(id)}/pay-direct`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentMethod, reference })
+      body: JSON.stringify(payload)
     });
     const data = await response.json();
     if (!response.ok) {

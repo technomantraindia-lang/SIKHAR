@@ -2,10 +2,11 @@
   "summary": {
     "totalInvoices": 17,
     "totalBilled": 16250,
-    "totalCollected": 9750,
-    "totalPending": 6500,
-    "overdueCount": 6,
-    "paidCount": 11
+    "totalCollected": 10750,
+    "totalPending": 5500,
+    "overdueCount": 5,
+    "paidCount": 12,
+    "partialCount": 0
   },
   "invoices": [
     {
@@ -177,12 +178,37 @@
       "gstPercent": 5,
       "gstAmount": 47.62,
       "totalAmount": 1000,
-      "amountPaid": 0,
-      "balanceDue": 1000,
-      "status": "Pending",
-      "paymentMethod": null,
-      "paidDate": null,
-      "notes": "Opening Daily rental invoice."
+      "amountPaid": 1000,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "Cash",
+      "paidDate": "2026-11-18T13:02:38.030Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "CASH-YARD-01",
+      "lastReceiptNumber": "RCP-958030",
+      "lastCollectedAmount": 500,
+      "paymentHistory": [
+        {
+          "receiptNumber": "RCP-919155",
+          "date": "2026-11-18T13:01:59.156Z",
+          "amount": 500,
+          "paymentMethod": "UPI",
+          "reference": "UTR-98218731",
+          "balanceRemaining": 500,
+          "status": "Partial Payment",
+          "collectedBy": "Finance / Admin Desk"
+        },
+        {
+          "receiptNumber": "RCP-958030",
+          "date": "2026-11-18T13:02:38.030Z",
+          "amount": 500,
+          "paymentMethod": "Cash",
+          "reference": "CASH-YARD-01",
+          "balanceRemaining": 0,
+          "status": "Full Settlement",
+          "collectedBy": "Finance / Admin Desk"
+        }
+      ]
     },
     {
       "id": "INV-26-642223",

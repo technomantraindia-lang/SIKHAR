@@ -39,6 +39,8 @@ export default function InvoiceDetailPage({
   const [showCollectForm, setShowCollectForm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [paymentRef, setPaymentRef] = useState('');
+  const [collectAmount, setCollectAmount] = useState('');
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   const activeId = invoiceId || localStorage.getItem('sikhar_selected_invoice_id');
 
@@ -86,17 +88,29 @@ export default function InvoiceDetailPage({
     }
   };
 
-  // Action: Direct UPI / Cash Handover Collection
+  // Action: Direct UPI / Cash Handover Collection (Supports Partial & Full)
   const handleDirectCollect = async (e) => {
     e.preventDefault();
     if (!invoice) return;
+    const due = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
+    const numericAmount = parseFloat(collectAmount) || due;
+    if (!numericAmount || numericAmount <= 0) {
+      alert('Please enter a valid collection amount greater than ₹0.');
+      return;
+    }
+    if (numericAmount > due) {
+      alert(`Collection amount (₹${numericAmount.toLocaleString('en-IN')}) cannot exceed outstanding balance due of ₹${due.toLocaleString('en-IN')}.`);
+      return;
+    }
+
     try {
       setIsProcessing(true);
       const ref = paymentRef || `${paymentMethod}-${Date.now().toString().slice(-6)}`;
-      const res = await payInvoiceDirectApi(invoice.id, paymentMethod, ref);
+      const res = await payInvoiceDirectApi(invoice.id, paymentMethod, ref, numericAmount);
       showToast(`✅ ${res.message || 'Payment successfully recorded!'}`);
       setShowCollectForm(false);
       setPaymentRef('');
+      setCollectAmount('');
       loadInvoice();
     } catch (err) {
       alert(err.message || 'Failed to record payment.');
@@ -125,8 +139,9 @@ export default function InvoiceDetailPage({
     }
   };
 
-  const isPaid = invoice?.status === 'Paid';
+  const isPaid = invoice?.status === 'Paid' && (invoice?.balanceDue === 0 || invoice?.balanceDue === undefined);
   const isWaived = invoice?.status === 'Waived';
+  const isPartial = !isPaid && !isWaived && (invoice?.status === 'Partially Paid' || (invoice?.amountPaid > 0 && invoice?.balanceDue > 0));
   const isPending = !isPaid && !isWaived;
 
   return (
@@ -184,8 +199,11 @@ export default function InvoiceDetailPage({
               Tax Invoice · {invoice?.invoiceNumber || 'INV-26-XXXX'}
             </h1>
             {invoice && (
-              <span className={`status-pill ${isPaid ? 'good' : isWaived ? 'blue' : 'warn'}`}>
-                {isPaid ? '✓ Paid & Settled' : isWaived ? '— Waived (Credit Note)' : '⏳ Payment Due'}
+              <span
+                className={`status-pill ${isPaid ? 'good' : isWaived ? 'blue' : 'warn'}`}
+                style={isPartial ? { background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' } : {}}
+              >
+                {isPaid ? '✓ Paid & Settled' : isWaived ? '— Waived (Credit Note)' : isPartial ? `⚡ Partially Paid (Due: ₹${invoice.balanceDue?.toLocaleString('en-IN')})` : '⏳ Payment Due'}
               </span>
             )}
           </div>
@@ -363,6 +381,14 @@ export default function InvoiceDetailPage({
                       <span>WAIVED &amp; CLOSED</span>
                       <small>CREDIT NOTE ISSUED</small>
                     </div>
+                  ) : isPartial ? (
+                    <div className="stamp-box partial">
+                      <span>PARTIALLY PAID</span>
+                      <small>₹{invoice.amountPaid?.toLocaleString('en-IN')} Received</small>
+                      <small style={{ fontSize: '9.5px', marginTop: '2px', fontWeight: 700, color: '#c2410c' }}>
+                        Due: ₹{invoice.balanceDue?.toLocaleString('en-IN')}
+                      </small>
+                    </div>
                   ) : (
                     <div className="stamp-box unpaid">
                       <span>PAYMENT DUE</span>
@@ -405,6 +431,55 @@ export default function InvoiceDetailPage({
                 </div>
               </div>
 
+              {/* Official Payment Receipts & Part Vouchers Table */}
+              {invoice.paymentHistory && invoice.paymentHistory.length > 0 && (
+                <div style={{ marginTop: '24px', borderTop: '2px dashed #cbd5e1', paddingTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      🧾 Official Collection Receipts &amp; Vouchers ({invoice.paymentHistory.length})
+                    </h4>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      Audit-verified payment credits
+                    </span>
+                  </div>
+
+                  <table className="tax-invoice-items-table" style={{ marginTop: '4px', fontSize: '11.5px' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9' }}>
+                        <th style={{ color: '#475569', background: '#f1f5f9' }}>Receipt #</th>
+                        <th style={{ color: '#475569', background: '#f1f5f9' }}>Date &amp; Time</th>
+                        <th style={{ color: '#475569', background: '#f1f5f9' }}>Payment Mode</th>
+                        <th style={{ color: '#475569', background: '#f1f5f9' }}>Amount Collected</th>
+                        <th style={{ color: '#475569', background: '#f1f5f9' }}>Remaining Due</th>
+                        <th style={{ textAlign: 'right', color: '#475569', background: '#f1f5f9' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.paymentHistory.map((pmt, pIdx) => (
+                        <tr key={pIdx}>
+                          <td><strong className="font-mono" style={{ color: '#0284c7' }}>{pmt.receiptNumber}</strong></td>
+                          <td>{new Date(pmt.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td>{pmt.paymentMethod} {pmt.reference ? `(${pmt.reference})` : ''}</td>
+                          <td><strong style={{ color: '#047857' }}>₹{Number(pmt.amount).toLocaleString('en-IN')}</strong></td>
+                          <td><strong style={{ color: pmt.balanceRemaining > 0 ? '#ea580c' : '#047857' }}>₹{Number(pmt.balanceRemaining || 0).toLocaleString('en-IN')}</strong></td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="receipt-print-btn"
+                              onClick={() => setSelectedReceipt(pmt)}
+                              title="View & Print official payment receipt voucher"
+                            >
+                              <Printer size={12} />
+                              <span>Print Slip</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {/* Signatory Footer */}
               <div className="invoice-footer-terms">
                 <p style={{ margin: '0 0 4px 0' }}>
@@ -445,9 +520,17 @@ export default function InvoiceDetailPage({
                     <button
                       className="btn secondary"
                       style={{ width: '100%', justifyContent: 'center' }}
-                      onClick={() => setShowCollectForm(!showCollectForm)}
+                      onClick={() => {
+                        const next = !showCollectForm;
+                        setShowCollectForm(next);
+                        if (next) {
+                          const due = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
+                          setCollectAmount(String(due));
+                          setPaymentRef(`UTR-${Date.now().toString().slice(-6)}`);
+                        }
+                      }}
                     >
-                      <span>Collect via UPI / Cash</span>
+                      <span>Collect via UPI / Cash (Full / Partial)</span>
                     </button>
 
                     <button
@@ -460,46 +543,113 @@ export default function InvoiceDetailPage({
                     </button>
                   </div>
 
-                  {/* Inline UPI/Cash Collect Form */}
-                  {showCollectForm && (
-                    <form onSubmit={handleDirectCollect} className="inline-collect-form-box">
-                      <div className="form-field-group">
-                        <label className="input-label">Payment Channel</label>
-                        <AdminOptionSelect
-                          group="payment_method"
-                          className="styled-input-select"
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
+                  {/* Inline UPI/Cash Collect Form with Custom / Partial Amount */}
+                  {showCollectForm && (() => {
+                    const currentDue = Number(invoice.balanceDue !== undefined ? invoice.balanceDue : (invoice.totalAmount - (invoice.amountPaid || 0)));
+                    const numericAmount = parseFloat(collectAmount) || 0;
+                    const remainingAfter = Math.max(0, Math.round((currentDue - numericAmount) * 100) / 100);
+                    const isInvalidAmount = !numericAmount || numericAmount <= 0 || numericAmount > currentDue;
+
+                    return (
+                      <form onSubmit={handleDirectCollect} className="inline-collect-form-box">
+                        <div className="form-field-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <label className="input-label" style={{ margin: 0, fontWeight: 700 }}>Amount to Collect (₹) *</label>
+                            <span style={{ fontSize: '10.5px', color: '#64748b' }}>Due: ₹{currentDue.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="collect-amount-input-wrap">
+                            <span className="collect-amount-prefix">₹</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max={currentDue}
+                              step="1"
+                              className="styled-input-text collect-amount-input"
+                              placeholder={`e.g. ${Math.min(500, currentDue)}`}
+                              value={collectAmount}
+                              onChange={(e) => setCollectAmount(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="collect-quick-buttons">
+                            <button
+                              type="button"
+                              className={`collect-chip-btn ${numericAmount === currentDue ? 'active' : ''}`}
+                              onClick={() => setCollectAmount(String(currentDue))}
+                            >
+                              Full: ₹{currentDue.toLocaleString('en-IN')}
+                            </button>
+                            {currentDue >= 200 && (
+                              <button
+                                type="button"
+                                className={`collect-chip-btn ${numericAmount === Math.round(currentDue / 2) ? 'active' : ''}`}
+                                onClick={() => setCollectAmount(String(Math.round(currentDue / 2)))}
+                              >
+                                Half: ₹{Math.round(currentDue / 2).toLocaleString('en-IN')}
+                              </button>
+                            )}
+                            {currentDue > 500 && numericAmount !== 500 && (
+                              <button
+                                type="button"
+                                className={`collect-chip-btn ${numericAmount === 500 ? 'active' : ''}`}
+                                onClick={() => setCollectAmount('500')}
+                              >
+                                ₹500 Part
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="collect-calculation-card">
+                            <div className="calc-stat-row">
+                              <span>💵 Collecting:</span>
+                              <strong style={{ color: '#047857' }}>₹{(numericAmount || 0).toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div className="calc-stat-row">
+                              <span>⏳ Remaining Due:</span>
+                              <strong style={{ color: remainingAfter > 0 ? '#ea580c' : '#047857' }}>₹{remainingAfter.toLocaleString('en-IN')}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="form-field-group">
+                          <label className="input-label">Payment Channel</label>
+                          <AdminOptionSelect
+                            group="payment_method"
+                            className="styled-input-select"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                          >
+                            <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
+                            <option value="Cash">Cash Handover at Fleet Yard</option>
+                            <option value="Bank Transfer">Bank Transfer (NEFT / IMPS)</option>
+                            <option value="POS Card">POS Card Terminal</option>
+                          </AdminOptionSelect>
+                        </div>
+
+                        <div className="form-field-group">
+                          <label className="input-label">Transaction Ref / UTR *</label>
+                          <input
+                            type="text"
+                            className="styled-input-text font-mono"
+                            placeholder="e.g. UTR-98218731"
+                            value={paymentRef}
+                            onChange={(e) => setPaymentRef(e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="btn primary"
+                          style={{ width: '100%', marginTop: '6px' }}
+                          disabled={isProcessing || isInvalidAmount}
                         >
-                          <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
-                          <option value="Cash">Cash Handover at Fleet Yard</option>
-                          <option value="Bank Transfer">Bank Transfer (NEFT / IMPS)</option>
-                          <option value="POS Card">POS Card Terminal</option>
-                        </AdminOptionSelect>
-                      </div>
-
-                      <div className="form-field-group">
-                        <label className="input-label">Transaction Ref / UTR *</label>
-                        <input
-                          type="text"
-                          className="styled-input-text font-mono"
-                          placeholder="e.g. UTR-98218731"
-                          value={paymentRef}
-                          onChange={(e) => setPaymentRef(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="btn primary"
-                        style={{ width: '100%', marginTop: '6px' }}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? 'Recording...' : `Confirm Receipt of ₹${invoice.balanceDue}`}
-                      </button>
-                    </form>
-                  )}
+                          {isProcessing ? 'Recording...' : `Confirm Collection of ₹${(numericAmount || 0).toLocaleString('en-IN')}`}
+                        </button>
+                      </form>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -522,11 +672,26 @@ export default function InvoiceDetailPage({
                     </div>
                   </div>
 
-                  {isPaid ? (
-                    <div className="timeline-node">
+                  {/* Render all partial payments recorded in paymentHistory */}
+                  {Array.isArray(invoice.paymentHistory) && invoice.paymentHistory.map((pmt, pIdx) => (
+                    <div key={pIdx} className="timeline-node">
                       <div className="node-dot blue"></div>
                       <div className="node-content">
-                        <div className="node-title">Payment Realized &amp; Settled</div>
+                        <div className="node-title">Payment Collected · ₹{Number(pmt.amount).toLocaleString('en-IN')}</div>
+                        <div className="node-sub">Channel: {pmt.paymentMethod} {pmt.reference ? `(${pmt.reference})` : ''}</div>
+                        <div className="node-sub font-mono" style={{ color: '#0284c7' }}>Receipt: {pmt.receiptNumber}</div>
+                        <span className="node-time">
+                          {new Date(pmt.date).toLocaleString('en-IN')} · Remaining Due: ₹{Number(pmt.balanceRemaining || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isPaid ? (
+                    <div className="timeline-node">
+                      <div className="node-dot green"></div>
+                      <div className="node-content">
+                        <div className="node-title">Invoice Fully Paid &amp; Settled</div>
                         <div className="node-sub">Channel: {invoice.paymentMethod || 'Driver Spendable Wallet'}</div>
                         <div className="node-sub font-mono">Ref: {invoice.receiptReference || 'WTX-INV-AUTO'}</div>
                         <span className="node-time">{invoice.paidDate || invoice.invoiceDate}</span>
@@ -546,7 +711,7 @@ export default function InvoiceDetailPage({
                       <div className="node-dot orange"></div>
                       <div className="node-content">
                         <div className="node-title">Awaiting Payment Collection</div>
-                        <div className="node-sub">Payment due by {invoice.dueDate}</div>
+                        <div className="node-sub">Payment due by {invoice.dueDate} · Outstanding: ₹{invoice.balanceDue?.toLocaleString('en-IN')}</div>
                       </div>
                     </div>
                   )}
@@ -554,6 +719,126 @@ export default function InvoiceDetailPage({
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Official Payment Receipt Slip Modal */}
+      {selectedReceipt && invoice && (
+        <div className="receipt-slip-modal-backdrop" onClick={() => setSelectedReceipt(null)}>
+          <div className="receipt-slip-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="receipt-slip-paper" id="printable-receipt-slip">
+              {/* Header */}
+              <div className="receipt-slip-header">
+                <div>
+                  <div className="receipt-slip-title">Sikhar Fleet Private Limited</div>
+                  <div className="receipt-slip-sub">Official Commercial Passenger Vehicle Rental Receipt · SAC 996601</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                    GSTIN: 07AAACS1234F1Z8 · Corporate Fleet Operations
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span className="font-mono" style={{ fontSize: '13px', fontWeight: 800, color: '#0284c7' }}>
+                    {selectedReceipt.receiptNumber}
+                  </span>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                    Date: {new Date(selectedReceipt.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer & Asset Details Grid */}
+              <div className="receipt-slip-meta-grid">
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '11px' }}>Received From (Driver / Customer):</span>
+                  <div style={{ fontWeight: 700, marginTop: '2px' }}>{invoice.customerName}</div>
+                  <div style={{ color: '#475569', fontSize: '11.5px' }}>📱 {invoice.driverPhone}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '11px' }}>Vehicle Asset Allocated:</span>
+                  <div style={{ fontWeight: 700, marginTop: '2px' }}>{invoice.vehicleRegistration}</div>
+                  <div style={{ color: '#475569', fontSize: '11.5px' }}>{invoice.vehicleModel}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '11px' }}>Parent Invoice Reference:</span>
+                  <div className="font-mono" style={{ fontWeight: 700, marginTop: '2px' }}>{invoice.invoiceNumber}</div>
+                  <div style={{ color: '#64748b', fontSize: '11px' }}>Billing Period: {invoice.period}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '11px' }}>Payment Mode &amp; UTR:</span>
+                  <div style={{ fontWeight: 700, marginTop: '2px' }}>{selectedReceipt.paymentMethod}</div>
+                  <div className="font-mono" style={{ color: '#0284c7', fontSize: '11px' }}>Ref: {selectedReceipt.reference || 'DIRECT-CASH'}</div>
+                </div>
+              </div>
+
+              {/* Amount Received Hero */}
+              <div className="receipt-slip-amount-hero">
+                <span className="hero-label">Amount Collected &amp; Credited</span>
+                <div className="hero-val">₹{Number(selectedReceipt.amount).toLocaleString('en-IN')}.00</div>
+                <div style={{ fontSize: '11px', color: '#065f46', marginTop: '2px' }}>
+                  Amount Credited towards Daily Commercial Vehicle Rent
+                </div>
+              </div>
+
+              {/* Balance Status Strip */}
+              <div className="receipt-slip-balance-strip">
+                <div>
+                  <span style={{ fontSize: '11px', display: 'block', color: '#7c2d12' }}>Total Invoice Amount:</span>
+                  <strong>₹{invoice.totalAmount?.toLocaleString('en-IN')}</strong>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '11px', display: 'block', color: '#7c2d12' }}>Total Paid to Date:</span>
+                  <strong style={{ color: '#047857' }}>₹{invoice.amountPaid?.toLocaleString('en-IN')}</strong>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '11px', display: 'block', color: '#7c2d12' }}>Remaining Balance Due:</span>
+                  <strong style={{ color: selectedReceipt.balanceRemaining > 0 ? '#ea580c' : '#047857', fontSize: '14px' }}>
+                    ₹{Number(selectedReceipt.balanceRemaining || 0).toLocaleString('en-IN')}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Signatures & Seal */}
+              <div className="receipt-slip-signatures">
+                <div>
+                  <div>Payment Processed By: {selectedReceipt.collectedBy || 'Finance Desk'}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8' }}>System Generated Receipt Voucher · Valid without Physical Signature</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a' }}>For Sikhar Fleet Pvt Ltd</div>
+                  <div style={{ fontSize: '10px', color: '#047857', fontWeight: 600 }}>✓ Verified Authorized Voucher</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="clean-modal-footer" style={{ padding: '14px 24px' }}>
+              <button type="button" className="btn secondary" onClick={() => setSelectedReceipt(null)}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  const printContent = document.getElementById('printable-receipt-slip');
+                  if (printContent) {
+                    const win = window.open('', '', 'height=650,width=800');
+                    win.document.write('<html><head><title>Payment Receipt Voucher</title>');
+                    win.document.write('<style>body{font-family:sans-serif;padding:30px;color:#0f172a;} .receipt-slip-header{display:flex;justify-content:space-between;border-bottom:2px solid #0f172a;padding-bottom:12px;margin-bottom:14px;} .receipt-slip-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:14px;} .receipt-slip-amount-hero{border:2px solid #047857;background:#ecfdf5;padding:16px;text-align:center;margin-bottom:14px;} .hero-val{font-size:28px;font-weight:bold;color:#047857;} .receipt-slip-balance-strip{display:flex;justify-content:space-between;padding:12px;border:1px solid #fed7aa;background:#fff7ed;margin-bottom:14px;} .receipt-slip-signatures{display:flex;justify-content:space-between;margin-top:24px;border-top:1px dashed #cbd5e1;padding-top:16px;font-size:11px;}</style>');
+                    win.document.write('</head><body>');
+                    win.document.write(printContent.innerHTML);
+                    win.document.write('</body></html>');
+                    win.document.close();
+                    win.focus();
+                    win.print();
+                    win.close();
+                  }
+                }}
+              >
+                <Printer size={14} />
+                <span>Print Receipt Slip</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
