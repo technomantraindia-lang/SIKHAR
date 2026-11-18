@@ -11,9 +11,10 @@ import {
   ChevronRight,
   Plus,
   RefreshCw,
-  Award
+  Award,
+  Trash2
 } from '../common/Icons';
-import { fetchDriversApi } from '../../services/api';
+import { fetchDriversApi, deleteDriverApi } from '../../services/api';
 import DriverDetailPage from './DriverDetailPage';
 import FleetLiveLocationMap from './FleetLiveLocationMap';
 import AddDriverPage from './AddDriverPage';
@@ -102,6 +103,23 @@ export default function DriverControlTower({ onNavigate }) {
       localStorage.removeItem('sikhar_driver_view_mode');
     } catch {
       // ignore
+    }
+  };
+
+  const handleDeleteDriver = async (drv) => {
+    const hasCar = drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned';
+    const confirmMsg = hasCar
+      ? `Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})?\n\n🚗 Assigned vehicle "${drv.vehicle.registration}" will automatically be UNASSIGNED and returned to available yard stock.`
+      : `Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await deleteDriverApi(drv.id);
+      triggerToast(`✓ Driver ${drv.name} deleted${hasCar ? ` and vehicle ${drv.vehicle.registration} unassigned.` : '.'}`);
+      loadDrivers();
+    } catch (err) {
+      alert('Failed to delete driver: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -433,13 +451,25 @@ export default function DriverControlTower({ onNavigate }) {
 
                       {/* Vehicle Column */}
                       <td>
-                        {drv.vehicle ? (
+                        {drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned' ? (
                           <div className="driver-vehicle-cell">
-                            <span className="driver-car-plate">{drv.vehicle.registration}</span>
-                            <span className="driver-car-sub">{drv.vehicle.model}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span className="driver-car-plate">{drv.vehicle.registration}</span>
+                              <span className="badge-assigned-signed" title="Car assigned as active commercial rent">
+                                ✓ ASSIGNED
+                              </span>
+                            </div>
+                            <span className="driver-car-sub">
+                              {drv.vehicle.model || 'Fleet Car'} • {drv.deal?.rate || '₹1,000 / day'}
+                            </span>
                           </div>
                         ) : (
-                          <span className="badge-unassigned">No Car Assigned</span>
+                          <div className="driver-vehicle-cell">
+                            <span className="badge-not-assigned" title="No vehicle assigned to this driver">
+                              ⚠️ NOT ASSIGNED
+                            </span>
+                            <span className="driver-car-sub" style={{ color: '#94a3b8' }}>Standby Crew (No Car)</span>
+                          </div>
                         )}
                       </td>
 
@@ -504,18 +534,31 @@ export default function DriverControlTower({ onNavigate }) {
                         <span className="driver-dl-expiry">{drv.kyc?.dlExpiry}</span>
                       </td>
 
-                      {/* Action Chevron */}
+                      {/* Actions */}
                       <td>
-                        <button
-                          className="driver-row-open-btn"
-                          title="Open Full Driver Profile Page"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectDriver(drv.id);
-                          }}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
+                            className="driver-row-open-btn"
+                            title="Open Full Driver Profile Page"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectDriver(drv.id);
+                            }}
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="driver-row-delete-btn"
+                            title={`Delete driver ${drv.name} (Unassigns vehicle)`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDriver(drv);
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

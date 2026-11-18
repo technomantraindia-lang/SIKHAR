@@ -2602,6 +2602,230 @@
   border-radius: 4px;
 }
 
+/* Institutional Driver Assignment & Rent Status Badges */
+.badge-assigned-signed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-not-assigned {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Institutional Delete Actions for Drivers and Vehicles */
+.driver-row-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.driver-row-delete-btn:hover {
+  background: #fca5a5;
+  color: #991b1b;
+}
+
+.table-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.table-delete-btn:hover {
+  background: #fca5a5;
+  color: #991b1b;
+}
+
+.cvc-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cvc-delete-btn:hover {
+  background: #fca5a5;
+  color: #991b1b;
+}
+
+.deal-type-card-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.deal-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.deal-card-btn:hover {
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+.deal-card-btn.is-active {
+  border-color: #1d68f0;
+  background: #eff6ff;
+}
+
+.deal-card-title {
+  font-size: 12px;
+  font-weight: 750;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deal-card-desc {
+  font-size: 10.5px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.rent-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rent-currency-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  font-weight: 750;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.rent-numeric-field {
+  padding-left: 28px !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+}
+
+.rent-unit-suffix {
+  position: absolute;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.rent-presets-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.rent-preset-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rent-preset-chip:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.rent-preset-chip.active {
+  background: #1d68f0;
+  color: #ffffff;
+  border-color: #1d68f0;
+}
+
+.wizard-deal-preview-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+
+.wizard-deal-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: #475569;
+  margin-bottom: 5px;
+}
+
+.wizard-deal-preview-row.total-row {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 6px;
+  padding-top: 6px;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #0f172a;
+  margin-bottom: 0;
+}
+
 .wizard-success-pane {
   text-align: center;
   padding: 20px 0;

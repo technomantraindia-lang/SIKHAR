@@ -1,13 +1,38 @@
 {
   "summary": {
-    "totalInvoices": 16,
-    "totalBilled": 15250,
-    "totalCollected": 8250,
-    "totalPending": 7000,
-    "overdueCount": 7,
-    "paidCount": 9
+    "totalInvoices": 17,
+    "totalBilled": 16250,
+    "totalCollected": 9750,
+    "totalPending": 6500,
+    "overdueCount": 6,
+    "paidCount": 11
   },
   "invoices": [
+    {
+      "id": "INV-26-633552",
+      "invoiceNumber": "INV-26-633552",
+      "customerName": "vivek",
+      "customerId": "CUST-26-33464",
+      "driverId": "drv-14",
+      "driverName": "vivek",
+      "driverPhone": "7418526852",
+      "vehicleRegistration": "DL52GD6605",
+      "vehicleModel": "TATA TIGOR EV XPRESS T",
+      "invoiceDate": "2026-11-18",
+      "dueDate": "2026-11-18",
+      "period": "18 Nov 2026",
+      "baseAmount": 952.38,
+      "gstPercent": 5,
+      "gstAmount": 47.62,
+      "totalAmount": 1000,
+      "amountPaid": 1000,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "Driver Spendable Wallet",
+      "paidDate": "2026-11-18T06:34:20.122Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "WTX-INV-0083"
+    },
     {
       "id": "INV-26-253582",
       "invoiceNumber": "INV-26-253582",
@@ -52,12 +77,13 @@
       "gstPercent": 5,
       "gstAmount": 23.81,
       "totalAmount": 500,
-      "amountPaid": 0,
-      "balanceDue": 500,
-      "status": "Pending",
-      "paymentMethod": null,
-      "paidDate": null,
-      "notes": "Opening Daily rental invoice."
+      "amountPaid": 500,
+      "balanceDue": 0,
+      "status": "Paid",
+      "paymentMethod": "Driver Spendable Wallet",
+      "paidDate": "2026-11-18T06:01:28.141Z",
+      "notes": "Opening Daily rental invoice.",
+      "receiptReference": "WTX-INV-8056"
     },
     {
       "id": "INV-26-414295",

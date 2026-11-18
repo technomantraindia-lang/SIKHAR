@@ -12,9 +12,10 @@ import {
   Zap,
   Car,
   ArrowLeftRight,
-  X
+  X,
+  Trash2
 } from '../common/Icons';
-import { fetchFleetTowerApi } from '../../services/api';
+import { fetchFleetTowerApi, deleteVehicleApi } from '../../services/api';
 
 export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, onOpenAssignment, onBackToDashboard }) {
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,23 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
   useEffect(() => {
     loadVehicleData();
   }, [loadVehicleData]);
+
+  const handleDeleteVehicle = async (veh) => {
+    const isAssigned = veh.driver && veh.driver !== 'Unassigned' && veh.driver !== 'Yard Inventory';
+    const confirmMsg = isAssigned
+      ? `Are you sure you want to permanently delete vehicle "${veh.registration}" (${veh.model})?\n\n👤 Assigned driver "${veh.driver}" will automatically be UNASSIGNED and placed on Standby Crew.`
+      : `Are you sure you want to permanently delete vehicle "${veh.registration}" from the fleet registry?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await deleteVehicleApi(veh.id || veh.registration);
+      showToast(res.message || `✓ Vehicle ${veh.registration} deleted successfully.`);
+      loadVehicleData();
+    } catch (err) {
+      alert('Failed to delete vehicle: ' + (err.message || 'Unknown error'));
+    }
+  };
 
   // Filter logic
   const filteredVehicles = vehicles.filter(v => {
@@ -497,7 +515,7 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                   </div>
 
                   <span className={`cvc-assignment-badge ${isMaintenance ? 'locked' : isAssigned ? 'assigned' : 'idle'}`}>
-                    {isMaintenance ? '⛔ Maintenance (Locked)' : isAssigned ? '24h Shift' : 'Idle Yard'}
+                    {isMaintenance ? '⛔ Maintenance (Locked)' : isAssigned ? '✓ ASSIGNED' : '⚠️ NOT ASSIGNED'}
                   </span>
                 </div>
 
@@ -510,9 +528,23 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                     </span>
                   </div>
 
-                  <div className="cvc-link-arrow">
-                    <span>View 360° Profile</span>
-                    <ChevronRight size={14} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="cvc-delete-btn"
+                      title={`Delete vehicle ${vehicle.registration} (Unassigns driver)`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteVehicle(vehicle);
+                      }}
+                    >
+                      <Trash2 size={12} />
+                      <span>Delete</span>
+                    </button>
+                    <div className="cvc-link-arrow">
+                      <span>View Specs</span>
+                      <ChevronRight size={14} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -651,15 +683,21 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                               {vehicle.driver.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </div>
                             <div className="table-driver-info">
-                              <span className="table-driver-name">{vehicle.driver}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span className="table-driver-name">{vehicle.driver}</span>
+                                <span className="badge-assigned-signed" style={{ fontSize: '9px', padding: '1px 5px' }}>✓ ASSIGNED</span>
+                              </div>
                               <span className="table-driver-phone">{vehicle.driverPhone || '—'}</span>
                             </div>
                           </div>
                         ) : (
-                          <span className="table-yard-pill">
-                            <span className="yard-dot" />
-                            <span>Yard Inventory</span>
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="table-yard-pill">
+                              <span className="yard-dot" />
+                              <span>Yard Inventory</span>
+                            </span>
+                            <span className="badge-not-assigned" style={{ fontSize: '9px', padding: '1px 5px' }}>⚠️ NOT ASSIGNED</span>
+                          </div>
                         )}
                       </td>
 
@@ -681,19 +719,33 @@ export default function VehicleMasterPage({ onSelectVehicle, onOpenAddVehicle, o
                       </td>
 
                       <td style={{ textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="table-action-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onSelectVehicle) {
-                              onSelectVehicle(vehicle.id);
-                            }
-                          }}
-                        >
-                          <span>View 360° Specs</span>
-                          <ChevronRight size={13} className="action-arrow" />
-                        </button>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            className="table-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onSelectVehicle) {
+                                onSelectVehicle(vehicle.id);
+                              }
+                            }}
+                          >
+                            <span>Specs</span>
+                            <ChevronRight size={13} className="action-arrow" />
+                          </button>
+                          <button
+                            type="button"
+                            className="table-delete-btn"
+                            title={`Delete vehicle ${vehicle.registration} (Unassigns driver)`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteVehicle(vehicle);
+                            }}
+                          >
+                            <Trash2 size={12} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

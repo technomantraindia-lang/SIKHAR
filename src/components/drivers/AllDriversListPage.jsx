@@ -53,12 +53,17 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
 
   const handleDeleteDriver = async (drv, e) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})? This will release their assigned vehicle and delete all associated records.`)) {
+    const hasCar = drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned';
+    const confirmMsg = hasCar
+      ? `Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})?\n\n🚗 Assigned vehicle "${drv.vehicle.registration}" will automatically be UNASSIGNED and returned to ready yard stock.`
+      : `Are you sure you want to permanently delete driver "${drv.name}" (${drv.id})?`;
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     try {
       await deleteDriverApi(drv.id);
-      showToast(`Driver ${drv.name} deleted successfully.`);
+      showToast(`✓ Driver ${drv.name} deleted successfully${hasCar ? ` and vehicle ${drv.vehicle.registration} unassigned.` : '.'}`);
       loadAllDrivers();
     } catch (err) {
       alert('Failed to delete driver: ' + (err.message || 'Unknown error'));
@@ -375,18 +380,24 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
 
                       {/* Vehicle Column */}
                       <td>
-                        {drv.vehicle ? (
+                        {drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned' ? (
                           <div className="table-vehicle-cell">
                             <div className="plate-badge-row">
                               <span className="table-car-plate">{drv.vehicle.registration}</span>
+                              <span className="badge-assigned-signed" title="Car assigned on active commercial lease">
+                                ✓ ASSIGNED
+                              </span>
                               <span className={`fuel-badge ${drv.vehicle.type === 'EV' ? 'ev' : 'cng'}`}>
                                 {drv.vehicle.type || 'CNG'}
                               </span>
                             </div>
-                            <span className="table-car-sub">{drv.vehicle.model}</span>
+                            <span className="table-car-sub">{drv.vehicle.model} • {drv.deal?.rate || '₹1,000 / day'}</span>
                           </div>
                         ) : (
-                          <span className="badge-standby-unassigned">Standby (No Car)</span>
+                          <div className="table-vehicle-cell">
+                            <span className="badge-not-assigned">⚠️ NOT ASSIGNED</span>
+                            <span className="table-car-sub" style={{ color: '#94a3b8' }}>Available for Vehicle Handover</span>
+                          </div>
                         )}
                       </td>
 
@@ -615,16 +626,18 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
 
                 {/* Assigned Vehicle Strip */}
                 <div className="card-vehicle-strip">
-                  {drv.vehicle ? (
+                  {drv.vehicle && drv.vehicle.registration && drv.vehicle.registration !== 'Unassigned' ? (
                     <div className="card-veh-info">
                       <div className="veh-plate-wrap">
                         <Car size={13} className="text-muted" />
                         <strong className="veh-plate-mono">{drv.vehicle.registration}</strong>
+                        <span className="badge-assigned-signed" style={{ fontSize: '9px', padding: '1px 5px' }}>✓ ASSIGNED</span>
                       </div>
-                      <span className="veh-model-muted">{drv.vehicle.model} • {drv.vehicle.type}</span>
+                      <span className="veh-model-muted">{drv.vehicle.model} • {drv.vehicle.type} • {drv.deal?.rate || '₹1,000 / day'}</span>
                     </div>
                   ) : (
                     <div className="card-standby-info">
+                      <span className="badge-not-assigned" style={{ fontSize: '9px', padding: '1px 5px' }}>⚠️ NOT ASSIGNED</span>
                       <span className="standby-text">Standby Crew (No Car Assigned)</span>
                     </div>
                   )}

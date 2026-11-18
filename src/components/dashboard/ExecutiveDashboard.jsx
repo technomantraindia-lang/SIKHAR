@@ -5,7 +5,6 @@ import {
   Wrench,
   IndianRupee,
   ChevronRight,
-  Plus,
   AlertTriangle,
   Info,
   Calendar
@@ -15,8 +14,6 @@ import { fetchDashboardApi } from '../../services/api';
 export default function ExecutiveDashboard({ onNavigate }) {
   const [_data, setData] = useState(null);
   const [_loading, setLoading] = useState(true);
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderStep, setOrderStep] = useState(1);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -97,14 +94,6 @@ export default function ExecutiveDashboard({ onNavigate }) {
           <h1 className="dash-greeting-text">Good morning, Sanjay 👋</h1>
           <p className="dash-date-subtext">Tuesday, 18 August 2026 • Executive Control Centre</p>
         </div>
-
-        <button 
-          className="dash-primary-btn"
-          onClick={() => { setShowOrderModal(true); setOrderStep(1); }}
-        >
-          <Plus size={16} strokeWidth={2.5} />
-          <span>New Rental Order</span>
-        </button>
       </div>
 
       {/* 2. Top Row: 4 KPI Cards */}
@@ -511,129 +500,6 @@ export default function ExecutiveDashboard({ onNavigate }) {
           </div>
         </div>
       </div>
-
-      {/* Interactive New Rental Order Wizard Modal */}
-      {showOrderModal && (
-        <div className="modal-overlay-backdrop" onClick={() => setShowOrderModal(false)}>
-          <div className="order-wizard-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="wizard-head">
-              <div>
-                <h2>Create New Rental Order</h2>
-                <p>Zero-bypass onboarding, vehicle allocation, digital agreement and deposit receipt.</p>
-              </div>
-              <button className="wizard-close-btn" onClick={() => setShowOrderModal(false)}>×</button>
-            </div>
-
-            {/* Stepper */}
-            <div className="wizard-steps-bar">
-              {['1 · Customer & KYC', '2 · Deal Model', '3 · Vehicle Master', '4 · Agreement & Deposit', '5 · Deploy'].map((stepName, idx) => (
-                <div key={idx} className={`wizard-step-pill ${orderStep === idx + 1 ? 'is-active' : orderStep > idx + 1 ? 'is-done' : ''}`}>
-                  {stepName}
-                </div>
-              ))}
-            </div>
-
-            {/* Step Body */}
-            <div className="wizard-step-content">
-              {orderStep === 1 && (
-                <div className="wizard-form-fields">
-                  <div className="input-group">
-                    <label>Customer Full Name *</label>
-                    <input type="text" defaultValue="Raj Kumar" />
-                  </div>
-                  <div className="input-group">
-                    <label>Mobile Number (OTP Verified) *</label>
-                    <input type="text" defaultValue="+91 98110 44291" />
-                  </div>
-                  <div className="kyc-badge-notice">
-                    <span>✓</span> Aadhaar and Driving Licence verified via UIDAI offline gateway.
-                  </div>
-                </div>
-              )}
-
-              {orderStep === 2 && (
-                <div className="wizard-form-fields">
-                  <div className="input-group">
-                    <label>Commercial Deal Model *</label>
-                    <select defaultValue="fixed">
-                      <option value="fixed">Fixed Daily Rental (₹1,000 / day)</option>
-                      <option value="revenue_share">Rapido Revenue Share (75% Driver / 25% Sikhar)</option>
-                    </select>
-                  </div>
-                  <div className="input-group">
-                    <label>Billing Cycle Trigger *</label>
-                    <select defaultValue="daily">
-                      <option value="daily">Daily Auto-Deduction at 00:00</option>
-                      <option value="weekly">Weekly on Monday</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {orderStep === 3 && (
-                <div className="wizard-form-fields">
-                  <div className="input-group">
-                    <label>Select Ready Vehicle from Fleet Inventory *</label>
-                    <select defaultValue="DL52GD6534">
-                      <option value="DL52GD6534">DL52GD6534 — TATA TIGOR EV (Sikhar Hub · Battery 96%)</option>
-                      <option value="HR38AK1234">HR38AK1234 — Maruti WagonR CNG (Gurgaon Yard)</option>
-                      <option value="HR55BD6737">HR55BD6737 — TATA TIGOR EV (Ready to Deploy)</option>
-                    </select>
-                  </div>
-                  <div className="kyc-badge-notice">
-                    <span>🔒</span> Selecting a vehicle triggers an atomic lock in the master registry.
-                  </div>
-                </div>
-              )}
-
-              {orderStep === 4 && (
-                <div className="wizard-form-fields">
-                  <div className="summary-confirm-row">
-                    <span>Digital Lease Agreement</span>
-                    <span className="status-pill-green">Signed via Aadhaar e-Sign</span>
-                  </div>
-                  <div className="summary-confirm-row">
-                    <span>Security Deposit Confirmation</span>
-                    <span className="status-pill-green">₹75,000 Received (Bank UTR Verified)</span>
-                  </div>
-                </div>
-              )}
-
-              {orderStep === 5 && (
-                <div className="wizard-success-pane">
-                  <div className="success-icon-large">🚙</div>
-                  <h3>Ready for Vehicle Dispatch</h3>
-                  <p>Vehicle DL52GD6534 is tagged to Raj Kumar. Fleet Live telemetry updated.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Wizard Controls */}
-            <div className="wizard-foot-actions">
-              {orderStep > 1 && (
-                <button className="btn-secondary" onClick={() => setOrderStep(orderStep - 1)}>
-                  ← Back
-                </button>
-              )}
-              {orderStep < 5 ? (
-                <button className="btn-primary" onClick={() => setOrderStep(orderStep + 1)}>
-                  Continue →
-                </button>
-              ) : (
-                <button 
-                  className="btn-primary"
-                  onClick={() => {
-                    alert('Lease order activated successfully!');
-                    setShowOrderModal(false);
-                  }}
-                >
-                  Activate Lease Order
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -43,14 +43,19 @@ function unassignVehicleInFleet(driverName, reg) {
       fleetData.vehicles.forEach(v => {
         if ((reg && v.registration === reg) || (driverName && v.driver === driverName)) {
           v.driver = 'Unassigned';
-          v.driverPhone = '-';
+          v.driverPhone = '—';
           v.driverStatus = 'Available in Yard';
-          v.status = 'Ready for Duty';
+          v.status = 'Ready to Deploy';
+          v.nextAction = 'Put on Road';
           changed = true;
         }
       });
     }
     if (changed) {
+      if (fleetData.summary?.metrics) {
+        fleetData.summary.metrics.onRoad.value = fleetData.vehicles.filter(v => v.status === 'On Road' || v.status === 'Allocated').length;
+        fleetData.summary.metrics.readyToDeploy.value = fleetData.vehicles.filter(v => v.status === 'Ready to Deploy').length;
+      }
       fs.writeFileSync(FLEET_DATA_FILE, JSON.stringify(fleetData, null, 2), 'utf8');
     }
   } catch (err) {
@@ -1162,6 +1167,34 @@ router.delete('/:id', (req, res) => {
   // If driver had a vehicle allocated, release vehicle back to available yard fleet
   if (deletedDriver.vehicle?.registration || deletedDriver.name) {
     unassignVehicleInFleet(deletedDriver.name, deletedDriver.vehicle?.registration);
+  }
+
+  // Also close any active temporary or permanent assignment in assignments.json if present
+  try {
+    const asgPath = path.join(__dirname, '../data/assignments.json');
+    if (fs.existsSync(asgPath)) {
+      const asgData = JSON.parse(fs.readFileSync(asgPath, 'utf8'));
+      let asgChanged = false;
+      if (Array.isArray(asgData.activeAssignments)) {
+        for (let i = asgData.activeAssignments.length - 1; i >= 0; i--) {
+          const asg = asgData.activeAssignments[i];
+          if (asg.driverId === id || (deletedDriver.name && asg.driverName === deletedDriver.name)) {
+            asg.status = 'Terminated';
+            asg.returnedAt = new Date().toISOString();
+            asg.returnNotes = `Driver ${deletedDriver.name} deleted by admin.`;
+            asgData.activeAssignments.splice(i, 1);
+            if (!asgData.history) asgData.history = [];
+            asgData.history.unshift(asg);
+            asgChanged = true;
+          }
+        }
+      }
+      if (asgChanged) {
+        fs.writeFileSync(asgPath, JSON.stringify(asgData, null, 2), 'utf8');
+      }
+    }
+  } catch (e) {
+    console.warn('Assignments clean up error on driver delete:', e.message);
   }
 
   // Recalculate summary metrics

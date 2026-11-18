@@ -1,16 +1,16 @@
 {
   "summary": {
-    "totalDrivers": 19,
+    "totalDrivers": 16,
     "activeContracts": 57,
     "onDuty": 9,
     "onLeave": 1,
     "suspended": 2,
-    "unassigned": 3,
+    "unassigned": 4,
     "walletBreached": 14,
     "lowPerformance": 6,
     "attendanceMarked": 58,
     "pendingHandover": 2,
-    "ready": 2
+    "ready": 3
   },
   "actionQueue": [
     {
@@ -78,14 +78,22 @@
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 1000,
+        "postedBalance": 500,
         "activeHolds": 0,
-        "spendableBalance": 1000,
+        "spendableBalance": 500,
         "outstandingDues": 0,
-        "status": "Healthy",
+        "status": "Low Balance",
         "autoTopup": false,
         "lastTopup": "13 Nov 2026, 06:02 AM · ₹500",
         "recentTransactions": [
+          {
+            "id": "WTX-INV-8056",
+            "date": "18 Nov 2026, 06:01 AM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹500.00",
+            "method": "Invoice Paid: INV-26-212934 [DL3CAB1234]",
+            "status": "Settled"
+          },
           {
             "id": "WTX-9234",
             "date": "13 Nov 2026, 06:02 AM",
@@ -290,167 +298,6 @@
         "presentDays": 1,
         "leaveDays": 0,
         "punctuality": "100%"
-      }
-    },
-    {
-      "id": "drv-18",
-      "name": "QA Test Driver 1105104011",
-      "phone": "+919900000001",
-      "altPhone": "",
-      "city": "QA Delhi",
-      "photo": "",
-      "mobileVerified": true,
-      "status": "On Duty",
-      "rating": 5,
-      "shift": "",
-      "shiftType": "",
-      "coDriver": null,
-      "location": "QA Delhi",
-      "vehicle": {
-        "registration": "QB1105104011",
-        "model": "QA WagonR CNG",
-        "type": "CNG",
-        "status": "Temporary Duty (2 Days)"
-      },
-      "todayGross": "₹0",
-      "todayTrips": 0,
-      "wallet": {
-        "postedBalance": 4000,
-        "activeHolds": 0,
-        "spendableBalance": 4000,
-        "outstandingDues": 0,
-        "status": "Healthy",
-        "autoTopup": false,
-        "lastTopup": "05 Nov 2026, 10:40 AM · ₹1,500",
-        "recentTransactions": [
-          {
-            "id": "WTX-4219",
-            "date": "05 Nov 2026, 10:40 AM",
-            "type": "Wallet Top-up",
-            "amount": "+₹1,500",
-            "method": "QA Test UPI (QA-TOPUP-1105104011)",
-            "status": "Success"
-          },
-          {
-            "id": "WTX-4143",
-            "date": "05 Nov 2026, 10:00 AM",
-            "type": "Initial Deposit",
-            "amount": "+₹2,500.00",
-            "method": "Initial Credit",
-            "status": "Success"
-          }
-        ]
-      },
-      "kyc": {
-        "dob": "",
-        "gender": "Other",
-        "fatherName": "QA Parent",
-        "aadhaar": "999988887777",
-        "aadhaarVerified": true,
-        "panCard": "QATEST1234A",
-        "panVerified": true,
-        "drivingLicence": "QA-DL-1105104011",
-        "dlExpiry": "2032-12-31",
-        "dlCategory": "Commercial LMV",
-        "dlStatus": "Valid",
-        "policeVerification": "Verified (Clear)",
-        "emergencyContact": "",
-        "reference": null,
-        "address": "QA Test Address"
-      },
-      "documents": [
-        {
-          "id": "doc-adh-drv-18",
-          "type": "Aadhaar Card",
-          "category": "aadhaar",
-          "title": "UIDAI Aadhaar Biometric Card",
-          "docNumber": "999988887777",
-          "issueDate": "2020-01-01",
-          "expiryDate": "Lifetime / Valid",
-          "verified": true,
-          "uploadedAt": "2026-11-05T05:10:14.144Z",
-          "uploadedBy": "Admin Authority",
-          "fileUrl": "",
-          "fileSize": "",
-          "status": "Verified",
-          "notes": "",
-          "source": "Driver onboarding OCR upload"
-        },
-        {
-          "id": "doc-dl-drv-18",
-          "type": "Driving Licence",
-          "category": "dl",
-          "title": "Commercial Motor Vehicle Driving Licence (LMV-TR)",
-          "docNumber": "QA-DL-1105104011",
-          "issueDate": "2025-07-08",
-          "expiryDate": "2032-12-31",
-          "verified": true,
-          "uploadedAt": "2026-11-05T05:10:14.144Z",
-          "uploadedBy": "Admin Authority",
-          "fileUrl": "",
-          "fileSize": "",
-          "status": "Verified",
-          "notes": "",
-          "source": "Driver onboarding OCR upload"
-        },
-        {
-          "id": "doc-pan-drv-18",
-          "type": "PAN Card",
-          "category": "pan",
-          "title": "Income Tax Permanent Account Number (PAN)",
-          "docNumber": "QATEST1234A",
-          "issueDate": "2020-01-01",
-          "expiryDate": "Lifetime / Valid",
-          "verified": true,
-          "uploadedAt": "2026-11-05T05:10:14.144Z",
-          "uploadedBy": "Admin Authority",
-          "fileUrl": "",
-          "fileSize": "",
-          "status": "Verified",
-          "notes": "",
-          "source": "Driver onboarding OCR upload"
-        }
-      ],
-      "deal": {
-        "type": "Fixed Lease",
-        "rate": "₹1,250 / daily",
-        "deposit": "₹50,000 (Secured in Escrow)",
-        "frequency": "Daily",
-        "taxRule": "GST 5%",
-        "startDate": "2026-11-05T05:10:14.393Z",
-        "contractMonths": 0,
-        "agreementVersion": "v1.0 (Digitally Signed)",
-        "agreementSigned": true,
-        "depositReceipt": "QA-DEP-1105104011",
-        "depositStatus": "Held in Escrow",
-        "leaseId": "ORD-26-414249",
-        "leaseStatus": "Active",
-        "lastAmendment": "2026-11-05T05:10:14.414Z"
-      },
-      "attendance": {
-        "presentDays": 1,
-        "leaveDays": 0,
-        "punctuality": "100%"
-      },
-      "temporaryAssignment": {
-        "assignmentId": "ASG-2026-6564",
-        "isTemporary": true,
-        "originalVehicle": {
-          "registration": "QA1105104011",
-          "model": "QA Tigor EV",
-          "type": "EV",
-          "status": "Assigned 1:1"
-        },
-        "assignedVehicle": {
-          "registration": "QB1105104011",
-          "model": "QA WagonR CNG",
-          "type": "CNG"
-        },
-        "durationDays": 2,
-        "startDate": "2026-11-05T05:10:14.487Z",
-        "endDate": "2026-11-07T05:10:14.487Z",
-        "reason": "QA end-to-end duty test",
-        "status": "Active"
       }
     },
     {
@@ -956,24 +803,45 @@
       "city": "Gurgaon Operations Hub",
       "photo": "",
       "mobileVerified": true,
-      "status": "Ready",
+      "status": "On Duty",
       "rating": 5,
       "shift": "07:00 AM - 07:00 PM (Active)",
       "shiftType": "24-Hour Dedicated",
       "coDriver": null,
       "location": "Gurgaon Operations Hub",
-      "vehicle": null,
+      "vehicle": {
+        "registration": "DL52GD6605",
+        "model": "TATA TIGOR EV XPRESS T",
+        "type": "EV",
+        "status": "Assigned 1:1"
+      },
       "todayGross": "₹0",
       "todayTrips": 0,
       "wallet": {
-        "postedBalance": 1000,
+        "postedBalance": 2000,
         "activeHolds": 0,
-        "spendableBalance": 1000,
+        "spendableBalance": 2000,
         "outstandingDues": 0,
         "status": "Healthy",
         "autoTopup": false,
-        "lastTopup": "15 Oct 2026, 03:26 PM · ₹500",
+        "lastTopup": "18 Nov 2026, 06:36 AM · ₹2,000",
         "recentTransactions": [
+          {
+            "id": "WTX-5767",
+            "date": "18 Nov 2026, 06:36 AM",
+            "type": "Wallet Top-up",
+            "amount": "+₹2,000",
+            "method": "UPI (UPI-83760289)",
+            "status": "Success"
+          },
+          {
+            "id": "WTX-INV-0083",
+            "date": "18 Nov 2026, 06:34 AM",
+            "type": "Invoice Auto-Debit",
+            "amount": "-₹1,000.00",
+            "method": "Invoice Paid: INV-26-633552 [DL52GD6605]",
+            "status": "Settled"
+          },
           {
             "id": "WTX-6347",
             "date": "15 Oct 2026, 03:26 PM",
@@ -1012,19 +880,20 @@
         "address": "25 Mahadevnagar 2"
       },
       "deal": {
-        "type": "Fixed Daily Rental",
-        "rate": "₹1,000 / day",
-        "deposit": "₹75,000 (Secured in Escrow)",
-        "frequency": "Daily Debit (00:00 hrs)",
-        "taxRule": "GST 5% (Commercial Passenger Transport)",
-        "startDate": "15 Oct 2026",
-        "contractMonths": 12,
-        "agreementVersion": "v1.0 (Master Commercial Lease)",
+        "type": "Fixed Lease",
+        "rate": "₹1,000 / daily",
+        "deposit": "₹5,000 (Secured in Escrow)",
+        "frequency": "Daily",
+        "taxRule": "",
+        "startDate": "2026-11-18T06:34:09.332Z",
+        "contractMonths": 0,
+        "agreementVersion": "v1.0 (Executed)",
         "agreementSigned": true,
-        "depositReceipt": "UTR-89127632",
+        "depositReceipt": "UTR-ESC-642555",
         "depositStatus": "Held in Escrow",
-        "handoverOdometer": "45,210 km",
-        "handoverStatus": "Completed & QC Inspected"
+        "leaseId": "ORD-26-633464",
+        "leaseStatus": "Active",
+        "lastAmendment": "2026-11-18T06:34:09.376Z"
       },
       "attendance": {
         "presentDays": 1,
@@ -1796,66 +1665,6 @@
       }
     },
     {
-      "id": "drv-07",
-      "name": "Vicky",
-      "phone": "+91 98101 33221",
-      "city": "South Delhi Hub",
-      "status": "On Duty",
-      "rating": 4.9,
-      "shift": "07:00 AM - 07:00 PM (Active)",
-      "location": "Nehru Place Metro, New Delhi",
-      "vehicle": {
-        "registration": "DL52GD6534",
-        "model": "WagonR H3 CNG",
-        "type": "CNG",
-        "status": "On Road"
-      },
-      "todayGross": "₹1,900",
-      "todayTrips": 14,
-      "wallet": {
-        "postedBalance": 2500,
-        "activeHolds": 0,
-        "spendableBalance": 2500,
-        "status": "Healthy",
-        "autoTopup": true,
-        "lastTopup": "18 Aug 2026 · ₹2,000",
-        "recentTransactions": [
-          {
-            "id": "WTX-701",
-            "date": "18 Aug 2026, 02:40 PM",
-            "type": "Top-up",
-            "amount": "+₹2,000.00",
-            "method": "UPI",
-            "status": "Success"
-          }
-        ]
-      },
-      "kyc": {
-        "aadhaar": "XXXX-XXXX-3344",
-        "aadhaarVerified": true,
-        "drivingLicence": "DL-0420210088776",
-        "dlExpiry": "10 Jan 2031",
-        "dlStatus": "Valid",
-        "policeVerification": "Verified (Clear)",
-        "emergencyContact": "+91 98100 11223 (Father)",
-        "address": "Lajpat Nagar 4, New Delhi",
-        "panCard": "MNBVC3312Q",
-        "panVerified": true
-      },
-      "deal": {
-        "type": "Rapido Revenue Share",
-        "rate": "75% Driver / 25% Sikhar",
-        "deposit": "₹75,000 (Secured)",
-        "startDate": "05 Feb 2026",
-        "contractMonths": 12
-      },
-      "attendance": {
-        "presentDays": 28,
-        "leaveDays": 0,
-        "punctuality": "100%"
-      }
-    },
-    {
       "id": "drv-08",
       "name": "Anoop",
       "phone": "+91 98101 88771",
@@ -1913,66 +1722,6 @@
         "presentDays": 21,
         "leaveDays": 4,
         "punctuality": "88%"
-      }
-    },
-    {
-      "id": "drv-09",
-      "name": "Suraj Mishra",
-      "phone": "+91 98101 99112",
-      "city": "South Delhi Hub",
-      "status": "On Duty",
-      "rating": 4.9,
-      "shift": "06:00 AM - 06:00 PM (Active)",
-      "location": "Connaught Place, Central Delhi",
-      "vehicle": {
-        "registration": "DL1Z08899",
-        "model": "Tigor EV Fleet",
-        "type": "EV",
-        "status": "On Road"
-      },
-      "todayGross": "₹1,780",
-      "todayTrips": 13,
-      "wallet": {
-        "postedBalance": 3100,
-        "activeHolds": 600,
-        "spendableBalance": 2500,
-        "status": "Healthy",
-        "autoTopup": true,
-        "lastTopup": "18 Aug 2026 · ₹2,000",
-        "recentTransactions": [
-          {
-            "id": "WTX-901",
-            "date": "18 Aug 2026, 03:00 PM",
-            "type": "EV Charging Hold",
-            "amount": "-₹600.00",
-            "method": "Statiq Station",
-            "status": "Hold Active"
-          }
-        ]
-      },
-      "kyc": {
-        "aadhaar": "XXXX-XXXX-9901",
-        "aadhaarVerified": true,
-        "drivingLicence": "DL-0120190044556",
-        "dlExpiry": "19 Dec 2029",
-        "dlStatus": "Valid",
-        "policeVerification": "Verified (Clear)",
-        "emergencyContact": "+91 98711 00998 (Wife)",
-        "address": "Janakpuri Block C, New Delhi",
-        "panCard": "ZXCVB1123D",
-        "panVerified": true
-      },
-      "deal": {
-        "type": "Fixed Daily Rental",
-        "rate": "₹1,100 / day",
-        "deposit": "₹75,000 (Secured)",
-        "startDate": "20 Feb 2026",
-        "contractMonths": 12
-      },
-      "attendance": {
-        "presentDays": 27,
-        "leaveDays": 0,
-        "punctuality": "99%"
       }
     },
     {

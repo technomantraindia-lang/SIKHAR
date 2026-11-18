@@ -441,7 +441,7 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
                     <option value="">-- Choose Driver from Registry --</option>
                     {drivers.map(d => (
                       <option key={d.id} value={d.id}>
-                        {d.name} ({d.phone}) — {d.vehicle ? `Current: ${d.vehicle.model} [${d.vehicle.registration}]` : 'No vehicle assigned'}
+                        {d.name} ({d.phone}) — {d.vehicle && d.vehicle.registration && d.vehicle.registration !== 'Unassigned' ? `[✓ ASSIGNED: ${d.vehicle.registration}]` : '[⚠️ NOT ASSIGNED]'}
                       </option>
                     ))}
                   </select>
@@ -465,22 +465,25 @@ export default function VehicleAssignmentPage({ onNavigateToAllVehicles, onNavig
 
                     <div className="snapshot-vehicle-details">
                       <div className="snapshot-field-label">CURRENT ASSIGNED VEHICLE</div>
-                      {selectedDriver.vehicle ? (
+                      {selectedDriver.vehicle && selectedDriver.vehicle.registration && selectedDriver.vehicle.registration !== 'Unassigned' ? (
                         <div className="current-veh-box">
                           <div className="veh-box-top">
                             <span className="veh-reg-plate">{selectedDriver.vehicle.registration}</span>
+                            <span className="badge-assigned-signed">✓ ASSIGNED</span>
                             <span className="veh-type-tag">{selectedDriver.vehicle.type || 'CNG'}</span>
                           </div>
                           <div className="veh-model-name">{selectedDriver.vehicle.model}</div>
                           <div className="veh-sub-stats">
-                            <span>Status: {selectedDriver.vehicle.status || 'Assigned'}</span>
+                            <span>Status: {selectedDriver.vehicle.status || 'Assigned as Rent'}</span>
                             <span>Daily Rent: {selectedDriver.deal?.rate || '₹1,000 / day'}</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="no-veh-alert">
-                          <Info size={15} />
-                          <span>No vehicle currently attached. This will be an initial assignment.</span>
+                        <div className="no-veh-alert" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+                          <span className="badge-not-assigned">⚠️ NOT ASSIGNED</span>
+                          <span style={{ fontSize: '12px', color: '#92400e', marginLeft: '6px' }}>
+                            No vehicle currently attached. This driver is ready for initial allocation.
+                          </span>
                         </div>
                       )}
                     </div>

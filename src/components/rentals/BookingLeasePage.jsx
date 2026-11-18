@@ -1243,12 +1243,14 @@ export default function BookingLeasePage({ onNavigate, onBackToDashboard }) {
                                   <div className="driver-item-row-bottom">
                                     <span className="driver-phone-text">📱 {d.phone}</span>
                                     {hasAssignedCar ? (
-                                      <span className="driver-veh-assigned-pill">
-                                        🚗 {d.vehicle.registration} ({d.vehicle.model || 'Car'})
+                                      <span className="driver-veh-assigned-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                        <span className="badge-assigned-signed">✓ ASSIGNED</span>
+                                        <span>🚗 {d.vehicle.registration} ({d.vehicle.model || 'Car'})</span>
                                       </span>
                                     ) : (
-                                      <span className="driver-veh-unassigned-pill">
-                                        ⚠️ No Vehicle Assigned
+                                      <span className="driver-veh-unassigned-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                        <span className="badge-not-assigned">⚠️ NOT ASSIGNED</span>
+                                        <span>(Standby Driver)</span>
                                       </span>
                                     )}
                                   </div>

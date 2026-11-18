@@ -240,6 +240,23 @@ export async function updateVehicleStatusApi(vehicleId, status, reason = '', dri
   }
 }
 
+export async function deleteVehicleApi(vehicleId) {
+  try {
+    const response = await fetch(`${API_BASE}/fleet/vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete vehicle asset.');
+    }
+    return data;
+  } catch (err) {
+    console.error('Delete vehicle API error:', err);
+    throw err;
+  }
+}
+
 
 // ========================================================
 // DRIVER CONTROL TOWER APIS

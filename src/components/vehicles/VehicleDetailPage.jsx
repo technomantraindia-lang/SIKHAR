@@ -10,9 +10,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Phone,
-  Edit
+  Edit,
+  Trash2
 } from '../common/Icons';
-import { fetchVehicleDetailApi, executeVehicleActionApi } from '../../services/api';
+import { fetchVehicleDetailApi, executeVehicleActionApi, deleteVehicleApi } from '../../services/api';
 import SpeedometerTelemetryCard from './SpeedometerTelemetryCard';
 
 export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDriver, onNavigateToAssignment, onEdit }) {
@@ -72,6 +73,27 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
       await loadVehicle();
     } catch (err) {
       alert(`Action failed: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteVehicle = async () => {
+    if (!vehicle) return;
+    const isAssigned = vehicle.driver && vehicle.driver !== 'Unassigned' && vehicle.driver !== 'Yard Inventory';
+    const confirmMsg = isAssigned
+      ? `Are you sure you want to permanently delete vehicle "${vehicle.registration}" (${vehicle.model})?\n\n👤 Assigned driver "${vehicle.driver}" will automatically be UNASSIGNED and placed on Standby Crew.`
+      : `Are you sure you want to permanently delete vehicle "${vehicle.registration}" from the fleet registry?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setActionLoading(true);
+      const res = await deleteVehicleApi(vehicle.id || vehicle.registration);
+      alert(res.message || `✓ Vehicle ${vehicle.registration} deleted successfully.`);
+      onBack?.();
+    } catch (err) {
+      alert('Failed to delete vehicle: ' + (err.message || 'Unknown error'));
     } finally {
       setActionLoading(false);
     }
@@ -177,6 +199,18 @@ export default function VehicleDetailPage({ vehicleId, onBack, onNavigateToDrive
           <button className="btn secondary" onClick={() => onEdit?.(vehicle)} title="Edit this vehicle master record">
             <Edit size={14} />
             <span>Edit Vehicle</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={handleDeleteVehicle}
+            disabled={actionLoading}
+            title="Permanently remove vehicle from fleet (unassigns driver)"
+            style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+          >
+            <Trash2 size={13} />
+            <span>Delete Vehicle</span>
           </button>
 
           {vehicle.status === 'Ready to Deploy' && (

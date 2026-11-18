@@ -421,4 +421,143 @@ router.post('/vehicles/:id/action', (req, res) => {
   }
 });
 
+// Helper to unassign driver when a vehicle is deleted
+function unassignDriverInDriversData(driverName, regPlate) {
+  try {
+    const driversPath = path.join(__dirname, '../data/drivers.json');
+    if (!fs.existsSync(driversPath)) return null;
+    const raw = fs.readFileSync(driversPath, 'utf8');
+    const driversData = JSON.parse(raw);
+    let changed = false;
+    let affectedDriverName = null;
+
+    if (Array.isArray(driversData.drivers)) {
+      driversData.drivers.forEach(d => {
+        const matchesReg = d.vehicle && d.vehicle.registration && 
+          d.vehicle.registration.trim().toUpperCase() === regPlate.trim().toUpperCase();
+        const matchesName = driverName && d.name && 
+          d.name.trim().toLowerCase() === driverName.trim().toLowerCase();
+
+        if (matchesReg || matchesName) {
+          affectedDriverName = d.name;
+          d.vehicle = null;
+          if (d.status === 'On Duty') {
+            d.status = 'Ready';
+          }
+          if (d.deal) {
+            d.deal.lastAmendment = new Date().toISOString();
+            d.deal.notes = `${d.deal.notes || ''} [Vehicle ${regPlate} deleted on ${new Date().toLocaleDateString('en-IN')}; Driver moved to Standby Pool]`;
+          }
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      if (driversData.summary) {
+        driversData.summary.totalDrivers = driversData.drivers.length;
+        driversData.summary.onDuty = driversData.drivers.filter(d => d.status === 'On Duty').length;
+        driversData.summary.unassigned = driversData.drivers.filter(d => !d.vehicle || !d.vehicle.registration || d.vehicle.registration === 'Unassigned').length;
+      }
+      fs.writeFileSync(driversPath, JSON.stringify(driversData, null, 2), 'utf8');
+    }
+    return affectedDriverName;
+  } catch (err) {
+    console.warn('Could not unassign driver in drivers data:', err.message);
+    return null;
+  }
+}
+
+// DELETE /api/fleet/vehicles/:id - Admin permanently deletes a vehicle from Vehicle Master (unassigns driver)
+router.delete('/vehicles/:id', (req, res) => {
+  try {
+    const data = getFleetData();
+    const vehicleId = String(req.params.id || '').trim().toUpperCase();
+    const index = data.vehicles.findIndex(v =>
+      String(v.id || '').trim().toUpperCase() === vehicleId || 
+      String(v.registration || '').trim().toUpperCase() === vehicleId
+    );
+
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Vehicle not found.' });
+    }
+
+    const [deletedVehicle] = data.vehicles.splice(index, 1);
+    const regPlate = deletedVehicle.registration || vehicleId;
+    const assignedDriver = deletedVehicle.driver && deletedVehicle.driver !== 'Unassigned' && deletedVehicle.driver !== 'Yard Inventory'
+      ? deletedVehicle.driver
+      : null;
+
+    // Vice Versa: If vehicle was assigned to a driver, unassign that driver and set them to Standby
+    const affectedDriver = unassignDriverInDriversData(assignedDriver, regPlate);
+
+    // Also close any active temporary assignment in assignments.json if present
+    try {
+      const asgPath = path.join(__dirname, '../data/assignments.json');
+      if (fs.existsSync(asgPath)) {
+        const asgData = JSON.parse(fs.readFileSync(asgPath, 'utf8'));
+        let asgChanged = false;
+        if (Array.isArray(asgData.activeAssignments)) {
+          for (let i = asgData.activeAssignments.length - 1; i >= 0; i--) {
+            const asg = asgData.activeAssignments[i];
+            const asgReg = asg.assignedVehicle?.registration || asg.vehicleReg;
+            if (asgReg && asgReg.trim().toUpperCase() === regPlate.trim().toUpperCase()) {
+              asg.status = 'Terminated';
+              asg.returnedAt = new Date().toISOString();
+              asg.returnNotes = `Vehicle ${regPlate} deleted by admin.`;
+              asgData.activeAssignments.splice(i, 1);
+              if (!asgData.history) asgData.history = [];
+              asgData.history.unshift(asg);
+              asgChanged = true;
+            }
+          }
+        }
+        if (Array.isArray(asgData.assignments)) {
+          asgData.assignments.forEach(asg => {
+            if (asg.assignedVehicle?.registration?.toUpperCase() === regPlate.toUpperCase() && asg.status === 'active') {
+              asg.status = 'terminated';
+              asg.completedDate = new Date().toISOString();
+              asg.notes = `Vehicle ${regPlate} deleted by admin.`;
+              asgChanged = true;
+            }
+          });
+        }
+        if (asgChanged) {
+          fs.writeFileSync(asgPath, JSON.stringify(asgData, null, 2), 'utf8');
+        }
+      }
+    } catch (e) {
+      console.warn('Assignments clean up error:', e);
+    }
+
+    // Recalculate fleet summary metrics
+    const totalCount = data.vehicles.length;
+    const onRoadCount = data.vehicles.filter(v => v.status === 'On Road' || v.status === 'Allocated').length;
+    const workshopCount = data.vehicles.filter(v => v.status === 'At Workshop').length;
+    const readyCount = data.vehicles.filter(v => v.status === 'Ready to Deploy').length;
+    const breakdownCount = data.vehicles.filter(v => v.status === 'Breakdown').length;
+
+    if (data.summary?.metrics) {
+      data.summary.totalFleet = totalCount;
+      if (data.summary.metrics.totalFleet) data.summary.metrics.totalFleet.value = totalCount;
+      if (data.summary.metrics.onRoad) data.summary.metrics.onRoad.value = onRoadCount;
+      if (data.summary.metrics.atWorkshop) data.summary.metrics.atWorkshop.value = workshopCount;
+      if (data.summary.metrics.readyToDeploy) data.summary.metrics.readyToDeploy.value = readyCount;
+      if (data.summary.metrics.breakdown) data.summary.metrics.breakdown.value = breakdownCount;
+    }
+
+    saveFleetData(data);
+
+    return res.json({
+      success: true,
+      message: `Vehicle "${regPlate}" successfully deleted.${affectedDriver ? ` Assigned driver "${affectedDriver}" has been unassigned and moved to Standby.` : ''}`,
+      deletedRegistration: regPlate,
+      unassignedDriver: affectedDriver
+    });
+  } catch (error) {
+    console.error('Vehicle deletion error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete vehicle.' });
+  }
+});
+
 export default router;
