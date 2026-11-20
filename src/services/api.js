@@ -45,6 +45,92 @@ export async function loginAdminApi(email, password, rememberMe = true) {
     return data;
 }
 
+// =========================================================================
+// DRIVER AUTHENTICATION & PORTAL API CLIENT
+// =========================================================================
+
+export async function checkDriverEmailApi(email) {
+  const response = await fetch(`${API_BASE}/auth/driver/check-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase() })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Driver enrollment verification failed.');
+  }
+  return data;
+}
+
+export async function registerDriverApi(email, pin, rememberMe = true) {
+  const response = await fetch(`${API_BASE}/auth/driver/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), pin: String(pin).trim() })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Driver registration could not be completed.');
+  }
+  if (data.token && rememberMe) {
+    localStorage.setItem('sikhar_driver_token', data.token);
+    localStorage.setItem('sikhar_driver_user', JSON.stringify(data.user));
+  }
+  return data;
+}
+
+export async function loginDriverApi({ identifier, pin, otp, loginType = 'pin', rememberMe = true }) {
+  const response = await fetch(`${API_BASE}/auth/driver/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier: identifier.trim(), pin, otp, loginType })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data.message || 'Driver login rejected.');
+    err.needsRegistration = data.needsRegistration;
+    throw err;
+  }
+  if (data.token && rememberMe) {
+    localStorage.setItem('sikhar_driver_token', data.token);
+    localStorage.setItem('sikhar_driver_user', JSON.stringify(data.user));
+  }
+  return data;
+}
+
+export function getCachedDriverUser() {
+  const stored = localStorage.getItem('sikhar_driver_user');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {}
+  }
+  return null;
+}
+
+export function logoutDriverApi() {
+  localStorage.removeItem('sikhar_driver_token');
+  localStorage.removeItem('sikhar_driver_user');
+}
+
+export async function fetchDriverProfileApi() {
+  const token = localStorage.getItem('sikhar_driver_token');
+  const cached = getCachedDriverUser();
+  const url = new URL(`${window.location.origin}${API_BASE}/auth/driver/me`);
+  if (token) url.searchParams.set('token', token);
+  if (cached?.id) url.searchParams.set('id', cached.id);
+
+  const response = await fetch(url.toString(), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch driver profile.');
+  if (data.user) {
+    localStorage.setItem('sikhar_driver_user', JSON.stringify(data.user));
+  }
+  return data.user;
+}
+
 export async function fetchDashboardApi() {
   try {
     const response = await fetch(`${API_BASE}/dashboard`);
@@ -417,6 +503,41 @@ export async function assignDriverVehicleApi(driverId, vehicleRegistration, vehi
   } catch (err) {
     console.error('Assign vehicle error:', err);
     throw err;
+  }
+}
+
+export async function assignTodayVehicleApi(driverId, vehicleRegistration, vehicleModel = 'TATA TIGOR EV XPRESS T', vehicleType = 'EV', reason = 'Daily replacement vehicle allocated by Fleet Admin', durationDays = 1) {
+  try {
+    const response = await fetch(`${API_BASE}/drivers/${encodeURIComponent(driverId)}/today-vehicle`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicleRegistration, vehicleModel, vehicleType, reason, durationDays })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update today's vehicle assignment.");
+    }
+    return data;
+  } catch (err) {
+    console.error('Assign today vehicle error:', err);
+    throw err;
+  }
+}
+
+export async function fetchDriverInvoicesApi(driverId, driverPhone) {
+  try {
+    const params = new URLSearchParams();
+    if (driverId) params.append('driverId', driverId);
+    if (driverPhone) params.append('driverPhone', driverPhone);
+    const response = await fetch(`${API_BASE}/rentals/invoices?${params.toString()}`);
+    const data = await response.json();
+    if (data.success && data.data) {
+      return data.data.invoices || [];
+    }
+    return [];
+  } catch (err) {
+    console.error('Fetch driver invoices error:', err);
+    return [];
   }
 }
 

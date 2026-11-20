@@ -604,6 +604,7 @@ export default function AddDriverPage({ onBack, onDriverCreated, onDriverUpdated
 
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     dob: '',
     gender: '',
     fatherName: '',
@@ -665,6 +666,7 @@ export default function AddDriverPage({ onBack, onDriverCreated, onDriverUpdated
     setFormData((prev) => ({
       ...prev,
       name: driver.name || prev.name,
+      email: driver.email || prev.email || '',
       phone: driver.phone || prev.phone,
       altPhone: driver.altPhone || prev.altPhone,
       city: driver.city || driver.location || prev.city,
@@ -852,6 +854,7 @@ export default function AddDriverPage({ onBack, onDriverCreated, onDriverUpdated
 
       const payload = {
         name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
         dob: formData.dob,
         gender: formData.gender,
         fatherName: formData.fatherName.trim(),
@@ -1535,6 +1538,25 @@ export default function AddDriverPage({ onBack, onDriverCreated, onDriverUpdated
                         onChange={(e) => updateField('altPhone', e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  <div className="adp-form-group">
+                    <div className="adp-label-with-meta">
+                      <label className="adp-field-label">Driver Email Address (Portal Registration Key)</label>
+                      <span className="mobile-verify-status-badge" style={{ background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }}>
+                        Required for Driver Portal
+                      </span>
+                    </div>
+                    <input
+                      type="email"
+                      className="adp-text-input"
+                      placeholder="driver@gmail.com or driver@sikharfleet.com"
+                      value={formData.email}
+                      onChange={(e) => updateField('email', e.target.value)}
+                    />
+                    <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                      Driver uses this registered email to activate their Mobile Portal, set Quick PIN, and access the KYC Locker.
+                    </span>
                   </div>
 
                   <div className="adp-form-group">

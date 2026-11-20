@@ -29,6 +29,7 @@ import {
   updateDriverStatusApi,
   topupDriverWalletApi,
   assignDriverVehicleApi,
+  assignTodayVehicleApi,
   updateDriverLeaseApi,
   requestDriverLeaveApi,
   deleteDriverApi,
@@ -41,7 +42,9 @@ import DocumentOcrScannerModal from '../common/DocumentOcrScannerModal';
 import StatutoryCertificateViewerModal from './StatutoryCertificateViewerModal';
 
 const AVAILABLE_CARS = [
-  { reg: 'DL52GD6605', model: 'WagonR H3 CNG', type: 'CNG' },
+  { reg: 'DL52GD6605', model: 'TATA TIGOR EV XPRESS T', type: 'EV' },
+  { reg: 'DL1EV2026', model: 'TATA TIGOR EV XPRESS T', type: 'EV' },
+  { reg: 'DL2EV9944', model: 'TATA TIGOR EV XPRESS T', type: 'EV' },
   { reg: 'HR55BC2211', model: 'WagonR H3 CNG', type: 'CNG' },
   { reg: 'DL8CAZ7788', model: 'WagonR H3 CNG', type: 'CNG' },
   { reg: 'DL1Z08899', model: 'Tigor EV Fleet', type: 'EV' },
@@ -103,6 +106,25 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
   const [lightboxDoc, setLightboxDoc] = useState(null);
   const [copiedDocId, setCopiedDocId] = useState(null);
   const [highlightedDocId, setHighlightedDocId] = useState(null);
+
+  // Filtered documents for category filter tabs
+  const filteredDocuments = (documents || []).filter((doc) => {
+    if (!doc) return false;
+    if (docsCategoryFilter === 'all') return true;
+    const cat = String(doc.category || '').toLowerCase();
+    const type = String(doc.type || '').toLowerCase();
+    if (docsCategoryFilter === 'identity') {
+      return cat === 'aadhaar' || cat === 'pan' || type.includes('aadhaar') || type.includes('pan');
+    }
+    if (docsCategoryFilter === 'dl') {
+      return cat === 'dl' || type.includes('dl') || type.includes('licence') || type.includes('license');
+    }
+    if (docsCategoryFilter === 'agreements') {
+      return cat === 'police' || cat === 'lease' || cat === 'agreement' ||
+        type.includes('police') || type.includes('agreement') || type.includes('lease');
+    }
+    return true;
+  });
 
   // Statutory KYC Certificate Viewer Modal State
   const [certViewerState, setCertViewerState] = useState({ isOpen: false, category: 'dl', doc: null });
@@ -170,6 +192,15 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
   const [isAssigningVehicle, setIsAssigningVehicle] = useState(false);
   const [selectedVehicleToAssign, setSelectedVehicleToAssign] = useState('');
   const [isVehicleAssignLoading, setIsVehicleAssignLoading] = useState(false);
+
+  // Today's Vehicle Allocation Modal State (Shift Temporary Swap)
+  const [isTodayVehicleModalOpen, setIsTodayVehicleModalOpen] = useState(false);
+  const [todayVehReg, setTodayVehReg] = useState('');
+  const [todayVehModel, setTodayVehModel] = useState('TATA TIGOR EV XPRESS T');
+  const [todayVehType, setTodayVehType] = useState('EV');
+  const [todayVehReason, setTodayVehReason] = useState('Regular car routine maintenance & servicing');
+  const [todayVehDuration, setTodayVehDuration] = useState(1);
+  const [isTodayVehLoading, setIsTodayVehLoading] = useState(false);
 
   // Document OCR Modal State
   const [showOcrModal, setShowOcrModal] = useState(false);
@@ -446,6 +477,52 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
     }
   };
 
+  const handleAssignTodayVehicle = async (e) => {
+    if (e) e.preventDefault();
+    if (!driver) return;
+    if (!todayVehReg || !todayVehReg.trim()) {
+      alert("Please select or enter a vehicle registration plate number for today's assignment.");
+      return;
+    }
+    try {
+      setIsTodayVehLoading(true);
+      const res = await assignTodayVehicleApi(
+        driver.id,
+        todayVehReg.trim().toUpperCase(),
+        todayVehModel,
+        todayVehType,
+        todayVehReason,
+        todayVehDuration
+      );
+      setDriver(res.data);
+      setIsTodayVehicleModalOpen(false);
+      showToast(`Vehicle ${todayVehReg.trim().toUpperCase()} allocated to ${driver.name} for today's shift! This is immediately visible in the Driver Portal.`);
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err) {
+      alert(err.message || "Failed to update today's vehicle assignment.");
+    } finally {
+      setIsTodayVehLoading(false);
+    }
+  };
+
+  const handleResetTodayVehicle = async () => {
+    if (!driver) return;
+    if (!window.confirm(`Reset today's temporary vehicle and restore ${driver.name}'s regular vehicle (${driver.vehicle?.registration || 'Regular Car'})?`)) {
+      return;
+    }
+    try {
+      setIsTodayVehLoading(true);
+      const res = await assignTodayVehicleApi(driver.id, '');
+      setDriver(res.data);
+      showToast(`Today's vehicle reset. Driver ${driver.name} is now back on regular car (${driver.vehicle?.registration || 'Regular Car'}).`);
+      if (onStatusUpdated) onStatusUpdated();
+    } catch (err) {
+      alert(err.message || "Failed to reset today's vehicle assignment.");
+    } finally {
+      setIsTodayVehLoading(false);
+    }
+  };
+
   const handleUnassignLease = async () => {
     if (!driver?.deal) return;
     if (!window.confirm(`Unassign the commercial lease for ${driver.name}? The driver will remain available for a later lease assignment.`)) return;
@@ -578,6 +655,26 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
               <span className="meta-item">
                 <Phone size={13} className="text-muted" />
                 <strong>{driver.phone}</strong>
+              </span>
+              <span className="meta-item-dot">•</span>
+              <span className="meta-item" style={{ color: driver.email ? '#2563eb' : '#64748b' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span>✉</span>
+                  <strong>{driver.email || 'No email assigned'}</strong>
+                </span>
+                {driver.email && (
+                  <span style={{
+                    fontSize: '10px',
+                    background: driver.isRegistered || driver.pin ? '#dcfce7' : '#fef3c7',
+                    color: driver.isRegistered || driver.pin ? '#15803d' : '#b45309',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    marginLeft: '4px',
+                    fontWeight: 600
+                  }}>
+                    {driver.isRegistered || driver.pin ? 'Portal Active' : 'Pending Activation'}
+                  </span>
+                )}
               </span>
               <span className="meta-item-dot">•</span>
               <span className="meta-item">
@@ -718,21 +815,109 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
           <div className="overview-two-col-layout">
             {/* Left: Vehicle Assignment & Live GPS Telemetry */}
             <div className="overview-col-card">
-              <div className="card-section-header flex-between">
+              <div className="card-section-header flex-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
                 <div className="flex-header-left">
                   <Car size={18} className="text-blue" />
                   <h3>Assigned Commercial Asset</h3>
                 </div>
-                <button
-                  type="button"
-                  className="btn secondary small"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => onNavigate && onNavigate('vehicle-assignments')}
-                  title="Manage vehicle assignment in Vehicle Assignment"
-                >
-                  <span>{driver.vehicle ? 'Manage in Vehicle Assignment →' : '+ Assign in Vehicle Assignment →'}</span>
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn primary small"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: '#d97706',
+                      borderColor: '#b45309',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setTodayVehReg(driver.todayVehicle?.registration || 'DL1EV2026');
+                      setTodayVehModel(driver.todayVehicle?.model || 'TATA TIGOR EV XPRESS T');
+                      setTodayVehType(driver.todayVehicle?.type || 'EV');
+                      setTodayVehReason(driver.todayVehicle?.reason || 'Regular car routine maintenance & servicing');
+                      setTodayVehDuration(driver.todayVehicle?.durationDays || 1);
+                      setIsTodayVehicleModalOpen(true);
+                    }}
+                    title="Change or allocate a replacement vehicle for today's shift"
+                  >
+                    <span>🔄 {driver.todayVehicle ? "Edit Today's Car" : "Change Car for Today"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn secondary small"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => onNavigate && onNavigate('vehicle-assignments')}
+                    title="Manage vehicle assignment in Vehicle Assignment"
+                  >
+                    <span>{driver.vehicle ? 'Vehicle Assignment →' : '+ Assign in Vehicle Assignment →'}</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Today's Vehicle Shift Allocation Banner (If Swapped/Assigned for Today) */}
+              {driver.todayVehicle && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  border: '1.5px solid #f59e0b',
+                  borderRadius: '10px',
+                  padding: '14px 16px',
+                  marginBottom: '16px',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.1)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        background: '#fef3c7',
+                        color: '#92400e',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #fde68a',
+                        textTransform: 'uppercase'
+                      }}>
+                        ⚡ TODAY'S SHIFT VEHICLE
+                      </span>
+                      <strong style={{ fontSize: '16px', color: '#78350f', fontFamily: 'monospace' }}>
+                        {driver.todayVehicle.registration}
+                      </strong>
+                      <span style={{ fontSize: '13px', color: '#92400e', fontWeight: 650 }}>
+                        ({driver.todayVehicle.model})
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={handleResetTodayVehicle}
+                        disabled={isTodayVehLoading}
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid #d97706',
+                          color: '#b45309',
+                          borderRadius: '6px',
+                          padding: '4px 10px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        title="Revert back to regular contract car"
+                      >
+                        Reset to Regular Car ({driver.vehicle?.registration || 'Contract Car'})
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '12px', color: '#92400e', lineHeight: 1.4 }}>
+                    <strong>Reason:</strong> {driver.todayVehicle.reason || 'Shift temporary replacement'} · <strong>Duration:</strong> {driver.todayVehicle.durationDays || 1} day(s) · <strong>Allocated by:</strong> Fleet Admin · <em>Visible in Driver Portal</em>
+                  </div>
+                </div>
+              )}
 
               {driver.vehicle ? (
                 <div className="detail-vehicle-preview-box">
@@ -1136,6 +1321,191 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
       {/* Tab 4: KYC & COMMERCIAL DEAL (PDF Page 3, 4, 5) */}
       {activeTab === 'kyc' && (
         <div className="driver-detail-tab-content">
+          {/* Driver Personal Identity & Onboarded Profile Particulars */}
+          <div className="detail-section-white-card" style={{ marginBottom: '20px' }}>
+            <div className="flex-between mb-4" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800
+                }}>
+                  <User size={20} />
+                </div>
+                <div>
+                  <h3 className="section-block-title" style={{ margin: 0, fontSize: '18px' }}>
+                    Driver Personal Profile & Contact Credentials
+                  </h3>
+                  <p className="text-muted text-xs" style={{ margin: 0, marginTop: '2px' }}>
+                    Complete personal records, mobile contact, portal credentials, and guarantor references on file.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  background: driver.email ? (driver.isRegistered || driver.pin ? '#ecfdf5' : '#fef3c7') : '#f1f5f9',
+                  color: driver.email ? (driver.isRegistered || driver.pin ? '#065f46' : '#b45309') : '#64748b',
+                  border: `1px solid ${driver.email ? (driver.isRegistered || driver.pin ? '#a7f3d0' : '#fde68a') : '#cbd5e1'}`
+                }}>
+                  {driver.email
+                    ? (driver.isRegistered || driver.pin ? '✓ Portal Active (Quick PIN Set)' : '⏳ Portal Pending Activation')
+                    : 'Portal Inactive (Email Missing)'}
+                </span>
+              </div>
+            </div>
+
+            {/* 8-Card Comprehensive Personal Particulars Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+              gap: '14px',
+              marginBottom: '10px'
+            }}>
+              {/* 1. Full Legal Name */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Driver Full Name (as per DL)
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '15px' }}>{driver.name}</strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                  Driver Roster ID: <b>{driver.id}</b>
+                </span>
+              </div>
+
+              {/* 2. Primary Mobile Phone */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Primary Mobile Phone
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '15px', letterSpacing: '0.3px' }}>
+                  +91 {driver.phone}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
+                  ✓ Mobile OTP Verified
+                </span>
+              </div>
+
+              {/* 3. Driver Email (Portal Login Key) */}
+              <div style={{ background: '#eff6ff', padding: '12px 14px', borderRadius: '9px', border: '1.5px solid #93c5fd' }}>
+                <span style={{ fontSize: '11px', color: '#1e40af', fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Driver Email Address (Portal Key)
+                </span>
+                <strong style={{ color: '#1d4ed8', fontSize: '14px', wordBreak: 'break-all' }}>
+                  {driver.email || '—'}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#2563eb', fontWeight: 600, marginTop: '2px' }}>
+                  {driver.email ? 'Enrolled for Driver Mobile App' : 'Required for driver login registration'}
+                </span>
+              </div>
+
+              {/* 4. Alternate Phone */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Alternate Contact Number
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '14px' }}>
+                  {driver.altPhone ? `+91 ${driver.altPhone}` : 'None provided'}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                  Secondary phone on file
+                </span>
+              </div>
+
+              {/* 5. Father's Name */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Father's Name (Parentage)
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '14px' }}>
+                  {driver.kyc?.fatherName || 'Not recorded'}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                  Statutory identification record
+                </span>
+              </div>
+
+              {/* 6. Date of Birth & Gender */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Date of Birth & Gender
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '14px' }}>
+                  {driver.kyc?.dob || '—'} {driver.kyc?.gender ? `· ${driver.kyc.gender}` : ''}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                  Verified with UIDAI record
+                </span>
+              </div>
+
+              {/* 7. Emergency Contact */}
+              <div style={{ background: '#fef2f2', padding: '12px 14px', borderRadius: '9px', border: '1px solid #fecaca' }}>
+                <span style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Emergency Contact
+                </span>
+                <strong style={{ color: '#dc2626', fontSize: '14px' }}>
+                  {driver.kyc?.emergencyContact || 'None on record'}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#991b1b', marginTop: '2px' }}>
+                  Hub emergency escalation protocol
+                </span>
+              </div>
+
+              {/* 8. Guarantor Reference */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                  Personal Guarantor / Reference
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '14px' }}>
+                  {driver.kyc?.reference?.name || 'Suresh Verma (Ref)'}
+                </strong>
+                <span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                  {driver.kyc?.reference?.relation || 'Guarantor'} · {driver.kyc?.reference?.phone || '98101 88990'}
+                </span>
+              </div>
+            </div>
+
+            {/* Permanent Address Bar */}
+            <div style={{
+              background: '#f8fafc',
+              padding: '12px 16px',
+              borderRadius: '9px',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              <div>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block' }}>
+                  Permanent Residential Address
+                </span>
+                <strong style={{ color: '#0f172a', fontSize: '13.5px' }}>
+                  {driver.kyc?.address || driver.city || '25 Mahadevnagar 2, Gurgaon Operations Hub'}
+                </strong>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 750, textTransform: 'uppercase', display: 'block' }}>
+                  Operational Hub & City
+                </span>
+                <strong style={{ color: '#0284c7', fontSize: '13px' }}>
+                  {driver.city || 'Gurgaon Central Terminal, Delhi NCR'}
+                </strong>
+              </div>
+            </div>
+          </div>
+
           <div className="detail-section-white-card">
             <div className="flex-between mb-4">
               <div>
@@ -2324,6 +2694,163 @@ export default function DriverDetailPage({ driverId, initialTab = 'overview', on
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Change Vehicle for Today (Shift Temporary Allocation) */}
+      {isTodayVehicleModalOpen && (
+        <div className="driver-modal-overlay-custom" onClick={() => setIsTodayVehicleModalOpen(false)}>
+          <div className="driver-modal-dialog-box" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-dialog-header">
+              <div>
+                <h3>Change Vehicle for Today</h3>
+                <span className="text-xs text-muted">Driver: {driver.name} · Master Car: {driver.vehicle?.registration || 'None'}</span>
+              </div>
+              <button className="btn-modal-close" onClick={() => setIsTodayVehicleModalOpen(false)}>✕</button>
+            </div>
+            
+            <form onSubmit={handleAssignTodayVehicle}>
+              <div className="modal-dialog-body">
+                <p className="text-muted text-xs mb-3">
+                  Allocates a replacement or temporary vehicle for today's shift. This will immediately reflect in the Driver Portal under <strong>Allocated Vehicle Asset</strong>.
+                </p>
+
+                <div className="form-group mb-3">
+                  <label className="text-xs font-bold text-navy block mb-1">Select Available Fleet Vehicle</label>
+                  <select
+                    className="adp-select-input"
+                    value={todayVehReg}
+                    onChange={(e) => {
+                      const reg = e.target.value;
+                      setTodayVehReg(reg);
+                      const found = AVAILABLE_CARS.find(c => c.reg === reg);
+                      if (found) {
+                        setTodayVehModel(found.model);
+                        setTodayVehType(found.type);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value="">-- Choose Fleet Car --</option>
+                    {AVAILABLE_CARS.map(c => (
+                      <option key={c.reg} value={c.reg}>
+                        {c.reg} — {c.model} ({c.type})
+                      </option>
+                    ))}
+                    <option value="CUSTOM">+ Enter Custom Registration...</option>
+                  </select>
+                </div>
+
+                {todayVehReg === 'CUSTOM' && (
+                  <div className="form-group mb-3">
+                    <label className="text-xs font-bold text-navy block mb-1">Custom Plate Number</label>
+                    <input
+                      type="text"
+                      className="adp-text-input"
+                      placeholder="e.g. DL1EV9988"
+                      onChange={(e) => setTodayVehReg(e.target.value.toUpperCase())}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                  <div className="form-group">
+                    <label className="text-xs font-bold text-navy block mb-1">Vehicle Model</label>
+                    <input
+                      type="text"
+                      className="adp-text-input"
+                      value={todayVehModel}
+                      onChange={(e) => setTodayVehModel(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="text-xs font-bold text-navy block mb-1">Fuel / Type</label>
+                    <select
+                      className="adp-select-input"
+                      value={todayVehType}
+                      onChange={(e) => setTodayVehType(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    >
+                      <option value="EV">EV (Electric)</option>
+                      <option value="CNG">CNG</option>
+                      <option value="Petrol">Petrol</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group mb-3">
+                  <label className="text-xs font-bold text-navy block mb-1">Reason for Today's Change</label>
+                  <select
+                    className="adp-select-input"
+                    value={todayVehReason}
+                    onChange={(e) => setTodayVehReason(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '8px' }}
+                  >
+                    <option value="Regular car routine maintenance & servicing">Regular car routine maintenance & servicing</option>
+                    <option value="Traction battery recharge swap">Traction battery recharge swap</option>
+                    <option value="Minor bumper / scratch inspection & repair">Minor bumper / scratch inspection & repair</option>
+                    <option value="High-demand shift route reallocation">High-demand shift route reallocation</option>
+                    <option value="Temporary standby replacement car">Temporary standby replacement car</option>
+                  </select>
+                  <input
+                    type="text"
+                    className="adp-text-input"
+                    value={todayVehReason}
+                    onChange={(e) => setTodayVehReason(e.target.value)}
+                    placeholder="Or enter custom reason..."
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                  />
+                </div>
+
+                <div className="form-group mb-3">
+                  <label className="text-xs font-bold text-navy block mb-1">Duration</label>
+                  <select
+                    className="adp-select-input"
+                    value={todayVehDuration}
+                    onChange={(e) => setTodayVehDuration(Number(e.target.value))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value={1}>1 Day (Today's Shift Only)</option>
+                    <option value={2}>2 Days</option>
+                    <option value={3}>3 Days</option>
+                    <option value={7}>7 Days (Weekly Swap)</option>
+                  </select>
+                </div>
+
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '11.5px',
+                  color: '#475569'
+                }}>
+                  💡 <strong>Driver Visibility:</strong> Once confirmed, driver <strong>{driver.name}</strong> will see this replacement car under <em>Allocated Vehicle Asset</em> and on their cockpit dashboard immediately upon login or sync.
+                </div>
+              </div>
+
+              <div className="modal-dialog-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-driver-secondary"
+                  onClick={() => setIsTodayVehicleModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-driver-primary"
+                  style={{ background: '#d97706', borderColor: '#b45309' }}
+                  disabled={isTodayVehLoading || !todayVehReg}
+                >
+                  {isTodayVehLoading ? 'Assigning...' : "✓ Confirm Today's Vehicle Allocation"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

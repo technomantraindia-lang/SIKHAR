@@ -372,6 +372,11 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                                 <Phone size={11} className="inline mr-1" />
                                 {drv.phone}
                               </span>
+                              {drv.email && (
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  ✉ {drv.email}
+                                </span>
+                              )}
                               <span className="table-rating-pill">★ {drv.rating || '4.8'}</span>
                             </div>
                           </div>
@@ -613,6 +618,11 @@ export default function AllDriversListPage({ onBack, onSelectDriver, onAddDriver
                       <Phone size={11} className="inline mr-1" />
                       {drv.phone}
                     </span>
+                    {drv.email && (
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        ✉ {drv.email}
+                      </span>
+                    )}
                   </div>
 
                   <span

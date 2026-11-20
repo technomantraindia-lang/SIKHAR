@@ -2,11 +2,11 @@
   "summary": {
     "totalInvoices": 17,
     "totalBilled": 16250,
-    "totalCollected": 10750,
-    "totalPending": 5500,
+    "totalCollected": 11350,
+    "totalPending": 4900,
     "overdueCount": 5,
     "paidCount": 12,
-    "partialCount": 0
+    "partialCount": 1
   },
   "invoices": [
     {
@@ -277,12 +277,27 @@
       "gstPercent": 5,
       "gstAmount": 57.14,
       "totalAmount": 1200,
-      "amountPaid": 0,
-      "balanceDue": 1200,
-      "status": "Pending",
-      "paymentMethod": null,
-      "paidDate": null,
-      "notes": "Daily commercial vehicle rental invoice"
+      "amountPaid": 600,
+      "balanceDue": 600,
+      "status": "Partially Paid",
+      "paymentMethod": "UPI",
+      "paidDate": "2026-11-18T13:41:44.764Z",
+      "notes": "Daily commercial vehicle rental invoice",
+      "receiptReference": "UTR-292150",
+      "lastReceiptNumber": "RCP-304764",
+      "lastCollectedAmount": 600,
+      "paymentHistory": [
+        {
+          "receiptNumber": "RCP-304764",
+          "date": "2026-11-18T13:41:44.764Z",
+          "amount": 600,
+          "paymentMethod": "UPI",
+          "reference": "UTR-292150",
+          "balanceRemaining": 600,
+          "status": "Partial Payment",
+          "collectedBy": "Finance / Admin Desk"
+        }
+      ]
     },
     {
       "id": "INV-26-699479",

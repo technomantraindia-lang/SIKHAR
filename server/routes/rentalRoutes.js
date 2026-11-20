@@ -428,9 +428,26 @@ function recalculateInvoiceSummaries(invoicesData) {
 
 // GET /api/rentals/invoices - List invoices with filters
 router.get('/invoices', (req, res) => {
-  const { status, search } = req.query;
+  const { status, search, driverId, driverPhone } = req.query;
   const data = readJson(INVOICES_FILE, { summary: {}, invoices: [] });
   let list = data.invoices || [];
+
+  // Filter specifically for driver portal if driverId or driverPhone provided
+  if (driverId || driverPhone) {
+    const cleanId = (driverId || '').trim().toLowerCase();
+    const cleanPhone = (driverPhone || '').replace(/\D/g, '').slice(-10);
+    list = list.filter(i => {
+      const matchId = cleanId && (
+        (i.driverId && i.driverId.toLowerCase() === cleanId) ||
+        (i.customerId && i.customerId.toLowerCase() === cleanId)
+      );
+      const matchPhone = cleanPhone && (
+        (i.driverPhone && i.driverPhone.replace(/\D/g, '').includes(cleanPhone)) ||
+        (i.customerPhone && i.customerPhone.replace(/\D/g, '').includes(cleanPhone))
+      );
+      return matchId || matchPhone;
+    });
+  }
 
   if (status && status !== 'all') {
     const s = status.toLowerCase();

@@ -1,5 +1,6 @@
 {
-  "activeAssignments": [
+  "activeAssignments": [],
+  "history": [
     {
       "id": "ASG-2026-6395",
       "driverId": "drv-19",
@@ -19,9 +20,11 @@
       "reason": "nothing",
       "notes": "Assigned TATA TIAGO EV to Parekh Dhruv  tester for 2 days.",
       "oldVehicleAction": "yard_reserve",
-      "status": "Active",
+      "status": "Terminated",
       "assignedBy": "Fleet Administrator",
-      "createdAt": "2026-11-05T06:31:17.045Z"
+      "createdAt": "2026-11-05T06:31:17.045Z",
+      "returnedAt": "2026-11-20T11:04:35.979Z",
+      "returnNotes": "Driver Parekh Dhruv  tester deleted by admin."
     },
     {
       "id": "ASG-2026-7815",
@@ -47,12 +50,12 @@
       "reason": "VIP Corporate 7-Seater Duty",
       "notes": "Assigned TATA TIGOR EV XPRESS T to chetan for 7 days.",
       "oldVehicleAction": "yard_reserve",
-      "status": "Active",
+      "status": "Terminated",
       "assignedBy": "Fleet Administrator",
-      "createdAt": "2026-10-12T04:09:00.853Z"
-    }
-  ],
-  "history": [
+      "createdAt": "2026-10-12T04:09:00.853Z",
+      "returnedAt": "2026-11-20T11:04:15.352Z",
+      "returnNotes": "Driver chetan deleted by admin."
+    },
     {
       "id": "ASG-2026-6564",
       "driverId": "drv-18",

@@ -337,6 +337,7 @@ router.put('/:id', (req, res) => {
   const clean = (value) => String(value ?? '').trim();
 
   if (has('name') && clean(input.name)) driver.name = clean(input.name);
+  if (has('email')) driver.email = clean(input.email).toLowerCase();
   if (has('phone')) driver.phone = clean(input.phone);
   if (has('altPhone')) driver.altPhone = clean(input.altPhone);
   if (has('city')) {
@@ -569,6 +570,7 @@ router.post('/:id/wallet/topup', (req, res) => {
 router.post('/', (req, res) => {
   const {
     name,
+    email = '',
     phone,
     altPhone = '',
     city = '',
@@ -630,6 +632,7 @@ router.post('/', (req, res) => {
   const newDriver = {
     id: newId,
     name: name.trim(),
+    email: (email || '').trim().toLowerCase(),
     phone: phone.trim(),
     altPhone: altPhone.trim(),
     city: city.trim(),
@@ -884,6 +887,72 @@ router.put('/:id/vehicle', (req, res) => {
     success: true,
     message: vehicleRegistration ? `Vehicle ${vehicleRegistration} assigned to ${data.drivers[index].name}` : `Vehicle unassigned for ${data.drivers[index].name}`,
     data: data.drivers[index]
+  });
+});
+
+// PUT /api/drivers/:id/today-vehicle - Admin allocates/swaps replacement vehicle for today
+router.put('/:id/today-vehicle', (req, res) => {
+  const { id } = req.params;
+  const {
+    vehicleRegistration,
+    vehicleModel = 'TATA TIGOR EV XPRESS T',
+    vehicleType = 'EV',
+    reason = 'Daily replacement vehicle allocated by Fleet Admin',
+    durationDays = 1
+  } = req.body;
+
+  const data = readDriversData();
+  const index = (data.drivers || []).findIndex(d => d.id === id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Driver not found.' });
+  }
+
+  const driver = data.drivers[index];
+
+  if (!vehicleRegistration || vehicleRegistration.trim() === '') {
+    driver.todayVehicle = null;
+    delete driver.temporaryAssignment;
+    writeDriversData(data);
+    return res.json({
+      success: true,
+      message: `Today's vehicle reset. Driver ${driver.name} is operating regular assigned car (${driver.vehicle?.registration || 'Unassigned'}).`,
+      data: driver
+    });
+  }
+
+  const regUpper = vehicleRegistration.trim().toUpperCase();
+  const todayObj = {
+    registration: regUpper,
+    model: vehicleModel,
+    type: vehicleType,
+    isTemporary: true,
+    reason,
+    durationDays: Number(durationDays) || 1,
+    assignedAt: new Date().toISOString(),
+    assignedBy: 'Fleet Admin Operations',
+    status: 'Active for Today',
+    originalVehicle: driver.vehicle ? { ...driver.vehicle } : null
+  };
+
+  driver.todayVehicle = todayObj;
+  driver.temporaryAssignment = {
+    assignmentId: `ASG-TODAY-${Date.now().toString().slice(-4)}`,
+    isTemporary: true,
+    originalVehicle: driver.vehicle ? { ...driver.vehicle } : null,
+    assignedVehicle: { registration: regUpper, model: vehicleModel, type: vehicleType },
+    durationDays: Number(durationDays) || 1,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + (Number(durationDays) || 1) * 24 * 60 * 60 * 1000).toISOString(),
+    reason,
+    status: 'Active'
+  };
+
+  writeDriversData(data);
+
+  res.json({
+    success: true,
+    message: `Vehicle ${regUpper} assigned to ${driver.name} for today!`,
+    data: driver
   });
 });
 

@@ -25,8 +25,9 @@ import ManagementReportsPage from './components/finance/ManagementReportsPage';
 import ReferenceScreensPage from './components/finance/ReferenceScreensPage';
 import ModuleViewer from './components/dashboard/ModuleViewer';
 import AdminLogin from './components/auth/AdminLogin';
+import DriverPortalShell from './components/driver-portal/DriverPortalShell';
 import LandingPage from './components/landing/LandingPage';
-import { getCachedAdminUser, logoutAdminApi } from './services/api';
+import { getCachedAdminUser, logoutAdminApi, getCachedDriverUser, logoutDriverApi } from './services/api';
 import './App.css';
 
 // Read initial route from URL hash or localStorage so refreshing stays on the active view
@@ -44,6 +45,7 @@ const getInitialRoute = () => {
 
 export default function App() {
   const [adminUser, setAdminUser] = useState(() => getCachedAdminUser());
+  const [driverUser, setDriverUser] = useState(() => getCachedDriverUser());
   const [activeRoute, setActiveRoute] = useState(getInitialRoute);
   const [publicPath, setPublicPath] = useState(() => window.location.pathname);
 
@@ -116,6 +118,18 @@ export default function App() {
   }, [adminUser, publicPath]);
 
   const handleLoginSuccess = (user) => {
+    if (user.role === 'driver') {
+      logoutAdminApi();
+      setAdminUser(null);
+      setDriverUser(user);
+      setActiveRoute('driver-hub');
+      window.history.replaceState({}, '', '/');
+      setPublicPath('/');
+      return;
+    }
+
+    logoutDriverApi();
+    setDriverUser(null);
     setAdminUser(user);
     setActiveRoute('dashboard');
     window.history.replaceState({}, '', '/');
@@ -132,12 +146,30 @@ export default function App() {
     setAdminUser(null);
   };
 
+  const handleDriverLogout = () => {
+    logoutDriverApi();
+    try {
+      localStorage.removeItem(`sikhar_driver_active_route_${driverUser?.id || 'current'}`);
+    } catch {
+      // ignore storage restrictions during logout
+    }
+    localStorage.removeItem('sikhar_active_route');
+    setDriverUser(null);
+    window.history.replaceState({}, '', '/login');
+    setPublicPath('/login');
+  };
+
   const isFinanceRoute = activeRoute.startsWith('finance-');
   const isFinanceStatementRoute = activeRoute === 'finance-pnl' || activeRoute === 'finance-cash-flow';
 
-  // Public entry experience: root is the product landing page, /login is always the admin gateway.
+  // Public entry experience: root is the product landing page, /login is always the gateway.
   if (publicPath === '/login') {
     return <AdminLogin onLoginSuccess={handleLoginSuccess} onBackToHome={openLanding} />;
+  }
+
+  // If authenticated as Driver, render dedicated Driver Portal (completely isolated from Admin Panel)
+  if (driverUser) {
+    return <DriverPortalShell user={driverUser} onLogout={handleDriverLogout} />;
   }
 
   // Keep the public homepage reachable at the clean root URL, even when an old session is cached.
